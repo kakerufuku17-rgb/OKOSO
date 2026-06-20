@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#13110c">
+<title>OKOSO</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500&family=Zen+Old+Mincho:wght@400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap');
+
+  :root {
+    --ink:#ede9df; --ink-2:#a89f8e; --ink-3:#6b6252; --ink-4:#3e3929;
+    --bg:#13110c; --bg-1:#1a1812; --bg-2:#211f18;
+    --rule:#252218; --rule-2:#2e2b21;
+    --ember:#c47a3e; --ember-d:rgba(196,122,62,0.12); --ember-b:rgba(196,122,62,0.28);
+    --serif:'Zen Old Mincho',serif; --sans:'Zen Kaku Gothic New',sans-serif; --mono:'DM Mono',monospace;
+    --nav-h:64px;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{height:100%;}
+  body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow:hidden;}
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 40% at 50% -5%,rgba(196,122,62,0.08) 0%,transparent 70%);}
+
+  .screen{position:fixed;inset:0 0 var(--nav-h);z-index:1;overflow-y:auto;overscroll-behavior:contain;display:none;}
+  .screen.active{display:block;}
+  .inner{max-width:480px;margin:0 auto;padding:0 26px 60px;}
+
+  .mast{padding:38px 0 0;display:flex;align-items:baseline;justify-content:space-between;margin-bottom:32px;}
+  .mast-logo{font-family:var(--mono);font-size:11.5px;letter-spacing:0.44em;color:var(--ink-3);text-transform:uppercase;padding-left:0.44em;}
+  .mast-date{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);letter-spacing:0.06em;}
+  .sync-badge{background:none;border:none;color:var(--ink-4);font-size:11px;cursor:pointer;padding:2px 4px;line-height:1;transition:color 0.3s;font-family:var(--mono);}
+  .sync-badge.on{color:var(--ember);}
+  .sync-badge.err{color:#c4603e;}
+  .sync-status{font-family:var(--serif);font-size:13px;color:var(--ink-2);line-height:1.7;letter-spacing:0.03em;padding:12px 14px;background:var(--bg-2);border:1px solid var(--rule-2);border-radius:4px;}
+  .sync-status.on{border-color:var(--ember-b);color:var(--ember);}
+  .sync-copy{flex-shrink:0;background:var(--ember-d);border:1px solid var(--ember-b);color:var(--ember);font-family:var(--serif);font-size:12px;padding:7px 12px;border-radius:3px;cursor:pointer;}
+
+  .label{font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:var(--ink-4);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:12px;}
+  .label::after{content:'';flex:1;height:1px;background:var(--rule-2);}
+
+  /* ── 今日の一本線フロー（理想 → 目標 → 今月 → 今日） ── */
+  .flow { padding: 6px 0 0; margin-bottom: 34px; }
+
+  /* 上3段：コンパクトな行（左にラベル、右に内容） */
+  .flow-mini {
+    background: var(--bg-1); border: 1px solid var(--rule-2); border-radius: 4px;
+    padding: 12px 16px; cursor: pointer; transition: border-color 0.3s;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .flow-mini:hover { border-color: var(--rule); }
+  .flow-mini-lbl {
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
+    color: var(--ink-4); text-transform: uppercase; flex-shrink: 0;
+    width: 58px; line-height: 1.5;
+  }
+  .flow-mini-body { font-family: var(--serif); font-size: 14.5px; line-height: 1.5; letter-spacing: 0.02em; color: var(--ink); flex: 1; min-width: 0; }
+  .flow-mini-body.empty { font-size: 12px; color: var(--ink-4); font-family: var(--sans); }
+
+  /* 複数行対応（目標・今月の焦点） */
+  .flow-multi { background: var(--bg-1); border: 1px solid var(--rule-2); border-radius: 4px; overflow: hidden; }
+  .flow-multi-head { display: flex; align-items: center; padding: 10px 16px 6px; gap: 14px; }
+  .flow-multi-lbl { font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em; color: var(--ink-4); text-transform: uppercase; flex: 1; }
+  .flow-multi-add { background: none; border: none; color: var(--ink-3); font-family: var(--serif); font-size: 11.5px; cursor: pointer; letter-spacing: 0.04em; padding: 2px 4px; transition: color 0.25s; }
+  .flow-multi-add:hover { color: var(--ember); }
+  .flow-multi-row { display: flex; align-items: center; gap: 11px; padding: 9px 16px; border-top: 1px solid var(--rule); transition: background 0.2s; }
+  .flow-multi-row:hover { background: var(--bg-2); }
+  .flow-multi-chk { flex-shrink:0; width:18px; height:18px; border-radius:50%; border:1.5px solid var(--ink-4); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color 0.3s; padding:0; }
+  .flow-multi-chk:hover { border-color:var(--ember); }
+  .flow-multi-chk svg { opacity:0; transition:opacity 0.3s; }
+  .flow-multi-chk:hover svg { opacity:0.6; }
+  .flow-multi-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ember); opacity: 0.6; flex-shrink: 0; }
+  .flow-multi-text { font-family: var(--serif); font-size: 14px; color: var(--ink); flex: 1; min-width: 0; letter-spacing: 0.02em; cursor: pointer; }
+  .flow-multi-empty { padding: 11px 16px; border-top: 1px solid var(--rule); font-family: var(--sans); font-size: 12px; color: var(--ink-4); cursor: pointer; }
+  .flow-multi-empty:hover { color: var(--ember); }
+
+  /* 細い縦線（矢印なしで圧縮） */
+  .flow-tick { width: 1px; height: 14px; background: var(--rule-2); margin: 0 auto; }
+
+  /* 今日の一歩（主役・通常サイズ） */
+  .flow-node-steps {
+    background: var(--bg-1); border: 1px solid var(--ember-b); border-radius: 4px;
+    padding: 18px 20px; margin-top: 2px;
+  }
+  .flow-node-lbl { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.26em; color: var(--ember); text-transform: uppercase; margin-bottom: 10px; }
+  .flow-steps-lead { font-family: var(--serif); font-size: 13px; color: var(--ink-3); margin-bottom: 14px; line-height: 1.9; letter-spacing: 0.04em; }
+  .step-row { display: flex; align-items: flex-start; gap: 13px; padding: 12px 0; border-top: 1px solid var(--rule); }
+  .step-row:first-of-type { border-top: none; padding-top: 0; }
+  .chk { flex-shrink:0; margin-top:2px; width:20px; height:20px; border-radius:50%; border:1.5px solid var(--ink-4); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color 0.4s,background 0.4s; }
+  .chk.done { border-color:var(--ember); background:var(--ember-d); }
+  .chk svg { opacity:0; transition:opacity 0.35s; }
+  .chk.done svg { opacity:1; }
+  .step-info { flex:1; min-width:0; }
+  .step-t { font-size:15px; line-height:1.6; transition:color 0.4s; }
+  .step-t.done { color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--ink-4); }
+  .step-tag { font-family:var(--mono); font-size:10px; color:var(--ink-4); margin-top:4px; letter-spacing:0.04em; }
+  .step-del { background:none; border:none; color:var(--ink-4); font-size:16px; cursor:pointer; padding:2px 4px; line-height:1; }
+  .add-btn { display:flex; align-items:center; gap:8px; margin-top:14px; padding:10px 0 0; border-top:1px dashed var(--rule-2); background:none; border-left:none; border-right:none; border-bottom:none; color:var(--ink-3); font-family:var(--serif); font-size:13px; letter-spacing:0.06em; cursor:pointer; width:100%; text-align:left; transition:color 0.3s; }
+  .add-btn span { color:var(--ember); font-size:16px; }
+  .add-btn:hover { color:var(--ember); }
+
+  /* 夜の記録ブロック */
+  .dusk-block { border-top: 1px solid var(--rule); padding-top: 32px; }
+
+  /* ── dusk ── */
+  .dusk-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .dtab{flex:1;padding:10px 8px;background:var(--bg-1);border:1px solid var(--rule-2);color:var(--ink-3);font-family:var(--serif);font-size:12.5px;letter-spacing:0.08em;border-radius:3px;cursor:pointer;transition:all 0.3s;}
+  .dtab.on{color:var(--ember);border-color:var(--ember-b);background:var(--ember-d);}
+  .dusk-hint{font-family:var(--serif);font-size:12.5px;color:var(--ink-3);line-height:1.9;margin-bottom:14px;letter-spacing:0.04em;}
+
+  /* 役割の宣言カード（前進記録／ジャーナルの違いを明示） */
+  .role-card{background:var(--bg-1);border:1px solid var(--rule-2);border-radius:4px;padding:14px 16px;margin-bottom:16px;}
+  .role-title{font-family:var(--serif);font-size:15px;font-weight:500;color:var(--ink);letter-spacing:0.04em;margin-bottom:7px;}
+  .role-sub{font-family:var(--serif);font-size:12px;color:var(--ink-3);line-height:1.85;letter-spacing:0.03em;}
+  .role-key{color:var(--ember);font-weight:500;}
+
+  /* 前進ログ入力：既存項目チップ＋新規 */
+  .asset-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .asset-chip{padding:8px 14px;border:1px solid var(--rule-2);border-radius:100px;background:var(--bg-1);color:var(--ink-2);font-size:13px;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;gap:6px;}
+  .asset-chip .cnt{font-family:var(--mono);font-size:10px;color:var(--ink-4);}
+  .asset-chip.on{border-color:var(--ember-b);background:var(--ember-d);color:var(--ember);}
+  .asset-chip.new{border-style:dashed;color:var(--ink-3);}
+  .log-input-row{display:flex;gap:10px;align-items:flex-end;border-bottom:1px solid var(--rule-2);padding-bottom:14px;}
+  .log-input-row.hidden{display:none;}
+  .amt-box{display:flex;align-items:baseline;gap:6px;flex:1;}
+  .amt-box input{width:100%;background:transparent;border:none;outline:none;color:var(--ink);font-family:var(--serif);font-size:24px;font-weight:500;}
+  .amt-box input::placeholder{color:var(--ink-4);font-weight:300;}
+  .amt-unit{font-family:var(--serif);font-size:14px;color:var(--ink-3);flex-shrink:0;}
+  .compose{display:flex;align-items:flex-end;gap:12px;border-bottom:1px solid var(--rule-2);padding-bottom:14px;}
+  .compose textarea{flex:1;background:transparent;border:none;outline:none;resize:none;color:var(--ink);font-family:var(--sans);font-weight:300;font-size:15px;line-height:1.7;}
+  .compose textarea::placeholder{color:var(--ink-4);}
+  .keep-btn{flex-shrink:0;background:transparent;border:1px solid var(--rule-2);color:var(--ink-3);font-family:var(--serif);font-size:13px;letter-spacing:0.1em;padding:9px 18px;border-radius:2px;cursor:pointer;transition:all 0.4s;}
+  .keep-btn.on{border-color:var(--ember-b);color:var(--ember);}
+  .log-current-label{font-family:var(--serif);font-size:14px;color:var(--ink-2);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .log-current-label .back{font-family:var(--mono);font-size:11px;color:var(--ink-4);cursor:pointer;}
+
+  /* ── Layer2: 前進の証 ── */
+  /* 理想の北極星（資産の上に置く本当の主役） */
+  .proof-north{padding:10px 0 30px;}
+  .proof-north-label{font-family:var(--mono);font-size:9px;letter-spacing:0.28em;color:var(--ember);text-transform:uppercase;margin-bottom:14px;text-align:center;}
+  .proof-north-ideal{font-family:var(--serif);font-size:21px;font-weight:500;line-height:1.7;color:var(--ink);letter-spacing:0.04em;text-align:center;margin-bottom:18px;}
+  .proof-north-theme{background:var(--bg-1);border:1px solid var(--rule-2);border-radius:4px;padding:13px 18px;display:flex;align-items:center;gap:12px;justify-content:center;}
+  .proof-north-theme .tlbl{font-family:var(--mono);font-size:9px;color:var(--ink-4);letter-spacing:0.16em;}
+  .proof-north-theme .ttxt{font-family:var(--serif);font-size:14px;color:var(--ink-2);letter-spacing:0.04em;}
+  .proof-north-empty{text-align:center;font-family:var(--serif);font-size:14px;color:var(--ink-3);line-height:2;}
+  .proof-asset-note{font-family:var(--serif);font-size:12px;color:var(--ink-4);margin:-6px 0 16px;letter-spacing:0.04em;}
+
+  .asset-card{background:var(--bg-1);border:1px solid var(--rule-2);border-radius:4px;padding:18px 20px;margin-bottom:10px;}
+
+  /* 達成資産カード */
+  .achieve-list{display:flex;flex-direction:column;gap:8px;}
+  .achieve-card{background:var(--bg-1);border:1px solid var(--rule-2);border-radius:4px;padding:14px 16px;display:flex;align-items:center;gap:13px;}
+  .achieve-check{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--ember-b);background:var(--ember-d);display:flex;align-items:center;justify-content:center;}
+  .achieve-body{flex:1;min-width:0;display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+  .achieve-text{font-family:var(--serif);font-size:15px;color:var(--ink);letter-spacing:0.03em;}
+  .achieve-date{font-family:var(--mono);font-size:10px;color:var(--ink-4);letter-spacing:0.04em;flex-shrink:0;}
+  .asset-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+  .asset-name{font-family:var(--serif);font-size:16px;font-weight:500;letter-spacing:0.04em;}
+  .asset-times{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);letter-spacing:0.04em;}
+  .asset-total{font-family:var(--serif);font-weight:600;line-height:1;display:flex;align-items:baseline;gap:6px;margin-bottom:14px;}
+  .asset-total .num{font-size:38px;color:var(--ink);font-feature-settings:"tnum";}
+  .asset-total .u{font-size:15px;color:var(--ink-3);font-weight:400;}
+  /* 変化量（累計の下に4期間を並べて見せる） */
+  .asset-changes{display:flex;gap:0;border-top:1px solid var(--rule);padding-top:13px;}
+  .change-cell{flex:1;text-align:center;border-right:1px solid var(--rule);padding:0 2px;}
+  .change-cell:last-child{border-right:none;}
+  .change-span{font-family:var(--mono);font-size:8.5px;color:var(--ink-4);letter-spacing:0.04em;margin-bottom:5px;}
+  .change-val{font-family:var(--serif);font-size:13px;font-weight:600;color:var(--ember);}
+  .change-val.zero{color:var(--ink-4);font-weight:400;}
+  .recent-entry{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--rule);align-items:center;}
+  .log-menu-btn{flex-shrink:0;background:none;border:none;color:var(--ink-4);font-size:15px;cursor:pointer;padding:4px 6px;letter-spacing:0.1em;line-height:1;transition:color 0.25s;}
+  .log-menu-btn:hover{color:var(--ember);}
+  .recent-day{flex-shrink:0;width:64px;font-family:var(--mono);font-size:10.5px;color:var(--ink-4);letter-spacing:0.04em;}
+  .recent-text{font-size:14px;line-height:1.6;flex:1;min-width:0;}
+  .jrnl-card{background:var(--bg-1);border:1px solid var(--rule-2);border-left:2px solid var(--ember-b);border-radius:0 4px 4px 0;padding:14px 16px;margin-bottom:8px;}
+
+  /* 前進の翻訳（未来の自分からの手紙） */
+  .translation{margin-top:40px;padding-top:32px;border-top:1px solid var(--rule);}
+  .translation-card{background:linear-gradient(180deg,var(--ember-d),transparent 80%);border:1px solid var(--ember-b);border-radius:5px;padding:26px 24px;}
+  .translation-eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:0.3em;color:var(--ember);text-transform:uppercase;margin-bottom:14px;text-align:center;}
+  .translation-title{font-family:var(--serif);font-size:19px;font-weight:500;color:var(--ink);letter-spacing:0.05em;text-align:center;line-height:1.6;margin-bottom:22px;}
+  .translation-body{font-family:var(--serif);font-size:14.5px;line-height:2.15;color:var(--ink-2);letter-spacing:0.03em;white-space:pre-wrap;}
+  .translation-sign{font-family:var(--serif);font-size:11px;color:var(--ink-4);letter-spacing:0.08em;text-align:right;margin-top:22px;font-style:italic;}
+  .translation-loading{font-family:var(--serif);font-size:13px;color:var(--ink-3);text-align:center;padding:20px;letter-spacing:0.06em;}
+
+  /* 人生の方向転換カード */
+  .shift-card{background:linear-gradient(180deg,var(--ember-d),transparent);border:1px solid var(--ember-b);border-radius:5px;padding:20px;margin-bottom:18px;text-align:center;}
+  .shift-card-label{font-family:var(--mono);font-size:9px;letter-spacing:0.28em;color:var(--ember);text-transform:uppercase;margin-bottom:16px;}
+  .shift-flow{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:14px;}
+  .shift-from{font-family:var(--serif);font-size:14px;color:var(--ink-3);text-decoration:line-through;text-decoration-color:var(--ink-4);letter-spacing:0.03em;}
+  .shift-arrow{font-size:9px;color:var(--ember);opacity:0.7;}
+  .shift-to{font-family:var(--serif);font-size:17px;font-weight:500;color:var(--ink);letter-spacing:0.03em;line-height:1.5;}
+  .shift-note{font-family:var(--serif);font-size:11px;color:var(--ink-4);letter-spacing:0.04em;line-height:1.8;}
+  .jrnl-text{font-family:var(--serif);font-size:14px;color:var(--ink-2);line-height:1.85;letter-spacing:0.02em;}
+  .jrnl-date{font-family:var(--mono);font-size:9.5px;color:var(--ink-4);margin-top:8px;letter-spacing:0.06em;}
+
+  /* ── Layer3: アーカイブ ── */
+  .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+  .cal-nav{background:none;border:none;color:var(--ink-3);font-size:18px;cursor:pointer;padding:4px 10px;font-family:var(--serif);}
+  .cal-title{font-family:var(--serif);font-size:16px;letter-spacing:0.08em;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px;}
+  .cal-dow{text-align:center;font-family:var(--mono);font-size:9px;color:var(--ink-4);padding-bottom:6px;}
+  .cal-cell{aspect-ratio:1;border:none;background:transparent;border-radius:7px;color:var(--ink-3);font-family:var(--mono);font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;transition:background 0.2s;}
+  .cal-cell:disabled{opacity:0;cursor:default;}
+  .cal-cell.has{background:var(--bg-1);color:var(--ink);}
+  .cal-cell.today-cell{border:1px solid var(--ember-b);}
+  .cal-mark{width:4px;height:4px;border-radius:50%;background:var(--ember);}
+  .cal-detail{margin-top:24px;}
+  .cal-detail-date{font-family:var(--serif);font-size:15px;color:var(--ink-2);margin-bottom:14px;letter-spacing:0.06em;}
+
+  /* ── nav ── */
+  .nav{position:fixed;bottom:0;left:0;right:0;z-index:10;height:var(--nav-h);background:rgba(19,17,12,0.96);backdrop-filter:blur(12px);border-top:1px solid var(--rule-2);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);}
+  .nav-inner{width:100%;max-width:480px;display:flex;}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:8px 0;}
+  .nav-btn svg{opacity:0.35;transition:opacity 0.25s;color:var(--ink-2);}
+  .nav-label{font-family:var(--mono);font-size:9px;letter-spacing:0.16em;color:var(--ink-3);opacity:0.45;transition:opacity 0.25s;}
+  .nav-btn.on svg{opacity:1;color:var(--ember);}
+  .nav-btn.on .nav-label{opacity:1;color:var(--ember);}
+
+  /* ── empty ── */
+  .empty-msg{padding:8px 0 32px;font-family:var(--serif);font-size:13px;line-height:2.2;color:var(--ink-3);letter-spacing:0.05em;}
+
+  /* ── sheet ── */
+  .veil{position:fixed;inset:0;z-index:20;background:rgba(8,7,5,0.82);backdrop-filter:blur(5px);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity 0.35s;pointer-events:none;}
+  .veil.show{opacity:1;pointer-events:all;}
+  .sheet{width:100%;max-width:480px;background:var(--bg-1);border-top:1px solid var(--rule-2);border-radius:16px 16px 0 0;padding:28px 26px calc(32px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform 0.45s cubic-bezier(0.16,1,0.3,1);max-height:88vh;overflow-y:auto;}
+  .veil.show .sheet{transform:translateY(0);}
+  .sheet h2{font-family:var(--serif);font-size:18px;font-weight:500;margin-bottom:6px;}
+  .sheet-note{font-family:var(--serif);font-size:12.5px;color:var(--ink-3);line-height:1.9;margin-bottom:22px;letter-spacing:0.04em;}
+  .field-lbl{font-family:var(--mono);font-size:10px;color:var(--ink-3);letter-spacing:0.2em;display:block;margin-bottom:8px;}
+  .field-box{background:var(--bg-2);border:1px solid var(--rule-2);border-radius:3px;padding:12px 14px;margin-bottom:16px;}
+  .field-box input,.field-box textarea{width:100%;background:transparent;border:none;outline:none;color:var(--ink);font-family:var(--sans);font-weight:300;font-size:15px;line-height:1.6;resize:none;}
+  .field-box input::placeholder,.field-box textarea::placeholder{color:var(--ink-4);}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .chip{padding:8px 14px;border:1px solid var(--rule-2);border-radius:100px;background:var(--bg-2);color:var(--ink-3);font-size:13px;cursor:pointer;transition:all 0.25s;}
+  .chip.on{border-color:var(--ember-b);background:var(--ember-d);color:var(--ember);}
+  .sub-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;}
+  .sub-chip{padding:6px 12px;border:1px solid var(--rule);border-radius:100px;background:transparent;color:var(--ink-4);font-size:12px;cursor:pointer;transition:all 0.25s;}
+  .sub-chip.on{border-color:var(--ember-b);color:var(--ember);background:var(--ember-d);}
+  .ideal-edit-area{border-bottom:1px solid var(--rule);padding-bottom:18px;margin-bottom:16px;}
+  .ideal-edit-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  .ideal-edit-row input{flex:1;background:var(--bg-2);border:1px solid var(--rule-2);border-radius:3px;padding:10px 12px;color:var(--ink);font-family:var(--serif);font-size:15px;outline:none;}
+  .goal-edit-row{display:flex;gap:8px;align-items:center;padding-left:14px;margin-bottom:8px;}
+  .goal-edit-row input{flex:1;background:transparent;border:none;border-bottom:1px solid var(--rule);padding:7px 0;color:var(--ink);font-size:13.5px;outline:none;}
+  .del-btn{background:none;border:none;color:var(--ink-4);font-size:17px;cursor:pointer;padding:2px 5px;}
+  .add-sub{background:none;border:none;color:var(--ink-3);font-family:var(--serif);font-size:12.5px;cursor:pointer;padding:4px 0 4px 14px;letter-spacing:0.05em;display:block;}
+  .sheet-btns{display:flex;gap:10px;margin-top:4px;}
+  .sbtn{flex:1;padding:14px;border-radius:3px;font-family:var(--serif);font-size:14px;letter-spacing:0.1em;cursor:pointer;border:1px solid var(--rule-2);background:transparent;color:var(--ink-3);transition:all 0.3s;}
+  .sbtn-p{background:var(--ember-d);border-color:var(--ember-b);color:var(--ember);}
+  .unit-suggest{display:flex;flex-wrap:wrap;gap:7px;margin-top:-8px;margin-bottom:16px;}
+  .unit-pick{padding:5px 12px;border:1px solid var(--rule-2);border-radius:100px;background:transparent;color:var(--ink-3);font-size:12px;cursor:pointer;font-family:var(--mono);}
+  .unit-pick.on{border-color:var(--ember-b);color:var(--ember);}
+
+  /* ── 保存演出（前進の証へのカウントアップ） ── */
+  .celebrate{position:fixed;inset:0;z-index:30;background:rgba(15,13,9,0.94);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;opacity:0;transition:opacity 0.5s;pointer-events:none;}
+  .celebrate.show{opacity:1;pointer-events:all;}
+  .celebrate-label{font-family:var(--mono);font-size:10px;letter-spacing:0.3em;color:var(--ember);text-transform:uppercase;margin-bottom:34px;opacity:0;transform:translateY(8px);transition:all 0.7s 0.1s;}
+  .celebrate.show .celebrate-label{opacity:1;transform:translateY(0);}
+  .cele-asset{text-align:center;margin-bottom:26px;opacity:0;transform:translateY(12px);transition:all 0.7s;}
+  .celebrate.show .cele-asset{opacity:1;transform:translateY(0);}
+  .cele-asset-name{font-family:var(--serif);font-size:15px;color:var(--ink-2);margin-bottom:12px;letter-spacing:0.06em;}
+  .cele-asset-nums{font-family:var(--serif);font-weight:600;display:flex;align-items:baseline;justify-content:center;gap:12px;}
+  .cele-from{font-size:26px;color:var(--ink-4);}
+  .cele-arrow{font-size:18px;color:var(--ember);}
+  .cele-to{font-size:44px;color:var(--ember);}
+  .cele-to .u{font-size:17px;color:var(--ink-2);margin-left:4px;}
+  .cele-total{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:10px;letter-spacing:0.06em;}
+  .cele-hint{font-family:var(--serif);font-size:12px;color:var(--ink-4);margin-top:30px;letter-spacing:0.1em;opacity:0;transition:opacity 0.6s 0.5s;}
+  .cele-achieve-check{width:64px;height:64px;border-radius:50%;border:1px solid var(--ember-b);background:var(--ember-d);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;}
+  .cele-achieve-text{font-family:var(--serif);font-size:21px;font-weight:500;color:var(--ink);letter-spacing:0.04em;line-height:1.6;}
+  .celebrate.show .cele-hint{opacity:1;}
+
+  @keyframes up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ── オンボーディング ── */
+  .onb{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;opacity:0;transition:opacity 0.6s;}
+  .onb.show{opacity:1;}
+  .onb::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 90% 50% at 50% 8%,rgba(196,122,62,0.1),transparent 65%);pointer-events:none;}
+  .onb-inner{position:relative;max-width:400px;width:100%;}
+  .onb-splash-logo{font-family:var(--mono);font-size:13px;letter-spacing:0.5em;color:var(--ink-3);text-transform:uppercase;margin-bottom:30px;padding-left:0.5em;}
+  .onb-splash-title{font-family:var(--serif);font-size:30px;font-weight:600;letter-spacing:0.1em;color:var(--ink);line-height:1.6;}
+  .onb-step-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.26em;color:var(--ember);text-transform:uppercase;margin-bottom:22px;}
+  .onb-q{font-family:var(--serif);font-size:21px;font-weight:500;line-height:1.7;color:var(--ink);margin-bottom:14px;letter-spacing:0.04em;}
+  .onb-sub{font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:2;margin-bottom:26px;letter-spacing:0.03em;}
+  .onb-welcome-body{font-family:var(--serif);font-size:18px;line-height:2.1;color:var(--ink-2);margin-bottom:36px;letter-spacing:0.05em;}
+  .onb-input{width:100%;background:var(--bg-1);border:1px solid var(--rule-2);border-radius:4px;padding:15px 16px;color:var(--ink);font-family:var(--sans);font-weight:300;font-size:16px;outline:none;text-align:center;margin-bottom:14px;transition:border-color 0.3s;}
+  .onb-input:focus{border-color:var(--ember-b);}
+  .onb-hint{font-family:var(--serif);font-size:11.5px;color:var(--ink-4);line-height:1.9;margin-bottom:30px;}
+  .onb-examples{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:30px;}
+  .onb-ex{padding:7px 13px;border:1px solid var(--rule-2);border-radius:100px;background:transparent;color:var(--ink-3);font-size:12px;cursor:pointer;transition:all 0.25s;}
+  .onb-ex:hover{border-color:var(--ember-b);color:var(--ember);}
+  .onb-btn{width:100%;padding:15px;background:var(--ember-d);border:1px solid var(--ember-b);border-radius:4px;color:var(--ember);font-family:var(--serif);font-size:15px;letter-spacing:0.1em;cursor:pointer;transition:all 0.3s;}
+  .onb-btn:hover{background:rgba(196,122,62,0.18);}
+  .onb-btn.ghost{background:transparent;border-color:var(--rule-2);color:var(--ink-3);}
+  .onb-progress{display:flex;gap:6px;justify-content:center;margin-top:26px;}
+  .onb-dot{width:5px;height:5px;border-radius:50%;background:var(--rule-2);transition:background 0.3s;}
+  .onb-dot.on{background:var(--ember);}
+  .onb-done-line{font-family:var(--serif);font-size:15px;line-height:2.2;color:var(--ink-2);margin-bottom:8px;letter-spacing:0.04em;}
+  .onb-done-line .v{color:var(--ember);}
+  @keyframes bloom{0%{opacity:0.3;transform:scale(0.96);}60%{transform:scale(1.02);opacity:1;}100%{transform:scale(1);}}
+  .blooming{animation:bloom 1s cubic-bezier(0.16,1,0.3,1);}
+  @media (prefers-reduced-motion:reduce){.blooming{animation:none;}}
+</style>
+</head>
+<body>
+
+<!-- ① 今日（起動画面） -->
+<div class="screen active" id="scr-today">
+  <div class="inner">
+    <div class="mast"><div class="mast-logo">okoso</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="sync-badge" id="sync-badge" onclick="openSyncSheet()" title="同期">○</button>
+        <div class="mast-date" id="md1"></div>
+      </div>
+    </div>
+
+    <!-- 理想 → 目標 → 今月の焦点 → 今日の一歩 の一本線 -->
+    <div class="flow" id="flow">
+      <!-- 向かう先（理想） -->
+      <div class="flow-mini" id="flow-ideal" onclick="openIdealSheet()">
+        <div class="flow-mini-lbl">向かう先<br>（理想）</div>
+        <div class="flow-mini-body" id="flow-ideal-body"></div>
+      </div>
+      <div class="flow-tick"></div>
+      <!-- 目標（複数可） -->
+      <div class="flow-multi" id="flow-goal-wrap"></div>
+      <div class="flow-tick"></div>
+      <!-- 今月の焦点（複数可） -->
+      <div class="flow-multi" id="flow-month-wrap"></div>
+      <div class="flow-tick"></div>
+      <!-- 今日の一歩（主役・通常サイズ） -->
+      <div class="flow-node flow-node-steps">
+        <div class="flow-node-lbl">今日の一歩</div>
+        <div class="flow-steps-lead" id="steps-lead">理想に繋がる一歩を、今日ひとつ。</div>
+        <div id="steps-list"></div>
+        <button class="add-btn" onclick="openStepSheet()"><span>＋</span> 一歩を決める</button>
+      </div>
+    </div>
+
+    <!-- 夜の記録（一本線の下、独立） -->
+    <div class="dusk-block">
+      <div class="label">夜の記録</div>
+      <div class="dusk-tabs">
+        <button class="dtab on" id="dtab-log" onclick="switchDusk('log')">前進記録</button>
+        <button class="dtab" id="dtab-j" onclick="switchDusk('journal')">ジャーナル</button>
+      </div>
+      <div id="dusk-log">
+        <div class="role-card">
+          <div class="role-title">何を積み上げたか</div>
+          <div class="role-sub">今日の行動を、数字で残す。<br>これが、未来の自分の<span class="role-key">自信</span>になる。</div>
+        </div>
+        <div class="asset-chips" id="asset-chips"></div>
+        <div id="log-input" class="log-input-row hidden">
+          <div style="flex:1">
+            <div class="log-current-label"><span id="log-current-name"></span><span class="back" onclick="cancelLogItem()">変更</span></div>
+            <div class="amt-box"><input type="number" id="amt-inp" placeholder="数値（任意）" step="any"><span class="amt-unit" id="amt-unit"></span></div>
+          </div>
+          <button class="keep-btn" id="log-keep" onclick="keepLog()">残す</button>
+        </div>
+      </div>
+      <div id="dusk-journal" style="display:none">
+        <div class="role-card">
+          <div class="role-title">どう感じながら歩いたか</div>
+          <div class="role-sub">今日の気持ちを、言葉で残す。<br>これが、進んだことの<span class="role-key">意味</span>になる。</div>
+        </div>
+        <div class="compose">
+          <textarea id="jrnl-field" rows="1" placeholder="今日は眠かった。でも簿記だけはやった。少し自信が戻った。"></textarea>
+          <button class="keep-btn" id="jrnl-keep" onclick="keepJournal()">残す</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ② 前進の証（Layer2） -->
+<div class="screen" id="scr-proof">
+  <div class="inner">
+    <div class="mast"><div class="mast-logo">okoso</div><div class="mast-date" id="md2"></div></div>
+
+    <!-- 理想を最上部に（資産より上＝本当の主役） -->
+    <div class="proof-north" id="proof-north"></div>
+
+    <!-- 達成した目標（目標達成資産） -->
+    <div id="achieved-goals-section"></div>
+    <!-- 達成した今月の焦点（焦点達成資産） -->
+    <div id="achieved-focuses-section"></div>
+
+    <div class="label">前進資産</div>
+    <p class="proof-asset-note" id="proof-asset-note">数字が、未来のあなたの自信になる。</p>
+    <div id="asset-list"></div>
+    <div class="label" style="margin-top:32px">最近の前進</div>
+    <div id="recent-list"></div>
+    <div class="label" style="margin-top:32px">最近のことば</div>
+    <div id="recent-journals"></div>
+    <!-- 前進の翻訳（節目のみ・最下部） -->
+    <div id="translation-section"></div>
+  </div>
+</div>
+
+<!-- ③ 人生アーカイブ（Layer3） -->
+<div class="screen" id="scr-archive">
+  <div class="inner">
+    <div class="mast"><div class="mast-logo">okoso</div><div class="mast-date" style="font-family:var(--serif);font-size:11px;color:var(--ink-4);letter-spacing:0.1em">人生の保管庫</div></div>
+    <div class="cal-head">
+      <button class="cal-nav" onclick="calMove(-1)">‹</button>
+      <div class="cal-title" id="cal-title"></div>
+      <button class="cal-nav" onclick="calMove(1)">›</button>
+    </div>
+    <div class="cal-grid" id="cal-dows"></div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="cal-detail" id="cal-detail"></div>
+  </div>
+</div>
+
+<!-- nav -->
+<nav class="nav"><div class="nav-inner">
+  <button class="nav-btn on" id="nav-today" onclick="goScreen('today')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span class="nav-label">今日</span>
+  </button>
+  <button class="nav-btn" id="nav-proof" onclick="goScreen('proof')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 5-7"/></svg>
+    <span class="nav-label">前進の証</span>
+  </button>
+  <button class="nav-btn" id="nav-archive" onclick="goScreen('archive')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+    <span class="nav-label">アーカイブ</span>
+  </button>
+</div></nav>
+
+<div id="modal"></div>
+<div id="celebrate-mount"></div>
+<div id="onb-mount"></div>
+
+<script>
+// ════════════════════════════════
+//  STATE
+// ════════════════════════════════
+const STORE='okoso_v13';
+let S = {
+  ideal: '',                   // Layer0 理想（北極星・単一テキスト）
+  idealHistory: [],            // 理想の変遷
+  goals: [],                   // 未達成の目標 [{id,text}]
+  monthFocuses: [],            // 未達成の今月の焦点 [{id,text}]
+  achievedGoals: [],           // 達成した目標 [{id,text,doneTs}]
+  achievedFocuses: [],         // 達成した今月の焦点 [{id,text,doneTs,ym}]
+  steps: {},
+  assets: {},
+  logs: [],
+  journals: [],
+  translations: {},            // 前進の翻訳 {7:{text,ts,days},30:{...},...}
+  onboarded: false,
+  updatedAt: 0                 // このデータの最終更新時刻（同期のマージ判定に使う）
+};
+function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.parse(r)};}catch(e){} }
+function persist(){
+  S.updatedAt = Date.now();
+  try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}
+  schedulePush();            // 変更があればGistへ（デバウンス）
+}
+
+// ════════════════════════════════
+//  GitHub Gist 同期
+// ════════════════════════════════
+// 設定（トークン・gistID）は同期しない。各端末のlocalStorageに別キーで保持。
+const SYNC_KEY='okoso_sync_cfg';
+let sync = { token:'', gistId:'', enabled:false, lastSync:0 };
+function loadSync(){ try{const r=localStorage.getItem(SYNC_KEY); if(r) sync={...sync,...JSON.parse(r)};}catch(e){} }
+function saveSync(){ try{localStorage.setItem(SYNC_KEY,JSON.stringify(sync));}catch(e){} }
+
+const GIST_FILENAME='okoso-data.json';
+let syncing=false, pushTimer=null;
+
+function schedulePush(){
+  if(!sync.enabled||!sync.token||!sync.gistId) return;
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(()=>{ pushToGist().catch(()=>{}); }, 1500);
+}
+
+async function gistHeaders(){
+  return { 'Authorization':`token ${sync.token}`, 'Accept':'application/vnd.github+json', 'Content-Type':'application/json' };
+}
+
+// 新規Gistを作成してIDを返す
+async function createGist(){
+  const res=await fetch('https://api.github.com/gists',{
+    method:'POST', headers:await gistHeaders(),
+    body:JSON.stringify({ description:'OKOSO data (do not delete)', public:false, files:{ [GIST_FILENAME]:{ content:JSON.stringify(S) } } })
+  });
+  if(!res.ok) throw new Error('create_failed:'+res.status);
+  const data=await res.json();
+  return data.id;
+}
+
+// Gistから読み込む
+async function pullFromGist(){
+  const res=await fetch(`https://api.github.com/gists/${sync.gistId}`,{ headers:await gistHeaders() });
+  if(!res.ok) throw new Error('pull_failed:'+res.status);
+  const data=await res.json();
+  const f=data.files&&data.files[GIST_FILENAME];
+  if(!f) return null;
+  let content=f.content;
+  // truncatedの場合はraw_urlから取得
+  if(f.truncated&&f.raw_url){ const r=await fetch(f.raw_url); content=await r.text(); }
+  try{ return JSON.parse(content); }catch(e){ return null; }
+}
+
+// Gistへ書き込む
+async function pushToGist(){
+  if(syncing) return;
+  syncing=true; updateSyncBadge('pushing');
+  try{
+    const res=await fetch(`https://api.github.com/gists/${sync.gistId}`,{
+      method:'PATCH', headers:await gistHeaders(),
+      body:JSON.stringify({ files:{ [GIST_FILENAME]:{ content:JSON.stringify(S) } } })
+    });
+    if(!res.ok) throw new Error('push_failed:'+res.status);
+    sync.lastSync=Date.now(); saveSync(); updateSyncBadge('ok');
+  }catch(e){ updateSyncBadge('error'); throw e; }
+  finally{ syncing=false; }
+}
+
+// ── マージ：項目ごとに新しい方を残す（追記型はID重複排除で両方残す）──
+function mergeData(local, remote){
+  if(!remote) return local;
+  if(!local) return remote;
+  const out=JSON.parse(JSON.stringify(local));
+
+  // 追記型（logs / journals / idealHistory / achievedGoals / achievedFocuses）：IDで重複排除して両方残す
+  const mergeById=(a=[],b=[],idKey='id')=>{
+    const map=new Map();
+    [...a,...b].forEach(x=>{ const k=x[idKey]||JSON.stringify(x); if(!map.has(k)) map.set(k,x); });
+    return [...map.values()].sort((x,y)=>(x.ts||x.doneTs||0)-(y.ts||y.doneTs||0));
+  };
+  out.logs=mergeById(local.logs,remote.logs);
+  out.journals=mergeById(local.journals,remote.journals);
+  out.idealHistory=mergeById(local.idealHistory,remote.idealHistory,'ts');
+  out.achievedGoals=mergeById(local.achievedGoals,remote.achievedGoals);
+  out.achievedFocuses=mergeById(local.achievedFocuses,remote.achievedFocuses);
+
+  // steps（日付キーごと）：日付単位で、未達成リストはIDマージ
+  out.steps={...remote.steps,...local.steps};
+  const allDays=new Set([...Object.keys(local.steps||{}),...Object.keys(remote.steps||{})]);
+  allDays.forEach(d=>{ out.steps[d]=mergeById(local.steps&&local.steps[d],remote.steps&&remote.steps[d]); });
+
+  // assets（台帳）：項目ごとに、記録(logs)から再集計する方が正確なので、logsベースで作り直す
+  out.assets=rebuildAssetsFromLogs(out.logs, {...remote.assets,...local.assets});
+
+  // translations：節目ごとに先に生成された方を残す
+  out.translations={...remote.translations,...local.translations};
+
+  // スカラー項目（理想・目標・焦点・onboarded）：updatedAtが新しい方を採用
+  const newer = (remote.updatedAt||0) > (local.updatedAt||0) ? remote : local;
+  out.ideal=newer.ideal;
+  out.goals=newer.goals;
+  out.monthFocuses=newer.monthFocuses;
+  out.onboarded=local.onboarded||remote.onboarded;
+  out.updatedAt=Math.max(local.updatedAt||0, remote.updatedAt||0);
+  return out;
+}
+
+// logsから資産の累計・回数を再構築（unitは既存定義を優先）
+function rebuildAssetsFromLogs(logs, existingAssets){
+  const assets={};
+  // まず既存のunit定義・firstTsを引き継ぐ
+  Object.keys(existingAssets||{}).forEach(n=>{ assets[n]={unit:existingAssets[n].unit||'', total:0, count:0, firstTs:existingAssets[n].firstTs||Date.now()}; });
+  logs.forEach(l=>{
+    if(!assets[l.item]) assets[l.item]={unit:l.unit||'', total:0, count:0, firstTs:l.ts};
+    assets[l.item].count+=1;
+    if(l.amount!=null) assets[l.item].total+=l.amount;
+    if(l.ts<assets[l.item].firstTs) assets[l.item].firstTs=l.ts;
+  });
+  return assets;
+}
+
+// 同期を有効化（初回セットアップ）
+async function enableSync(token, gistId){
+  sync.token=token.trim();
+  if(gistId&&gistId.trim()){
+    sync.gistId=gistId.trim();
+  } else {
+    sync.gistId=await createGist();   // 新規作成
+  }
+  sync.enabled=true; saveSync();
+  // 初回：リモートとマージ
+  await syncNow();
+  return sync.gistId;
+}
+
+// 今すぐ同期（pull → merge → push）
+async function syncNow(){
+  if(!sync.enabled||!sync.token||!sync.gistId) return;
+  syncing=true; updateSyncBadge('pulling');
+  try{
+    const remote=await pullFromGist();
+    const merged=mergeData(S, remote);
+    S=merged;
+    try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}
+    // 画面再描画
+    renderFlow(); renderAssetChips();
+    if(document.getElementById('scr-proof').classList.contains('active')) renderProof();
+    if(document.getElementById('scr-archive').classList.contains('active')) renderCalendar();
+    syncing=false;
+    await pushToGist();   // マージ結果を書き戻す
+    sync.lastSync=Date.now(); saveSync(); updateSyncBadge('ok');
+  }catch(e){ syncing=false; updateSyncBadge('error'); throw e; }
+}
+
+function updateSyncBadge(state){
+  const el=document.getElementById('sync-badge');
+  if(!el) return;
+  const map={ ok:'●', pushing:'↑', pulling:'↓', error:'!', off:'○' };
+  el.textContent=map[state]||'○';
+  el.className='sync-badge '+(state==='error'?'err':state==='ok'?'on':'');
+}
+
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dk=(d=new Date())=>`${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)}`;
+const fmtDate=()=>{const d=new Date();return `${d.getFullYear()}.${('0'+(d.getMonth()+1)).slice(-2)}.${('0'+d.getDate()).slice(-2)} ${'日月火水木金土'[d.getDay()]}`;};
+const todaySteps=()=>{if(!S.steps[dk()])S.steps[dk()]=[];return S.steps[dk()];};
+function autosize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,130)+'px';}
+
+// 相対日付
+function relDay(ts){
+  const a=new Date(dk(new Date(ts))), b=new Date(dk());
+  const diff=Math.round((b-a)/86400000);
+  if(diff===0)return '今日'; if(diff===1)return '昨日'; if(diff===2)return '2日前'; if(diff===3)return '3日前';
+  const d=new Date(ts); return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+// ════════════════════════════════
+//  NAV
+// ════════════════════════════════
+function goScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('scr-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('on');
+  document.querySelector('.screen.active').scrollTop=0;
+  if(name==='today'){ renderFlow(); renderAssetChips(); }
+  if(name==='proof'){ renderProof(); }
+  if(name==='archive'){ renderCalendar(); }
+}
+
+// ════════════════════════════════
+//  ① 今日
+// ════════════════════════════════
+// ── 一本線フロー（理想 → 今月 → 今日）の描画 ──
+function renderFlow(){
+  renderMini('flow-ideal-body', S.ideal, '理想を描く →');
+  renderFlowMulti('flow-goal-wrap','目標', S.goals, 'goal');
+  renderFlowMulti('flow-month-wrap','今月の焦点', S.monthFocuses, 'month');
+  renderSteps();
+}
+
+function renderMini(id, value, emptyHint){
+  const el=document.getElementById(id);
+  if(!el) return;
+  if(!value){
+    el.className='flow-mini-body empty';
+    el.textContent=emptyHint;
+  } else {
+    el.className='flow-mini-body';
+    el.textContent=value;
+  }
+}
+
+// 目標・今月の焦点：複数行＋追加ボタン（チェックで達成）
+function renderFlowMulti(wrapId, label, items, kind){
+  const el=document.getElementById(wrapId);
+  if(!el) return;
+  const rows = (items&&items.length)
+    ? items.map(it=>`<div class="flow-multi-row">
+        <button class="flow-multi-chk" onclick="event.stopPropagation();achieveItem('${kind}','${it.id}')" title="達成にする"><svg width="10" height="8" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="flow-multi-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}</span>
+      </div>`).join('')
+    : `<div class="flow-multi-empty" onclick="openMultiSheet('${kind}')">${kind==='goal'?'目標を決める →':'今月の焦点を決める →'}</div>`;
+  el.innerHTML=`
+    <div class="flow-multi-head">
+      <span class="flow-multi-lbl">${label}</span>
+      <button class="flow-multi-add" onclick="openMultiSheet('${kind}')">＋ 追加</button>
+    </div>
+    ${rows}`;
+}
+
+// 達成：未達成リストから達成資産へ移動
+function achieveItem(kind, id){
+  const now=Date.now();
+  if(kind==='goal'){
+    const i=S.goals.findIndex(x=>x.id===id);
+    if(i<0) return;
+    const g=S.goals[i];
+    if(!S.achievedGoals) S.achievedGoals=[];
+    S.achievedGoals.push({id:g.id, text:g.text, doneTs:now});
+    S.goals.splice(i,1);
+    S.journals.push({id:uid(), text:`目標を達成した。\n「${g.text}」`, ts:now, kind:'achieve'});
+    persist(); renderFlow();
+    showAchieveCelebrate('目標 達成', g.text);
+  } else {
+    const i=S.monthFocuses.findIndex(x=>x.id===id);
+    if(i<0) return;
+    const f=S.monthFocuses[i];
+    const d=new Date(now);
+    const ym=`${d.getFullYear()}.${('0'+(d.getMonth()+1)).slice(-2)}`;
+    if(!S.achievedFocuses) S.achievedFocuses=[];
+    S.achievedFocuses.push({id:f.id, text:f.text, doneTs:now, ym});
+    S.monthFocuses.splice(i,1);
+    S.journals.push({id:uid(), text:`今月の焦点を達成した。\n「${f.text}」`, ts:now, kind:'achieve'});
+    persist(); renderFlow();
+    showAchieveCelebrate('今月の焦点 達成', f.text);
+  }
+}
+
+function showAchieveCelebrate(label, text){
+  const mount=document.getElementById('celebrate-mount');
+  mount.innerHTML=`<div class="celebrate" id="celebrate">
+    <div class="celebrate-label">${esc(label)}</div>
+    <div class="cele-asset">
+      <div class="cele-achieve-check"><svg width="34" height="26" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="cele-achieve-text">${esc(text)}</div>
+    </div>
+    <div class="cele-hint">あなたは、ここまで来た。</div>
+  </div>`;
+  const cele=document.getElementById('celebrate');
+  cele.addEventListener('click',()=>{ cele.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},500); });
+  requestAnimationFrame(()=>cele.classList.add('show'));
+  setTimeout(()=>{ if(document.getElementById('celebrate')){ cele.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},500);} }, 4000);
+}
+
+function openIdealSheet(){
+  const hasExisting = !!S.ideal;
+  window.saveIdeal=()=>{
+    const next=(document.getElementById('id-inp').value||'').trim();
+    if(!next){ closeModal(); return; }
+    // 変更なしならそのまま閉じる
+    if(next===S.ideal){ closeModal(); return; }
+    if(S.ideal){
+      // 過去の理想を履歴として保存（上書きしない）
+      if(!S.idealHistory) S.idealHistory=[];
+      const now=Date.now();
+      S.idealHistory.push({ from:S.ideal, to:next, ts:now });
+      // 人生アーカイブに「方向性が変わった日」を記録（ジャーナル種別 shift）
+      S.journals.push({ id:uid(), text:`人生の向かう先が変わった。\n「${S.ideal}」から「${next}」へ。`, ts:now, kind:'shift' });
+    }
+    S.ideal=next;
+    persist(); renderFlow(); renderProof(); closeModal();
+    if(hasExisting) quietToast('新しい向かう先を、刻みました');
+  };
+  const changeNote = hasExisting
+    ? `<p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">理想は、変えてかまいません。<br>過去の理想は消えず、人生アーカイブに「変化の記録」として残ります。<br>理想が変わることは、失敗ではなく、人生の変化です。</p>`
+    : `<p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">これは人生の北極星。<br>数値化も、達成判定もしません。終わりもありません。</p>`;
+  openSheet(`<h2>向かう先（理想）${hasExisting?'を変える':''}</h2>
+    <p class="sheet-note">あなたはどんな人生を生きたいですか。<br>達成したいことではなく、本当に望む人生の姿を。</p>
+    <div class="field-box"><input type="text" id="id-inp" placeholder="例：家族との時間を増やしながら自由に働く" value="${esc(S.ideal||'')}"></div>
+    ${changeNote}
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="saveIdeal()">${hasExisting?'これに変える':'これにする'}</button></div>`);
+  setTimeout(()=>document.getElementById('id-inp')?.focus(),300);
+}
+
+// 目標・今月の焦点 共通シート（新規追加 or 既存編集）
+function openMultiSheet(kind, editId){
+  const isGoal = kind==='goal';
+  const list = isGoal ? S.goals : S.monthFocuses;
+  const editing = editId ? list.find(x=>x.id===editId) : null;
+  const title = isGoal ? '目標' : '今月の焦点';
+  const ph = isGoal ? '例：副業収入10万円、簿記2級合格' : '例：ポートフォリオ完成、投稿30本';
+  let hint;
+  if(isGoal){
+    hint = S.ideal ? `<p class="sheet-note">理想「<strong style="color:var(--ink)">${esc(S.ideal)}</strong>」に近づくために、<br>何を達成しますか。</p>` : `<p class="sheet-note">理想に近づくために、何を達成しますか。</p>`;
+  } else {
+    const goalNames = S.goals.map(g=>g.text).join('・');
+    hint = goalNames ? `<p class="sheet-note">目標「<strong style="color:var(--ink)">${esc(goalNames)}</strong>」に近づくために、<br>今月、集中することは。</p>` : `<p class="sheet-note">今月、集中することは。<br>目標と今日を繋ぐ橋です。</p>`;
+  }
+  const note = isGoal
+    ? '目標は、理想へ近づくための通過点。<br>いくつあってもかまいません。'
+    : '焦点はいくつでも。<br>でも、絞るほど今日が明確になります。';
+  window.saveMulti=()=>{
+    const v=(document.getElementById('multi-inp').value||'').trim();
+    if(!v){ if(editing){ /* 空で保存＝削除扱いにしない、何もしない */ } closeModal(); return; }
+    if(editing){ editing.text=v; }
+    else { (isGoal?S.goals:S.monthFocuses).push({id:uid(),text:v}); }
+    persist(); renderFlow(); closeModal();
+  };
+  window.delMulti=()=>{
+    const arr = isGoal?S.goals:S.monthFocuses;
+    const i=arr.findIndex(x=>x.id===editId);
+    if(i>=0) arr.splice(i,1);
+    persist(); renderFlow(); closeModal();
+  };
+  openSheet(`<h2>${title}${editing?'を編集':''}</h2>${hint}
+    <div class="field-box"><input type="text" id="multi-inp" placeholder="${ph}" value="${editing?esc(editing.text):''}"></div>
+    <p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">${note}</p>
+    <div class="sheet-btns">
+      ${editing?`<button class="sbtn" onclick="delMulti()" style="color:var(--ink-3)">削除</button>`:`<button class="sbtn" onclick="closeModal()">閉じる</button>`}
+      <button class="sbtn sbtn-p" onclick="saveMulti()">${editing?'更新する':'追加する'}</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('multi-inp')?.focus(),300);
+}
+
+function renderSteps(){
+  const steps=todaySteps();
+  const lead=document.getElementById('steps-lead');
+  const list=document.getElementById('steps-list');
+  if(!lead||!list) return;
+  const doneN=steps.filter(s=>s.done).length;
+  const focuses=S.monthFocuses||[];
+  const focusLead = focuses.length===1 ? `「${focuses[0].text}」に向けた、今日の一歩を。`
+    : focuses.length>1 ? '今月の焦点に向けた、今日の一歩を。'
+    : '理想に繋がる一歩を、今日ひとつ。';
+  lead.textContent = !steps.length
+    ? focusLead
+    : doneN===steps.length ? `今日の${steps.length}つ、全部前に進んだ。`
+    : doneN>0 ? `今日、${doneN}つ前に進んだ。`
+    : '今日の一歩が、ここにあります。';
+  list.innerHTML=steps.map((s,i)=>`
+    <div class="step-row">
+      <button class="chk${s.done?' done':''}" onclick="toggleStep(${i})"><svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="step-info"><div class="step-t${s.done?' done':''}">${esc(s.text)}</div>${s.tag?`<div class="step-tag">▸ ${esc(s.tag)}</div>`:''}</div>
+      <button class="step-del" onclick="removeStep(${i})">×</button>
+    </div>`).join('');
+}
+function toggleStep(i){const s=todaySteps()[i];s.done=!s.done;persist();renderSteps();}
+function removeStep(i){todaySteps().splice(i,1);persist();renderSteps();}
+
+function openStepSheet(){
+  const focuses=S.monthFocuses||[];
+  let chosenTag = focuses.length===1 ? focuses[0].text : '';
+  const hint = focuses.length
+    ? `<p class="sheet-note">今月の焦点に近づく、<br>今日できる一歩は。</p>`
+    : `<p class="sheet-note">ただのTODOではなく、<br>理想へ向かう意味を持った一歩を。</p>`;
+  // 焦点が複数あるときだけ選択チップを出す
+  const focusPart = focuses.length>1
+    ? `<label class="field-lbl">どの焦点に繋がる？（任意）</label><div class="chip-row" id="sf-row">${focuses.map(f=>`<button class="chip" onclick="pickStepFocus(this,'${esc(f.text)}')">${esc(f.text)}</button>`).join('')}</div>`
+    : '';
+  window.pickStepFocus=(el,t)=>{ document.querySelectorAll('#sf-row .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); chosenTag=t; };
+  window.doAddStep=()=>{const t=document.getElementById('step-inp').value.trim();if(!t)return;todaySteps().push({id:uid(),text:t,tag:chosenTag||'',done:false});persist();renderSteps();closeModal();};
+  openSheet(`<h2>今日の一歩を決める</h2>${hint}<label class="field-lbl">今日、踏む一歩</label><div class="field-box"><input type="text" id="step-inp" placeholder="例：LPを1画面作る、問題集10ページ"></div>${focusPart}<div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="doAddStep()">決める</button></div>`);
+  setTimeout(()=>document.getElementById('step-inp')?.focus(),300);
+}
+
+// ── 夜の記録：タブ切替 ──
+function switchDusk(m){
+  document.getElementById('dtab-log').classList.toggle('on',m==='log');
+  document.getElementById('dtab-j').classList.toggle('on',m==='journal');
+  document.getElementById('dusk-log').style.display=m==='log'?'block':'none';
+  document.getElementById('dusk-journal').style.display=m==='journal'?'block':'none';
+}
+
+// ── 前進ログ：台帳式入力 ──
+let activeItem=null; // 選択中の項目名
+function renderAssetChips(){
+  const el=document.getElementById('asset-chips');
+  const names=Object.keys(S.assets);
+  el.innerHTML = names.map(n=>{
+    const a=S.assets[n];
+    return `<button class="asset-chip" onclick="pickLogItem('${esc(n)}')">${esc(n)}<span class="cnt">${a.unit?(fmtNum(a.total)+a.unit):(a.count+'回')}</span></button>`;
+  }).join('') + `<button class="asset-chip new" onclick="openNewItem()">＋ 新しい項目</button>`;
+}
+function fmtNum(n){ return Number.isInteger(n)?n.toLocaleString():(+n.toFixed(1)).toLocaleString(); }
+function fmtYMD(ts){ const d=new Date(ts); return `${d.getFullYear()}.${('0'+(d.getMonth()+1)).slice(-2)}.${('0'+d.getDate()).slice(-2)}`; }
+
+function pickLogItem(name){
+  activeItem=name;
+  const a=S.assets[name];
+  document.querySelectorAll('#asset-chips .asset-chip').forEach(c=>c.classList.toggle('on', c.textContent.startsWith(name)));
+  document.getElementById('log-input').classList.remove('hidden');
+  document.getElementById('log-current-name').textContent=name;
+  const unit=a?a.unit:'';
+  document.getElementById('amt-unit').textContent=unit||'';
+  const inp=document.getElementById('amt-inp');
+  inp.placeholder = unit?`数値（${unit}）`:'数値（任意）';
+  inp.value='';
+  setTimeout(()=>inp.focus(),100);
+}
+function cancelLogItem(){
+  activeItem=null;
+  document.getElementById('log-input').classList.add('hidden');
+  document.querySelectorAll('#asset-chips .asset-chip').forEach(c=>c.classList.remove('on'));
+}
+
+function openNewItem(){
+  let unit='';
+  window.pickUnit=(el,u)=>{document.querySelectorAll('.unit-pick').forEach(p=>p.classList.remove('on'));el.classList.add('on');unit=u;document.getElementById('unit-custom').value=u;};
+  window.doNewItem=()=>{
+    const name=document.getElementById('new-item-name').value.trim();
+    if(!name){return;}
+    const customUnit=document.getElementById('unit-custom').value.trim();
+    const finalUnit=customUnit||unit||'';
+    if(!S.assets[name]) S.assets[name]={unit:finalUnit, total:0, count:0, firstTs:Date.now()};
+    persist();
+    closeModal();
+    renderAssetChips();
+    pickLogItem(name);
+  };
+  openSheet(`<h2>新しい積み上げ</h2><p class="sheet-note">これから積み上げていく項目を作ります。<br>単位は任意です（無くても残せます）。</p>
+    <label class="field-lbl">項目名</label><div class="field-box"><input type="text" id="new-item-name" placeholder="例：簿記の勉強、読書、ランニング"></div>
+    <label class="field-lbl">単位（任意）</label>
+    <div class="unit-suggest">
+      ${['分','時間','ページ','冊','回','本','km','個','文字'].map(u=>`<button class="unit-pick" onclick="pickUnit(this,'${u}')">${u}</button>`).join('')}
+    </div>
+    <div class="field-box"><input type="text" id="unit-custom" placeholder="自分で単位を書く（空欄もOK）"></div>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="doNewItem()">作る</button></div>`);
+  setTimeout(()=>document.getElementById('new-item-name')?.focus(),300);
+}
+
+function keepLog(){
+  // doKeepLog に統一（下部で window.keepLog = doKeepLog）
+  doKeepLog();
+}
+function doKeepLog(){
+  if(!activeItem)return;
+  const name=activeItem;
+  const a=S.assets[name];
+  const raw=document.getElementById('amt-inp').value.trim();
+  let amount = raw ? parseFloat(raw) : null;
+  if(amount==null||isNaN(amount)||amount<=0) amount=null;
+  const before={count:a.count,total:a.total,unit:a.unit};
+  a.count+=1;
+  if(amount!=null) a.total+=amount;
+  S.logs.push({id:uid(),item:name,amount,unit:a.unit,ts:Date.now()});
+  persist();
+  document.getElementById('amt-inp').value='';
+  cancelLogItem();
+  renderAssetChips();
+  showCelebrate(name, before, {count:a.count,total:a.total,unit:a.unit}, amount);
+}
+
+// ── 前進記録の編集・削除 ──
+function openLogMenu(id){
+  const l=S.logs.find(x=>x.id===id);
+  if(!l) return;
+  openSheet(`<h2>${esc(l.item)}</h2>
+    <p class="sheet-note">${relDay(l.ts)}に記録${l.amount!=null?`：${fmtNum(l.amount)}${esc(l.unit||'')}`:''}</p>
+    <div class="sheet-btns" style="flex-direction:column;gap:8px">
+      <button class="sbtn" onclick="editLog('${id}')" style="width:100%">編集する</button>
+      <button class="sbtn" onclick="confirmDeleteLog('${id}')" style="width:100%;color:var(--ink-3)">削除する</button>
+      <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+    </div>`);
+}
+
+function editLog(id){
+  const l=S.logs.find(x=>x.id===id);
+  if(!l) return;
+  const hasUnit=!!l.unit;
+  window.saveEditLog=()=>{
+    const raw=(document.getElementById('edit-amt').value||'').trim();
+    let amount = raw ? parseFloat(raw) : null;
+    if(amount==null||isNaN(amount)||amount<=0) amount=null;
+    // 資産の累計を差し替え（旧amount引く→新amount足す）
+    const a=S.assets[l.item];
+    if(a){
+      if(l.amount!=null) a.total-=l.amount;
+      if(amount!=null) a.total+=amount;
+      if(a.total<0) a.total=0;
+    }
+    l.amount=amount;
+    persist(); renderAssetChips(); renderProof(); closeModal();
+    quietToast('記録を直しました');
+  };
+  openSheet(`<h2>記録を編集</h2>
+    <p class="sheet-note">${esc(l.item)}${hasUnit?`（${esc(l.unit)}）`:''}</p>
+    <label class="field-lbl">数値${hasUnit?'':'（任意）'}</label>
+    <div class="field-box"><input type="number" id="edit-amt" step="any" value="${l.amount!=null?l.amount:''}" placeholder="数値"></div>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="saveEditLog()">更新する</button></div>`);
+  setTimeout(()=>document.getElementById('edit-amt')?.focus(),300);
+}
+
+function confirmDeleteLog(id){
+  const l=S.logs.find(x=>x.id===id);
+  if(!l) return;
+  window.doDeleteLog=()=>{
+    const a=S.assets[l.item];
+    if(a){
+      a.count-=1;
+      if(l.amount!=null) a.total-=l.amount;
+      if(a.count<0) a.count=0;
+      if(a.total<0) a.total=0;
+      // この項目の記録が0件になっても枠は残す（台帳思想）
+    }
+    const i=S.logs.findIndex(x=>x.id===id);
+    if(i>=0) S.logs.splice(i,1);
+    persist(); renderAssetChips(); renderProof(); closeModal();
+    quietToast('記録を削除しました');
+  };
+  openSheet(`<h2>本当に削除しますか？</h2>
+    <p class="sheet-note">「${esc(l.item)}${l.amount!=null?` ${fmtNum(l.amount)}${esc(l.unit||'')}`:''}」を削除します。<br>この操作は取り消せません。</p>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">やめる</button><button class="sbtn" onclick="doDeleteLog()" style="border-color:var(--ember-b);color:var(--ember)">削除する</button></div>`);
+}
+
+function keepJournal(){
+  const f=document.getElementById('jrnl-field');
+  const t=f.value.trim();
+  if(!t)return;
+  S.journals.push({id:uid(),text:t,ts:Date.now()});
+  persist();
+  f.value=''; autosize(f); document.getElementById('jrnl-keep').classList.remove('on'); f.blur();
+  // ジャーナルは静かに置く（演出は控えめなトースト）
+  quietToast('ことばを置きました');
+}
+
+// ── 保存演出（カウントアップ → 前進の証へ）──
+function showCelebrate(name, before, after, amount){
+  const mount=document.getElementById('celebrate-mount');
+  const unit=after.unit;
+  mount.innerHTML=`<div class="celebrate" id="celebrate">
+    <div class="celebrate-label">前進の証</div>
+    <div class="cele-asset">
+      <div class="cele-asset-name">${esc(name)}</div>
+      <div class="cele-asset-nums">
+        <span class="cele-from">${before.count}</span>
+        <span class="cele-arrow">→</span>
+        <span class="cele-to" id="cele-to">${before.count}<span class="u">回</span></span>
+      </div>
+      ${unit?`<div class="cele-total" id="cele-total">累計 ${fmtNum(before.total)}${unit}</div>`:''}
+    </div>
+    <div class="cele-hint">タップして閉じる</div>
+  </div>`;
+  const cele=document.getElementById('celebrate');
+  cele.addEventListener('click',()=>{ cele.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},500); });
+  requestAnimationFrame(()=>cele.classList.add('show'));
+  // カウントアップ
+  setTimeout(()=>{
+    animateCount('cele-to', before.count, after.count, '回');
+    if(unit) animateTotal('cele-total', before.total, after.total, unit);
+  }, 600);
+  // 4.5秒で自動的に閉じる
+  setTimeout(()=>{ if(document.getElementById('celebrate')){ cele.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},500);} }, 4500);
+}
+function animateCount(id,from,to,unit){
+  const el=document.getElementById(id); if(!el)return;
+  const dur=700,t0=performance.now();
+  function tick(t){const p=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-p,3);const v=Math.round(from+(to-from)*e);el.innerHTML=`${v}<span class="u">${unit}</span>`;if(p<1)requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+}
+function animateTotal(id,from,to,unit){
+  const el=document.getElementById(id); if(!el)return;
+  const dur=700,t0=performance.now();
+  function tick(t){const p=Math.min(1,(t-t0)/dur);const e=1-Math.pow(1-p,3);const v=from+(to-from)*e;el.textContent=`累計 ${fmtNum(Math.round(v*10)/10)}${unit}`;if(p<1)requestAnimationFrame(tick);}
+  requestAnimationFrame(tick);
+}
+
+function quietToast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;left:50%;bottom:calc(var(--nav-h) + 24px);transform:translateX(-50%);background:var(--bg-2);border:1px solid var(--rule-2);color:var(--ink-2);font-family:var(--serif);font-size:13px;padding:11px 22px;border-radius:100px;z-index:40;opacity:0;transition:opacity 0.4s;letter-spacing:0.06em;';
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>t.style.opacity='1');
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},1800);
+}
+
+// ════════════════════════════════
+//  ② 前進の証
+// ════════════════════════════════
+// 期間内の項目別増分を集計
+function periodDelta(name, days){
+  const cutoff = Date.now()-days*86400000;
+  let count=0, total=0;
+  S.logs.forEach(l=>{
+    if(l.item!==name || l.ts<cutoff) return;
+    count+=1; if(l.amount!=null) total+=l.amount;
+  });
+  return {count, total};
+}
+
+function renderProof(){
+  const names=Object.keys(S.assets);
+
+  // ── 北極星：理想を資産の上に置く ──
+  const north=document.getElementById('proof-north');
+  const goalsTxt = (S.goals||[]).map(g=>g.text).join('・');
+  const monthTxt = (S.monthFocuses||[]).map(f=>f.text).join('・');
+  if(S.ideal || goalsTxt || monthTxt){
+    north.innerHTML = `
+      <div class="proof-north-label">理想の姿</div>
+      ${S.ideal ? `<div class="proof-north-ideal">${esc(S.ideal)}</div>` : '<div class="proof-north-ideal" style="color:var(--ink-3);font-size:16px">理想は、まだ描かれていません</div>'}
+      ${goalsTxt||monthTxt ? `<div class="proof-north-theme">${goalsTxt?`<span class="tlbl">目標</span><span class="ttxt">${esc(goalsTxt)}</span>`:''}${goalsTxt&&monthTxt?'<span style="color:var(--ink-4);margin:0 4px">·</span>':''}${monthTxt?`<span class="tlbl">今月</span><span class="ttxt">${esc(monthTxt)}</span>`:''}</div>` : ''}`;
+  } else {
+    north.innerHTML = `<div class="proof-north-empty">理想を描くと、<br>積み上げが「証拠」に変わります。</div>`;
+  }
+
+  // 注記
+  document.getElementById('proof-asset-note').textContent = names.length
+    ? '数字が、未来のあなたの自信になる。' : '';
+
+  // ── 達成した目標（目標達成資産）──
+  const agEl=document.getElementById('achieved-goals-section');
+  const ag=(S.achievedGoals||[]).slice().sort((a,b)=>b.doneTs-a.doneTs);
+  if(ag.length){
+    agEl.innerHTML=`<div class="label">達成した目標</div>
+      <p class="proof-asset-note">あなたが、成し遂げてきたこと。</p>
+      <div class="achieve-list">${ag.map(g=>`
+        <div class="achieve-card">
+          <div class="achieve-check"><svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="achieve-body"><div class="achieve-text">${esc(g.text)}</div><div class="achieve-date">${fmtYMD(g.doneTs)}</div></div>
+        </div>`).join('')}</div>
+      <div style="height:32px"></div>`;
+  } else agEl.innerHTML='';
+
+  // ── 達成した今月の焦点（焦点達成資産）──
+  const afEl=document.getElementById('achieved-focuses-section');
+  const af=(S.achievedFocuses||[]).slice().sort((a,b)=>b.doneTs-a.doneTs);
+  if(af.length){
+    afEl.innerHTML=`<div class="label">達成した今月の焦点</div>
+      <p class="proof-asset-note">今年、ここまで前に進んだ。</p>
+      <div class="achieve-list">${af.map(f=>`
+        <div class="achieve-card">
+          <div class="achieve-check"><svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="achieve-body"><div class="achieve-text">${esc(f.text)}</div><div class="achieve-date">${f.ym||fmtYMD(f.doneTs)}</div></div>
+        </div>`).join('')}</div>
+      <div style="height:32px"></div>`;
+  } else afEl.innerHTML='';
+
+  // ── 前進資産（累計＋変化量を同時に見せる）──
+  const al=document.getElementById('asset-list');
+  if(!names.length){
+    al.innerHTML='<div class="empty-msg">まだ積み上げはありません。\n今日、最初の前進記録を残してみてください。</div>';
+  } else {
+    al.innerHTML=names.map(n=>{
+      const a=S.assets[n];
+      const unit=a.unit;
+      const cumLabel = unit ? `${fmtNum(a.total)}` : `${a.count}`;
+      const cumUnit  = unit ? esc(unit) : '回';
+      // 変化量：30 / 90 / 180 / 1年
+      const spans=[{lbl:'30日',d:30},{lbl:'90日',d:90},{lbl:'180日',d:180},{lbl:'1年',d:365}];
+      const changeCells = spans.map(s=>{
+        const dlt=periodDelta(n,s.d);
+        const v = unit ? dlt.total : dlt.count;
+        const u = unit ? esc(unit) : '回';
+        const zero = v<=0;
+        return `<div class="change-cell"><div class="change-span">${s.lbl}</div><div class="change-val${zero?' zero':''}">${zero?'—':'+'+fmtNum(v)+u}</div></div>`;
+      }).join('');
+      return `<div class="asset-card">
+        <div class="asset-top"><span class="asset-name">${esc(n)}</span><span class="asset-times">0 → ${a.count}回</span></div>
+        <div class="asset-total"><span class="num">${cumLabel}</span><span class="u">${cumUnit}</span></div>
+        <div class="asset-changes">${changeCells}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // 最近の前進（各ログに ・・・ メニュー）
+  const rl=document.getElementById('recent-list');
+  const recent=S.logs.slice().reverse().slice(0,8);
+  rl.innerHTML = !recent.length ? '<div class="empty-msg" style="padding-top:0">まだ記録はありません。</div>'
+    : recent.map(l=>`<div class="recent-entry">
+        <div class="recent-day">${relDay(l.ts)}</div>
+        <div class="recent-text">${esc(l.item)}${l.amount!=null?` ${fmtNum(l.amount)}${esc(l.unit||'')}`:''}</div>
+        <button class="log-menu-btn" onclick="openLogMenu('${l.id}')">···</button>
+      </div>`).join('');
+
+  // 最近のことば（ジャーナル・方向転換を含む）
+  const jl=document.getElementById('recent-journals');
+  const rj=S.journals.slice().reverse().slice(0,3);
+  jl.innerHTML = !rj.length ? '<div class="empty-msg" style="padding-top:0">まだことばはありません。</div>'
+    : rj.map(j=> j.kind==='shift'
+        ? `<div class="jrnl-card" style="border-left-color:var(--ember)"><div class="jrnl-text" style="white-space:pre-wrap">${esc(j.text)}</div><div class="jrnl-date">方向転換 ・ ${relDay(j.ts)}</div></div>`
+        : j.kind==='achieve'
+        ? `<div class="jrnl-card" style="border-left-color:var(--ember)"><div class="jrnl-text" style="white-space:pre-wrap">${esc(j.text)}</div><div class="jrnl-date">達成 ・ ${relDay(j.ts)}</div></div>`
+        : `<div class="jrnl-card"><div class="jrnl-text">${esc(j.text)}</div><div class="jrnl-date">${relDay(j.ts)}</div></div>`).join('');
+
+  // 前進の翻訳（節目のみ）
+  renderTranslation();
+}
+
+// ════════════════════════════════
+//  前進の翻訳
+// ════════════════════════════════
+const MILESTONES=[7,30,90,180,365];
+const MILESTONE_TITLES={7:'あなたが歩いてきた7日',30:'あなたが積み上げた30日',90:'あなたが変わり始めた90日',180:'あなたが続けてきた半年',365:'あなたが起こしてきた1年'};
+
+// 前進日数：前進ログまたはジャーナルを残した「ユニークな日」の数
+function progressDays(){
+  const days=new Set();
+  S.logs.forEach(l=>days.add(dk(new Date(l.ts))));
+  S.journals.forEach(j=>{ if(j.kind!=='shift'&&j.kind!=='achieve') days.add(dk(new Date(j.ts))); });
+  return days.size;
+}
+
+// 到達済みで未生成の最大マイルストーンを返す（なければnull）
+function pendingMilestone(){
+  const d=progressDays();
+  let target=null;
+  for(const m of MILESTONES){ if(d>=m && !(S.translations&&S.translations[m])) target=m; }
+  return target;
+}
+
+function renderTranslation(){
+  const sec=document.getElementById('translation-section');
+  if(!sec) return;
+  const days=progressDays();
+  // 既に生成済みの翻訳のうち最大のものを表示
+  const generated=Object.keys(S.translations||{}).map(Number).sort((a,b)=>b-a);
+  const pending=pendingMilestone();
+
+  if(pending){
+    // 新しい節目に到達 → 生成
+    sec.innerHTML=`<div class="translation"><div class="translation-card">
+      <div class="translation-eyebrow">前進の翻訳</div>
+      <div class="translation-title">${esc(MILESTONE_TITLES[pending])}</div>
+      <div class="translation-loading" id="tr-loading">あなたが積み上げてきたものを、読み返しています…</div>
+    </div></div>`;
+    generateTranslation(pending);
+    return;
+  }
+
+  if(generated.length){
+    const m=generated[0];
+    const t=S.translations[m];
+    sec.innerHTML=`<div class="translation"><div class="translation-card">
+      <div class="translation-eyebrow">前進の翻訳</div>
+      <div class="translation-title">${esc(MILESTONE_TITLES[m])}</div>
+      <div class="translation-body">${esc(t.text)}</div>
+      <div class="translation-sign">— 前進の翻訳 ・ ${fmtYMD(t.ts)}</div>
+    </div></div>`;
+  } else {
+    // まだ最初の節目（7日）に達していない
+    const next=MILESTONES.find(m=>m>days)||7;
+    sec.innerHTML=`<div class="translation"><div class="translation-card" style="background:none;border-color:var(--rule-2)">
+      <div class="translation-eyebrow" style="color:var(--ink-4)">前進の翻訳</div>
+      <div class="translation-body" style="text-align:center;color:var(--ink-3);font-size:13px">前進した日が${next}日に届いたとき、<br>あなたが積み上げてきたものの意味を、<br>ここで翻訳します。<br><br><span style="font-family:var(--mono);font-size:11px;color:var(--ink-4)">いま ${days}日 / ${next}日</span></div>
+    </div></div>`;
+  }
+}
+
+async function generateTranslation(milestone){
+  // データ収集
+  const days=progressDays();
+  // 期間内のログを項目ごとに集計
+  const cutoff=Date.now()-milestone*86400000;
+  const agg={};
+  S.logs.forEach(l=>{ if(l.ts>=cutoff){ if(!agg[l.item])agg[l.item]={count:0,total:0,unit:l.unit}; agg[l.item].count++; if(l.amount!=null)agg[l.item].total+=l.amount; } });
+  const assetSummary=Object.keys(agg).map(n=>{const a=agg[n];return a.unit?`${n}：${fmtNum(a.total)}${a.unit}`:`${n}：${a.count}回`;}).join('、');
+  // ジャーナル（感情）を時系列で
+  const jrnls=S.journals.filter(j=>j.ts>=cutoff && j.kind!=='shift' && j.kind!=='achieve').map(j=>j.text);
+  const jrnlSample=jrnls.slice(-8).join(' / ');
+  const goalsTxt=(S.goals||[]).map(g=>g.text).concat((S.achievedGoals||[]).map(g=>'(達成)'+g.text)).join('、');
+  const monthTxt=(S.monthFocuses||[]).map(f=>f.text).concat((S.achievedFocuses||[]).map(f=>'(達成)'+f.text)).join('、');
+
+  let text=null;
+  try {
+    text = await callTranslationAPI({milestone, ideal:S.ideal, goals:goalsTxt, month:monthTxt, assets:assetSummary, journals:jrnlSample, days});
+  } catch(e){ text=null; }
+  if(!text){ text = fallbackTranslation({milestone, ideal:S.ideal, assets:assetSummary, journals:jrnls, days}); }
+
+  if(!S.translations) S.translations={};
+  S.translations[milestone]={text, ts:Date.now(), days};
+  persist();
+  renderTranslation();
+}
+
+async function callTranslationAPI(d){
+  const sys=`あなたはOKOSOというアプリの「前進の翻訳」機能です。OKOSOは「理想の人生」と「今日の行動」を繋ぎ続ける伴走者です。
+
+あなたの唯一の役割は、ユーザーが積み上げた行動の「意味」を翻訳することです。
+
+絶対の禁止事項：
+- 褒めない。励まさない。評価しない。採点しない。説教しない。
+- 「素晴らしい」「成長しています」「頑張りましょう」「継続は力なり」「夢は叶う」のような、誰にでも当てはまる言葉を使わない。
+- 「何をしたか」を説明しない。「なぜそれが意味を持つのか」を翻訳する。
+
+口調：
+- 静か、誠実、断定しない、過剰に熱くしない。
+- 先生・コーチ・親・友達にならない。
+- 「未来の自分から届く手紙」のような温度感。
+
+文体：
+- 200〜300字程度。改行を使い、ゆっくりした余白のある文章。
+- ユーザーの理想と、実際に積み上げた行動・感情を結びつける。
+- ジャーナルに迷いや疲れがあれば、それでも手を止めなかった事実を静かに指摘する。
+
+成功条件：読んだuser が「そうか、俺が積み上げていたのはただの作業じゃなかったんだな」と思えること。`;
+
+  const userMsg=`節目：前進した日が${d.milestone}日に到達。
+理想（目的）：${d.ideal||'(未設定)'}
+目標：${d.goals||'(未設定)'}
+今月の焦点：${d.month||'(未設定)'}
+この期間に積み上げた前進ログ：${d.assets||'(記録なし)'}
+この期間のジャーナル（感情の記録）：${d.journals||'(記録なし)'}
+
+上記をもとに、「あなたが${d.milestone===180?'続けてきた半年':d.milestone===365?'起こしてきた1年':(d.milestone+'日')}」というタイトルにふさわしい「前進の翻訳」を書いてください。タイトルは出力に含めず、本文のみ。`;
+
+  // Vercelのサーバーレス関数（/api/translate）をプロキシとして呼ぶ。
+  // APIキーはサーバー側の環境変数に置き、ブラウザには出さない。
+  const res=await fetch('/api/translate',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ system:sys, user:userMsg })
+  });
+  if(!res.ok) throw new Error('api');
+  const data=await res.json();
+  const txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  if(!txt) throw new Error('empty');
+  return txt;
+}
+
+// API不可時のフォールバック（テンプレートだが思想に忠実に）
+function fallbackTranslation(d){
+  const ideal=d.ideal||'';
+  const hasJournalStruggle = (d.journals||[]).some(t=>/疲|しんど|意味|不安|やる気|辞め|やめ|難し|きつ/.test(t));
+  const lines=[];
+  if(d.assets){
+    lines.push(`この${d.milestone}日であなたが積み上げたのは、${d.assets}でした。`);
+  } else {
+    lines.push(`この${d.milestone}日、あなたは前進を残し続けました。`);
+  }
+  lines.push('');
+  lines.push('数字だけを見れば、小さな前進に見えるかもしれません。');
+  if(ideal){
+    lines.push(`しかしあなたの理想は「${ideal}」。`);
+    lines.push(`積み上げたものは、その理想へ向かう道を途切れさせませんでした。`);
+  } else {
+    lines.push('それでも、前に進む手を止めなかった事実は残りました。');
+  }
+  lines.push('');
+  if(hasJournalStruggle){
+    lines.push('ジャーナルには、疲れや迷いの言葉も残されていました。');
+    lines.push('それでも手を止めなかった日が、ここに積み上がっています。');
+    lines.push(`この${d.milestone}日は、成果よりも継続を選んだ日々でした。`);
+  } else {
+    lines.push(`大きく進んだ日ばかりではないかもしれません。`);
+    lines.push('それでも、理想から離れなかった事実が、ここに残りました。');
+  }
+  return lines.join('\n');
+}
+
+// ════════════════════════════════
+//  ③ 人生アーカイブ
+// ════════════════════════════════
+let calMonth=new Date();
+function calMove(d){ calMonth.setMonth(calMonth.getMonth()+d); renderCalendar(); }
+function renderCalendar(){
+  const y=calMonth.getFullYear(), m=calMonth.getMonth();
+  document.getElementById('cal-title').textContent=`${y}年 ${m+1}月`;
+  document.getElementById('cal-dows').innerHTML=['日','月','火','水','木','金','土'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  // その月の記録がある日
+  const marks={};
+  [...S.logs, ...S.journals].forEach(x=>{ const d=new Date(x.ts); if(d.getFullYear()===y&&d.getMonth()===m) marks[d.getDate()]=true; });
+  Object.values(S.steps).flat().forEach(()=>{}); // steps are per-day already keyed
+  Object.keys(S.steps).forEach(key=>{ const [yy,mm,dd]=key.split('-').map(Number); if(yy===y&&mm-1===m&&S.steps[key].some(s=>s.done)) marks[dd]=true; });
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const todayKey=dk();
+  let html='';
+  for(let i=0;i<first;i++) html+='<button class="cal-cell" disabled></button>';
+  for(let day=1;day<=days;day++){
+    const key=`${y}-${('0'+(m+1)).slice(-2)}-${('0'+day).slice(-2)}`;
+    const has=marks[day];
+    html+=`<button class="cal-cell${has?' has':''}${key===todayKey?' today-cell':''}" onclick="showDay('${key}')"><span>${day}</span>${has?'<span class="cal-mark"></span>':''}</button>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+  document.getElementById('cal-detail').innerHTML='';
+}
+function showDay(key){
+  const [y,m,d]=key.split('-').map(Number);
+  const logs=S.logs.filter(l=>dk(new Date(l.ts))===key);
+  const allJrnls=S.journals.filter(j=>dk(new Date(j.ts))===key);
+  const shifts=allJrnls.filter(j=>j.kind==='shift');
+  const jrnls=allJrnls.filter(j=>j.kind!=='shift');
+  const steps=(S.steps[key]||[]).filter(s=>s.done);
+  const el=document.getElementById('cal-detail');
+  if(!logs.length&&!allJrnls.length&&!steps.length){
+    el.innerHTML=`<div class="cal-detail-date">${y}年${m}月${d}日</div><div class="empty-msg" style="padding-top:0">この日の記録はありません。</div>`;
+    return;
+  }
+  let html=`<div class="cal-detail-date">${y}年${m}月${d}日</div>`;
+  // 方向転換（人生の節目）を最上部に
+  if(shifts.length){
+    html+=shifts.map(s=>{
+      const h=S.idealHistory&&S.idealHistory.find(x=>x.ts===s.ts);
+      return `<div class="shift-card">
+        <div class="shift-card-label">人生の方向転換</div>
+        ${h?`<div class="shift-flow"><span class="shift-from">${esc(h.from)}</span><span class="shift-arrow">▼</span><span class="shift-to">${esc(h.to)}</span></div>`
+            :`<div class="jrnl-text">${esc(s.text)}</div>`}
+        <div class="shift-note">理想が変わることは、失敗ではなく、人生の変化。</div>
+      </div>`;
+    }).join('');
+  }
+  if(logs.length){
+    html+=`<div class="label">前進記録</div>`;
+    html+=logs.map(l=>`<div class="recent-entry"><div class="recent-day">${('0'+new Date(l.ts).getHours()).slice(-2)}:${('0'+new Date(l.ts).getMinutes()).slice(-2)}</div><div class="recent-text">${esc(l.item)}${l.amount!=null?` ${fmtNum(l.amount)}${esc(l.unit||'')}`:''}</div></div>`).join('');
+  }
+  if(jrnls.length){
+    html+=`<div class="label" style="margin-top:24px">ジャーナル</div>`;
+    html+=jrnls.map(j=>`<div class="jrnl-card"><div class="jrnl-text">${esc(j.text)}</div></div>`).join('');
+  }
+  el.innerHTML=html;
+}
+
+// ════════════════════════════════
+//  ③(理想) sheet — openIdealSheet/openGoalSheet/openMonthSheet は上部で定義済み
+// ════════════════════════════════
+//  MODAL
+// ════════════════════════════════
+function openSheet(html){
+  const mount=document.getElementById('modal');
+  mount.innerHTML=`<div class="veil" id="veil"><div class="sheet">${html}</div></div>`;
+  const veil=document.getElementById('veil');
+  veil.addEventListener('click',e=>{if(e.target===veil)closeModal();});
+  requestAnimationFrame(()=>veil.classList.add('show'));
+}
+function closeModal(){const v=document.getElementById('veil');if(!v)return;v.classList.remove('show');setTimeout(()=>document.getElementById('modal').innerHTML='',400);}
+
+// ════════════════════════════════
+//  オンボーディング
+// ════════════════════════════════
+const ONB_EXAMPLES={
+  ideal:['家族との時間を増やしたい','自由な働き方をしたい','挑戦し続ける人生を送りたい','自分を誇れる人生を送りたい'],
+  goal:['副業月10万円','簿記2級合格','SNS発信100本'],
+  month:['ポートフォリオ完成','工業簿記終了','投稿30本'],
+  step:['LPを1画面作る','問題集10ページ','投稿を1本作る']
+};
+let onbDraft={ideal:'',goal:'',month:'',step:''};
+
+function startOnboarding(){
+  onbDraft={ideal:'',goal:'',month:'',step:''};
+  onbRender('splash');
+}
+
+function onbShow(html){
+  const m=document.getElementById('onb-mount');
+  m.innerHTML=`<div class="onb" id="onb"><div class="onb-inner">${html}</div></div>`;
+  requestAnimationFrame(()=>document.getElementById('onb').classList.add('show'));
+}
+function onbNext(stage){ const o=document.getElementById('onb'); if(o){o.classList.remove('show'); setTimeout(()=>onbRender(stage),350);} else onbRender(stage); }
+
+function onbRender(stage){
+  if(stage==='splash'){
+    onbShow(`<div class="onb-splash-logo">okoso</div><div class="onb-splash-title">人生を起こそう</div>`);
+    setTimeout(()=>onbNext('welcome'),2200);
+    return;
+  }
+  if(stage==='welcome'){
+    onbShow(`<div class="onb-welcome-body">変わろうとして<br>ここに来た。<br><br>それは、大切な一歩。<br><br>でも、人生はまだ変わっていない。<br><br>これから、<br>あなた自身の手で起こしていこう。</div>
+      <button class="onb-btn" onclick="onbNext('ideal')">はじめる</button>`);
+    return;
+  }
+  const steps={
+    ideal:{i:0,eyebrow:'Layer 0 ・ 理想',q:'あなたはどんな人生を<br>生きたいですか？',sub:'達成したいことではなく、本当に望む人生の姿を。',ph:'例：家族との時間を増やしながら自由に働く',key:'ideal',next:'goal'},
+    goal:{i:1,eyebrow:'Layer 1 ・ 目標',q:'その人生に近づくために、<br>まず何を達成しますか？',sub:'理想へ近づくための、通過点。',ph:'例：副業収入10万円',key:'goal',next:'month'},
+    month:{i:2,eyebrow:'Layer 2 ・ 今月の焦点',q:'その目標に近づくために、<br>今月もっとも集中することは？',sub:'目標と今日を繋ぐ、橋。',key:'month',ph:'例：ポートフォリオ完成',next:'step'},
+    step:{i:3,eyebrow:'Layer 3 ・ 今日の一歩',q:'その焦点に近づくために、<br>今日できる一歩は？',sub:'ただのTODOではない。意味を持った一歩。',key:'step',ph:'例：LPを1画面作る',next:'done'}
+  };
+  if(steps[stage]){
+    const s=steps[stage];
+    const ex=ONB_EXAMPLES[s.key]||[];
+    onbShow(`
+      <div class="onb-step-eyebrow">${s.eyebrow}</div>
+      <div class="onb-q">${s.q}</div>
+      <div class="onb-sub">${s.sub}</div>
+      <input class="onb-input" id="onb-inp" placeholder="${s.ph}" value="${esc(onbDraft[s.key]||'')}">
+      <div class="onb-examples">${ex.map(e=>`<button class="onb-ex" onclick="document.getElementById('onb-inp').value='${esc(e)}'">${esc(e)}</button>`).join('')}</div>
+      <button class="onb-btn" onclick="onbSave('${s.key}','${s.next}')">次へ</button>
+      <div class="onb-progress">${[0,1,2,3].map(n=>`<div class="onb-dot${n===s.i?' on':''}"></div>`).join('')}</div>`);
+    setTimeout(()=>document.getElementById('onb-inp')?.focus(),400);
+    return;
+  }
+  if(stage==='done'){
+    onbShow(`
+      <div class="onb-step-eyebrow">準備完了</div>
+      <div style="margin-bottom:30px">
+        <div class="onb-done-line">理想　<span class="v">${esc(onbDraft.ideal||'—')}</span></div>
+        <div class="onb-done-line">目標　<span class="v">${esc(onbDraft.goal||'—')}</span></div>
+        <div class="onb-done-line">今月　<span class="v">${esc(onbDraft.month||'—')}</span></div>
+        <div class="onb-done-line">今日　<span class="v">${esc(onbDraft.step||'—')}</span></div>
+      </div>
+      <div class="onb-sub" style="margin-bottom:30px">あとは、進むだけ。</div>
+      <button class="onb-btn" onclick="onbFinish()">OKOSOを始める</button>`);
+    return;
+  }
+}
+
+function onbSave(key,next){
+  const v=(document.getElementById('onb-inp').value||'').trim();
+  onbDraft[key]=v;
+  onbNext(next);
+}
+
+function onbFinish(){
+  S.ideal=onbDraft.ideal||'';
+  S.goals = onbDraft.goal ? [{id:uid(),text:onbDraft.goal}] : [];
+  S.monthFocuses = onbDraft.month ? [{id:uid(),text:onbDraft.month}] : [];
+  const focusTag = onbDraft.month||'';
+  if(onbDraft.step){ todaySteps().push({id:uid(),text:onbDraft.step,tag:focusTag,done:false}); }
+  S.onboarded=true;
+  persist();
+  renderFlow();
+  const o=document.getElementById('onb');
+  if(o){ o.classList.remove('show'); setTimeout(()=>document.getElementById('onb-mount').innerHTML='',500); }
+}
+
+// ════════════════════════════════
+//  同期設定シート
+// ════════════════════════════════
+function openSyncSheet(){
+  const on=sync.enabled&&sync.token&&sync.gistId;
+  const status = on
+    ? `<div class="sync-status on">同期は有効です${sync.lastSync?`<br><span style="color:var(--ink-4);font-size:11px">最終同期：${fmtSyncTime(sync.lastSync)}</span>`:''}</div>`
+    : `<div class="sync-status">この端末はまだ同期していません。</div>`;
+
+  const body = on
+    ? `${status}
+      <p style="font-family:var(--serif);font-size:12px;color:var(--ink-3);line-height:1.9;margin:16px 0 8px">この端末は、あなたのGistと繋がっています。<br>スマホでもPCでも、同じTokenとGist IDを入れれば、記録が共有されます。</p>
+      <label class="field-lbl" style="margin-top:14px">Gist ID（他の端末で使う）</label>
+      <div class="field-box" style="display:flex;align-items:center;gap:8px">
+        <input type="text" id="sync-gist-show" readonly value="${esc(sync.gistId)}" style="flex:1">
+        <button class="sync-copy" onclick="copyGistId()">コピー</button>
+      </div>
+      <div class="sheet-btns" style="flex-direction:column;gap:8px;margin-top:14px">
+        <button class="sbtn sbtn-p" onclick="doSyncNow()" style="width:100%">今すぐ同期する</button>
+        <button class="sbtn" onclick="disableSync()" style="width:100%;color:var(--ink-3)">この端末の同期を解除</button>
+        <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+      </div>`
+    : `${status}
+      <p style="font-family:var(--serif);font-size:12px;color:var(--ink-3);line-height:1.9;margin:14px 0 18px">GitHubの無料機能（Gist）に、あなたの記録をJSONで保存します。<br>スマホとPCで同じ記録が見られるようになります。月額0円です。</p>
+      <label class="field-lbl">GitHub Personal Access Token</label>
+      <div class="field-box"><input type="password" id="sync-token" placeholder="ghp_... （gistスコープのみ）"></div>
+      <p style="font-family:var(--serif);font-size:11px;color:var(--ink-4);line-height:1.8;margin:-8px 0 16px">GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) で発行。スコープは <span style="color:var(--ember)">gist</span> だけにチェック。</p>
+      <label class="field-lbl">Gist ID（2台目以降のみ・1台目は空欄）</label>
+      <div class="field-box"><input type="text" id="sync-gistid" placeholder="空欄なら新規に作成します"></div>
+      <div class="sheet-btns" style="margin-top:6px">
+        <button class="sbtn" onclick="closeModal()">閉じる</button>
+        <button class="sbtn sbtn-p" onclick="doEnableSync()">同期を始める</button>
+      </div>`;
+
+  openSheet(`<h2>端末間で記録を同期</h2>${body}`);
+}
+
+function fmtSyncTime(ts){ const d=new Date(ts); return `${('0'+(d.getMonth()+1)).slice(-2)}/${('0'+d.getDate()).slice(-2)} ${('0'+d.getHours()).slice(-2)}:${('0'+d.getMinutes()).slice(-2)}`; }
+
+function copyGistId(){
+  const inp=document.getElementById('sync-gist-show');
+  if(inp){ inp.select(); try{document.execCommand('copy');}catch(e){} navigator.clipboard&&navigator.clipboard.writeText(inp.value).catch(()=>{}); quietToast('Gist IDをコピーしました'); }
+}
+
+async function doEnableSync(){
+  const token=(document.getElementById('sync-token').value||'').trim();
+  const gistId=(document.getElementById('sync-gistid').value||'').trim();
+  if(!token){ quietToast('Tokenを入力してください'); return; }
+  quietToast('接続しています…');
+  try{
+    const id=await enableSync(token, gistId);
+    closeModal();
+    quietToast(gistId?'同期しました':'新しいGistを作成して同期しました');
+  }catch(e){
+    quietToast('接続に失敗しました。Tokenを確認してください');
+  }
+}
+
+async function doSyncNow(){
+  quietToast('同期しています…');
+  try{ await syncNow(); quietToast('同期しました'); closeModal(); }
+  catch(e){ quietToast('同期に失敗しました'); }
+}
+
+function disableSync(){
+  sync={ token:'', gistId:'', enabled:false, lastSync:0 };
+  saveSync(); updateSyncBadge('off'); closeModal();
+  quietToast('この端末の同期を解除しました');
+}
+
+// ════════════════════════════════
+//  INIT
+// ════════════════════════════════
+function init(){
+  load();
+  loadSync();
+  document.getElementById('md1').textContent=fmtDate();
+  document.getElementById('md2').textContent=fmtDate();
+  renderFlow(); renderAssetChips();
+  const jf=document.getElementById('jrnl-field');
+  jf.addEventListener('input',()=>{autosize(jf);document.getElementById('jrnl-keep').classList.toggle('on',jf.value.trim().length>0);});
+  const ai=document.getElementById('amt-inp');
+  ai.addEventListener('input',()=>{document.getElementById('log-keep').classList.toggle('on',true);});
+  ai.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doKeepLog();}});
+  // 同期が有効なら起動時にpull+merge
+  if(sync.enabled&&sync.token&&sync.gistId){
+    updateSyncBadge('ok');
+    syncNow().catch(()=>updateSyncBadge('error'));
+  } else {
+    updateSyncBadge('off');
+  }
+  if(!S.onboarded) startOnboarding();
+}
+// keepLogボタンは doKeepLog を呼ぶ
+window.keepLog=doKeepLog;
+init();
+</script>
+</body>
+</html>
