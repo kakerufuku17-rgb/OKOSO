@@ -2,8 +2,15 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#13110c">
+<!-- ホーム画面に追加した時、アドレスバーなしの全画面アプリとして開くための設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OKOSO">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <title>OKOSO</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;500&family=Zen+Old+Mincho:wght@400;500;600;700&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap');
@@ -25,7 +32,7 @@
   .screen.active{display:block;}
   .inner{max-width:480px;margin:0 auto;padding:0 26px 60px;}
 
-  .mast{padding:38px 0 0;display:flex;align-items:baseline;justify-content:space-between;margin-bottom:32px;}
+  .mast{padding:calc(38px + env(safe-area-inset-top)) 0 0;display:flex;align-items:baseline;justify-content:space-between;margin-bottom:32px;}
   .mast-logo{font-family:var(--mono);font-size:11.5px;letter-spacing:0.44em;color:var(--ink-3);text-transform:uppercase;padding-left:0.44em;}
   .mast-date{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);letter-spacing:0.06em;}
   .sync-badge{background:none;border:none;color:var(--ink-4);font-size:11px;cursor:pointer;padding:2px 4px;line-height:1;transition:color 0.3s;font-family:var(--mono);}
@@ -296,6 +303,10 @@
   .onb-dot.on{background:var(--ember);}
   .onb-done-line{font-family:var(--serif);font-size:15px;line-height:2.2;color:var(--ink-2);margin-bottom:8px;letter-spacing:0.04em;}
   .onb-done-line .v{color:var(--ember);}
+  .chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:22px 0 6px;}
+  .pain-chip{padding:13px 10px;border:1px solid var(--rule-2);border-radius:4px;background:var(--bg-1);color:var(--ink-2);font-family:var(--serif);font-size:13.5px;cursor:pointer;transition:all 0.25s;letter-spacing:0.02em;}
+  .pain-chip:hover{border-color:var(--ember-b);color:var(--ember);background:var(--ember-d);}
+  .onb-summary-card{background:var(--bg-1);border:1px solid var(--ember-b);border-radius:5px;padding:22px 20px;font-family:var(--serif);font-size:16px;line-height:1.9;color:var(--ink);letter-spacing:0.03em;text-align:left;margin-top:6px;}
   @keyframes bloom{0%{opacity:0.3;transform:scale(0.96);}60%{transform:scale(1.02);opacity:1;}100%{transform:scale(1);}}
   .blooming{animation:bloom 1s cubic-bezier(0.16,1,0.3,1);}
   @media (prefers-reduced-motion:reduce){.blooming{animation:none;}}
@@ -435,7 +446,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v13';
+const STORE='okoso_v14';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1400,7 +1411,7 @@ function openSheet(html){
 function closeModal(){const v=document.getElementById('veil');if(!v)return;v.classList.remove('show');setTimeout(()=>document.getElementById('modal').innerHTML='',400);}
 
 // ════════════════════════════════
-//  オンボーディング
+//  オンボーディング（理想の明確度で分岐）
 // ════════════════════════════════
 const ONB_EXAMPLES={
   ideal:['家族との時間を増やしたい','自由な働き方をしたい','挑戦し続ける人生を送りたい','自分を誇れる人生を送りたい'],
@@ -1408,10 +1419,11 @@ const ONB_EXAMPLES={
   month:['ポートフォリオ完成','工業簿記終了','投稿30本'],
   step:['LPを1画面作る','問題集10ページ','投稿を1本作る']
 };
-let onbDraft={ideal:'',goal:'',month:'',step:''};
+const PAIN_CATEGORIES=['仕事','お金','健康','体型','家族との関係','子育て','人間関係','自信','将来への不安','やりたいことが見つからない','毎日がつまらない','時間がない','習慣が続かない','その他'];
+let onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:''};
 
 function startOnboarding(){
-  onbDraft={ideal:'',goal:'',month:'',step:''};
+  onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:''};
   onbRender('splash');
 }
 
@@ -1422,43 +1434,133 @@ function onbShow(html){
 }
 function onbNext(stage){ const o=document.getElementById('onb'); if(o){o.classList.remove('show'); setTimeout(()=>onbRender(stage),350);} else onbRender(stage); }
 
+// 共通：1問1答の入力ステップを描画
+function onbInputStep(opts){
+  // opts: {eyebrow,q,sub,ph,multiline,value,onNext,dotIndex,dotTotal,examples}
+  const ex=opts.examples||[];
+  const inputHtml = opts.multiline
+    ? `<textarea class="onb-input" id="onb-inp" rows="3" placeholder="${opts.ph}" style="resize:none;line-height:1.7">${esc(opts.value||'')}</textarea>`
+    : `<input class="onb-input" id="onb-inp" placeholder="${opts.ph}" value="${esc(opts.value||'')}">`;
+  onbShow(`
+    <div class="onb-step-eyebrow">${opts.eyebrow}</div>
+    <div class="onb-q">${opts.q}</div>
+    ${opts.sub?`<div class="onb-sub">${opts.sub}</div>`:''}
+    ${inputHtml}
+    ${ex.length?`<div class="onb-examples">${ex.map(e=>`<button class="onb-ex" onclick="document.getElementById('onb-inp').value='${esc(e)}'">${esc(e)}</button>`).join('')}</div>`:''}
+    <button class="onb-btn" id="onb-next-btn" onclick="(${opts.onNext})()">次へ</button>
+    ${opts.dotTotal?`<div class="onb-progress">${Array.from({length:opts.dotTotal}).map((_,n)=>`<div class="onb-dot${n===opts.dotIndex?' on':''}"></div>`).join('')}</div>`:''}
+  `);
+  setTimeout(()=>document.getElementById('onb-inp')?.focus(),400);
+}
+
 function onbRender(stage){
+  // ── Splash / Welcome ──
   if(stage==='splash'){
     onbShow(`<div class="onb-splash-logo">okoso</div><div class="onb-splash-title">人生を起こそう</div>`);
     setTimeout(()=>onbNext('welcome'),2200);
     return;
   }
   if(stage==='welcome'){
-    onbShow(`<div class="onb-welcome-body">変わろうとして<br>ここに来た。<br><br>それは、大切な一歩。<br><br>でも、人生はまだ変わっていない。<br><br>これから、<br>あなた自身の手で起こしていこう。</div>
-      <button class="onb-btn" onclick="onbNext('ideal')">はじめる</button>`);
+    onbShow(`<div class="onb-welcome-body">変わろうとして<br>ここに来た。<br><br>それは、大切な一歩。<br><br>あなたはもう、<br>人生を起こそうとしている。</div>
+      <button class="onb-btn" onclick="onbNext('route')">はじめる</button>`);
     return;
   }
-  const steps={
-    ideal:{i:0,eyebrow:'Layer 0 ・ 理想',q:'あなたはどんな人生を<br>生きたいですか？',sub:'達成したいことではなく、本当に望む人生の姿を。',ph:'例：家族との時間を増やしながら自由に働く',key:'ideal',next:'goal'},
-    goal:{i:1,eyebrow:'Layer 1 ・ 目標',q:'その人生に近づくために、<br>まず何を達成しますか？',sub:'理想へ近づくための、通過点。',ph:'例：副業収入10万円',key:'goal',next:'month'},
-    month:{i:2,eyebrow:'Layer 2 ・ 今月の焦点',q:'その目標に近づくために、<br>今月もっとも集中することは？',sub:'目標と今日を繋ぐ、橋。',key:'month',ph:'例：ポートフォリオ完成',next:'step'},
-    step:{i:3,eyebrow:'Layer 3 ・ 今日の一歩',q:'その焦点に近づくために、<br>今日できる一歩は？',sub:'ただのTODOではない。意味を持った一歩。',key:'step',ph:'例：LPを1画面作る',next:'done'}
-  };
-  if(steps[stage]){
-    const s=steps[stage];
-    const ex=ONB_EXAMPLES[s.key]||[];
+
+  // ── STEP1：理想の明確度確認（分岐点） ──
+  if(stage==='route'){
     onbShow(`
-      <div class="onb-step-eyebrow">${s.eyebrow}</div>
-      <div class="onb-q">${s.q}</div>
-      <div class="onb-sub">${s.sub}</div>
-      <input class="onb-input" id="onb-inp" placeholder="${s.ph}" value="${esc(onbDraft[s.key]||'')}">
-      <div class="onb-examples">${ex.map(e=>`<button class="onb-ex" onclick="document.getElementById('onb-inp').value='${esc(e)}'">${esc(e)}</button>`).join('')}</div>
-      <button class="onb-btn" onclick="onbSave('${s.key}','${s.next}')">次へ</button>
-      <div class="onb-progress">${[0,1,2,3].map(n=>`<div class="onb-dot${n===s.i?' on':''}"></div>`).join('')}</div>`);
-    setTimeout(()=>document.getElementById('onb-inp')?.focus(),400);
+      <div class="onb-step-eyebrow">はじめに</div>
+      <div class="onb-q">あなたは今、理想の人生や<br>目指したい姿を、<br>はっきりと言葉で説明できますか？</div>
+      <div class="onb-sub">理想が無いわけではありません。<br>まだ言葉になっていないだけかもしれません。</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+        <button class="onb-btn" onclick="onbNext('ideal')">はい、明確にあります</button>
+        <button class="onb-btn ghost" onclick="onbNext('pain1')">まだ整理できていません</button>
+      </div>`);
     return;
   }
+
+  // ── Aルート：理想が明確 ──
+  const aSteps={
+    ideal:{i:0,eyebrow:'Layer 0 ・ 理想',q:'あなたはどんな人生を<br>生きたいですか？',sub:'達成したいことではなく、本当に望む人生の姿を。',ph:'例：家族との時間を増やしながら自由に働く',key:'ideal',next:'goal',ex:ONB_EXAMPLES.ideal},
+    goal:{i:1,eyebrow:'Layer 1 ・ 取り組みたいこと',q:'その人生に近づくために、<br>取り組んでいきたいことは？',sub:'理想へ近づくための、通過点。',ph:'例：副業収入10万円',key:'goal',next:'month',ex:ONB_EXAMPLES.goal},
+    month:{i:2,eyebrow:'Layer 2 ・ 今月の焦点',q:'積み重ねた先で、今月末には<br>どんな状態になっていたいですか？',sub:'TODOの上位版ではなく、積み重ねの先にある状態。',key:'month',ph:'例：ポートフォリオ完成',next:'step',ex:ONB_EXAMPLES.month},
+    step:{i:3,eyebrow:'Layer 3 ・ 今日の一歩',q:'その取り組みに向かって、<br>今日できる小さな一歩は？',sub:'絶対に、小さくていい。',key:'step',ph:'例：LPを1画面作る',next:'done',ex:ONB_EXAMPLES.step}
+  };
+  if(aSteps[stage]){
+    const s=aSteps[stage];
+    onbInputStep({eyebrow:s.eyebrow,q:s.q,sub:s.sub,ph:s.ph,value:onbDraft[s.key],examples:s.ex,dotIndex:s.i,dotTotal:4,
+      onNext:`()=>onbSave('${s.key}','${s.next}')`});
+    return;
+  }
+
+  // ── Bルート：理想が整理できていない ──
+  if(stage==='pain1'){
+    onbShow(`
+      <div class="onb-step-eyebrow">1 / 4</div>
+      <div class="onb-q">今の人生で、<br>最も変えたいことは<br>何ですか？</div>
+      <div class="onb-sub">ひとつだけ選んでください。</div>
+      <div class="chip-grid" id="pain-cat-grid">${PAIN_CATEGORIES.map(c=>`<button class="pain-chip" onclick="selectPainCategory('${esc(c)}')">${esc(c)}</button>`).join('')}</div>
+      <div class="onb-progress">${[0,1,2,3].map(n=>`<div class="onb-dot${n===0?' on':''}"></div>`).join('')}</div>`);
+    return;
+  }
+  if(stage==='pain2'){
+    onbInputStep({eyebrow:'2 / 4',q:'その悩みを一番強く感じるのは、<br>どんな時ですか？',sub:'自由に書いてください。',
+      ph:'例：日曜の夜、残業帰り、朝起きた時',value:onbDraft.painMoment,dotIndex:1,dotTotal:4,
+      onNext:`()=>onbSave('painMoment','pain3')`});
+    return;
+  }
+  if(stage==='pain3'){
+    onbInputStep({eyebrow:'3 / 4',q:'その悩みがなくなったら、<br>どんな毎日になっていたいですか？',sub:'状態ではなく、理想の日常を。',
+      ph:'例：家族と夕食を食べたい、心に余裕を持ちたい',value:onbDraft.idealDailyLife,multiline:true,dotIndex:2,dotTotal:4,
+      onNext:`()=>onbSave('idealDailyLife','summary')`});
+    return;
+  }
+
+  // ── STEP5：AI要約（翻訳者として）──
+  if(stage==='summary'){
+    onbShow(`
+      <div class="onb-step-eyebrow">4 / 4</div>
+      <div class="onb-q">あなたが向かいたい姿</div>
+      <div class="onb-sub" id="summary-loading">あなたの言葉を、整理しています…</div>
+      <div id="summary-body" style="display:none">
+        <div class="onb-summary-card" id="summary-text"></div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+          <button class="onb-btn" onclick="onbNext('goal2')">この内容で進む</button>
+          <button class="onb-btn ghost" onclick="onbEditSummary()">編集する</button>
+        </div>
+      </div>`);
+    generateIdealSummary();
+    return;
+  }
+
+  // ── STEP6〜8：取り組みたいこと / 今日の一歩 / 今月の焦点 ──
+  if(stage==='goal2'){
+    onbInputStep({eyebrow:'取り組みたいこと',q:'その理想に近づくために、<br>今後取り組んでいきたいことは？',sub:'肩肘張らず、自然に答えてください。',
+      ph:'例：Web制作を学ぶ、副業を始める、読書習慣をつける',value:onbDraft.goal,dotIndex:0,dotTotal:0,
+      onNext:`()=>onbSave('goal','step2')`});
+    return;
+  }
+  if(stage==='step2'){
+    onbInputStep({eyebrow:'今日の一歩',q:'その取り組みに向かって、<br>今日できる小さな一歩は？',sub:'絶対に、小さくていい。',
+      ph:'例：本を10ページ読む、10分歩く',value:onbDraft.step,dotIndex:0,dotTotal:0,
+      onNext:`()=>onbSave('step','month2')`});
+    return;
+  }
+  if(stage==='month2'){
+    onbInputStep({eyebrow:'今月の焦点',q:'今日の一歩を積み重ねた先で、<br>今月末にはどんな状態に<br>なっていたいですか？',sub:'積み重ねの先にある状態を。',
+      ph:'例：本を1冊読み終える、副業候補を3つ調べる',value:onbDraft.month,dotIndex:0,dotTotal:0,
+      onNext:`()=>onbSave('month','done')`});
+    return;
+  }
+
+  // ── 完了 ──
   if(stage==='done'){
+    const idealShown = onbDraft.idealSummary || onbDraft.ideal;
     onbShow(`
       <div class="onb-step-eyebrow">準備完了</div>
       <div style="margin-bottom:30px">
-        <div class="onb-done-line">理想　<span class="v">${esc(onbDraft.ideal||'—')}</span></div>
-        <div class="onb-done-line">目標　<span class="v">${esc(onbDraft.goal||'—')}</span></div>
+        <div class="onb-done-line">理想　<span class="v">${esc(idealShown||'—')}</span></div>
+        <div class="onb-done-line">取り組み　<span class="v">${esc(onbDraft.goal||'—')}</span></div>
         <div class="onb-done-line">今月　<span class="v">${esc(onbDraft.month||'—')}</span></div>
         <div class="onb-done-line">今日　<span class="v">${esc(onbDraft.step||'—')}</span></div>
       </div>
@@ -1468,14 +1570,78 @@ function onbRender(stage){
   }
 }
 
+function selectPainCategory(cat){
+  onbDraft.painCategory=cat;
+  onbNext('pain2');
+}
+
 function onbSave(key,next){
   const v=(document.getElementById('onb-inp').value||'').trim();
   onbDraft[key]=v;
   onbNext(next);
 }
 
+function onbEditSummary(){
+  onbInputStep({eyebrow:'4 / 4 ・ 編集',q:'あなたが向かいたい姿',sub:'あなた自身の言葉に直してください。',
+    ph:'あなたが向かいたい姿', value:onbDraft.idealSummary, multiline:true, dotIndex:3, dotTotal:4,
+    onNext:`()=>onbSave('idealSummary','goal2')`});
+}
+
+// AIは翻訳者：ユーザーの言葉を整理するだけ。夢を足さない、理想を作らない、人生を決めない。
+async function generateIdealSummary(){
+  let summary=null;
+  try{
+    summary=await callIdealSummaryAPI({
+      category:onbDraft.painCategory, moment:onbDraft.painMoment, dailyLife:onbDraft.idealDailyLife
+    });
+  }catch(e){ summary=null; }
+  if(!summary){
+    // フォールバック：ユーザーの言葉をそのまま繋げるだけ（AIが夢を足さない原則を守る）
+    summary = onbDraft.idealDailyLife
+      ? `${onbDraft.idealDailyLife}`
+      : `${onbDraft.painCategory}について、もっと違う毎日を生きたい`;
+  }
+  onbDraft.idealSummary=summary;
+  const loading=document.getElementById('summary-loading');
+  const body=document.getElementById('summary-body');
+  const text=document.getElementById('summary-text');
+  if(loading) loading.style.display='none';
+  if(text) text.textContent=summary;
+  if(body) body.style.display='block';
+}
+
+async function callIdealSummaryAPI(d){
+  const sys=`あなたはOKOSOというアプリの、理想を言語化するための「翻訳者」です。
+
+絶対の禁止事項：
+- ユーザーが言っていないことを足さない。夢を作らない。理想を勝手に作らない。人生を決めない。
+- 説教しない。評価しない。アドバイスしない。
+- あなたの役割は、ユーザー自身の言葉を整理して、短い一文〜二文にまとめることだけです。
+
+出力ルール：
+- 60〜90字程度の日本語、一人称は使わず「〜生きられる人生」「〜大切にしながら〜できる毎日」のような体言止め寄りの文体。
+- ユーザーが読んだ時に「それだ、俺が言いたかったのはそれだ」と思える、ユーザー自身の言葉に近い要約にする。
+- 説明や前置きは書かず、要約の本文だけを出力する。`;
+
+  const userMsg=`このユーザーが最も変えたいこと：${d.category||'(未回答)'}
+その悩みを強く感じる時：${d.moment||'(未回答)'}
+悩みがなくなったらどんな毎日になっていたいか：${d.dailyLife||'(未回答)'}
+
+上記から、「あなたが向かいたい姿」というタイトルにふさわしい一文〜二文の要約だけを出力してください。`;
+
+  const res=await fetch('/api/translate',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ system:sys, user:userMsg })
+  });
+  if(!res.ok) throw new Error('api');
+  const data=await res.json();
+  const txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  if(!txt) throw new Error('empty');
+  return txt;
+}
+
 function onbFinish(){
-  S.ideal=onbDraft.ideal||'';
+  S.ideal = onbDraft.idealSummary || onbDraft.ideal || '';
   S.goals = onbDraft.goal ? [{id:uid(),text:onbDraft.goal}] : [];
   S.monthFocuses = onbDraft.month ? [{id:uid(),text:onbDraft.month}] : [];
   const focusTag = onbDraft.month||'';
