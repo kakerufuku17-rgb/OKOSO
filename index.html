@@ -51,17 +51,17 @@
   /* 上3段：コンパクトな行（左にラベル、右に内容） */
   .flow-mini {
     background: var(--bg-1); border: 1px solid var(--rule-2); border-radius: 4px;
-    padding: 12px 16px; cursor: pointer; transition: border-color 0.3s;
-    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px; cursor: pointer; transition: border-color 0.3s;
+    display: flex; flex-direction: column; gap: 7px;
   }
   .flow-mini:hover { border-color: var(--rule); }
   .flow-mini-lbl {
-    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em;
     color: var(--ink-4); text-transform: uppercase; flex-shrink: 0;
-    width: 58px; line-height: 1.5;
+    line-height: 1.4;
   }
-  .flow-mini-body { font-family: var(--serif); font-size: 14.5px; line-height: 1.5; letter-spacing: 0.02em; color: var(--ink); flex: 1; min-width: 0; }
-  .flow-mini-body.empty { font-size: 12px; color: var(--ink-4); font-family: var(--sans); }
+  .flow-mini-body { font-family: var(--serif); font-size: 16px; line-height: 1.7; letter-spacing: 0.02em; color: var(--ink); }
+  .flow-mini-body.empty { font-size: 13px; color: var(--ink-4); font-family: var(--sans); }
 
   /* 複数行対応（目標・今月の焦点） */
   .flow-multi { background: var(--bg-1); border: 1px solid var(--rule-2); border-radius: 4px; overflow: hidden; }
@@ -132,9 +132,10 @@
   .amt-box input{width:100%;background:transparent;border:none;outline:none;color:var(--ink);font-family:var(--serif);font-size:24px;font-weight:500;}
   .amt-box input::placeholder{color:var(--ink-4);font-weight:300;}
   .amt-unit{font-family:var(--serif);font-size:14px;color:var(--ink-3);flex-shrink:0;}
-  .compose{display:flex;align-items:flex-end;gap:12px;border-bottom:1px solid var(--rule-2);padding-bottom:14px;}
-  .compose textarea{flex:1;background:transparent;border:none;outline:none;resize:none;color:var(--ink);font-family:var(--sans);font-weight:300;font-size:15px;line-height:1.7;}
+  .compose{display:flex;flex-direction:column;gap:14px;border-bottom:1px solid var(--rule-2);padding-bottom:16px;}
+  .compose textarea{width:100%;background:transparent;border:none;outline:none;resize:none;color:var(--ink);font-family:var(--sans);font-weight:300;font-size:16px;line-height:1.85;min-height:80px;}
   .compose textarea::placeholder{color:var(--ink-4);}
+  .compose .keep-btn{align-self:flex-end;}
   .keep-btn{flex-shrink:0;background:transparent;border:1px solid var(--rule-2);color:var(--ink-3);font-family:var(--serif);font-size:13px;letter-spacing:0.1em;padding:9px 18px;border-radius:2px;cursor:pointer;transition:all 0.4s;}
   .keep-btn.on{border-color:var(--ember-b);color:var(--ember);}
   .log-current-label{font-family:var(--serif);font-size:14px;color:var(--ink-2);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
@@ -160,25 +161,33 @@
   .achieve-body{flex:1;min-width:0;display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
   .achieve-text{font-family:var(--serif);font-size:15px;color:var(--ink);letter-spacing:0.03em;}
   .achieve-date{font-family:var(--mono);font-size:10px;color:var(--ink-4);letter-spacing:0.04em;flex-shrink:0;}
-  .asset-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
-  .asset-name{font-family:var(--serif);font-size:16px;font-weight:500;letter-spacing:0.04em;}
+  .asset-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .asset-name{font-family:var(--serif);font-size:17px;font-weight:500;letter-spacing:0.04em;}
   .asset-times{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);letter-spacing:0.04em;}
-  .asset-total{font-family:var(--serif);font-weight:600;line-height:1;display:flex;align-items:baseline;gap:6px;margin-bottom:14px;}
-  .asset-total .num{font-size:38px;color:var(--ink);font-feature-settings:"tnum";}
-  .asset-total .u{font-size:15px;color:var(--ink-3);font-weight:400;}
-  /* 変化量（累計の下に4期間を並べて見せる） */
-  .asset-changes{display:flex;gap:0;border-top:1px solid var(--rule);padding-top:13px;}
-  .change-cell{flex:1;text-align:center;border-right:1px solid var(--rule);padding:0 2px;}
-  .change-cell:last-child{border-right:none;}
-  .change-span{font-family:var(--mono);font-size:8.5px;color:var(--ink-4);letter-spacing:0.04em;margin-bottom:5px;}
-  .change-val{font-family:var(--serif);font-size:13px;font-weight:600;color:var(--ember);}
+  .asset-menu-btn{flex-shrink:0;background:none;border:none;color:var(--ink-4);font-size:16px;cursor:pointer;padding:2px 6px;letter-spacing:0.1em;line-height:1;transition:color 0.25s;}
+  .asset-menu-btn:hover{color:var(--ember);}
+  .asset-total{font-family:var(--serif);font-weight:600;line-height:1;display:flex;align-items:baseline;gap:6px;margin-bottom:18px;}
+  .asset-total .num{font-size:40px;color:var(--ink);font-feature-settings:"tnum";}
+  .asset-total .u{font-size:16px;color:var(--ink-3);font-weight:400;}
+  /* 変化量（累計の下に4期間を縦に並べて見せる＝読みやすさ優先） */
+  .asset-changes-col{border-top:1px solid var(--rule);padding-top:14px;display:flex;flex-direction:column;gap:10px;}
+  .change-row{display:flex;justify-content:space-between;align-items:baseline;}
+  .change-span{font-family:var(--mono);font-size:11px;color:var(--ink-4);letter-spacing:0.08em;}
+  .change-val{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--ember);font-feature-settings:"tnum";}
   .change-val.zero{color:var(--ink-4);font-weight:400;}
-  .recent-entry{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--rule);align-items:center;}
+  .recent-entry{display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--rule);align-items:center;}
   .log-menu-btn{flex-shrink:0;background:none;border:none;color:var(--ink-4);font-size:15px;cursor:pointer;padding:4px 6px;letter-spacing:0.1em;line-height:1;transition:color 0.25s;}
   .log-menu-btn:hover{color:var(--ember);}
-  .recent-day{flex-shrink:0;width:64px;font-family:var(--mono);font-size:10.5px;color:var(--ink-4);letter-spacing:0.04em;}
-  .recent-text{font-size:14px;line-height:1.6;flex:1;min-width:0;}
-  .jrnl-card{background:var(--bg-1);border:1px solid var(--rule-2);border-left:2px solid var(--ember-b);border-radius:0 4px 4px 0;padding:14px 16px;margin-bottom:8px;}
+  .recent-day{flex-shrink:0;width:64px;font-family:var(--mono);font-size:11px;color:var(--ink-4);letter-spacing:0.04em;}
+  .recent-text{font-size:15px;line-height:1.7;flex:1;min-width:0;}
+  .jrnl-card{background:var(--bg-1);border:1px solid var(--rule-2);border-left:2px solid var(--ember-b);border-radius:0 4px 4px 0;padding:18px 18px;margin-bottom:12px;}
+  /* 達成カードをタップ可能に */
+  .achieve-tappable{cursor:pointer;transition:border-color 0.25s;}
+  .achieve-tappable:hover{border-color:var(--ember-b);}
+  /* ジャーナルのメニュー */
+  .jrnl-foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;}
+  .jrnl-menu-btn{background:none;border:none;color:var(--ink-4);font-size:15px;cursor:pointer;padding:2px 6px;letter-spacing:0.1em;line-height:1;transition:color 0.25s;}
+  .jrnl-menu-btn:hover{color:var(--ember);}
 
   /* 前進の翻訳（未来の自分からの手紙） */
   .translation{margin-top:40px;padding-top:32px;border-top:1px solid var(--rule);}
@@ -307,6 +316,15 @@
   .pain-chip{padding:13px 10px;border:1px solid var(--rule-2);border-radius:4px;background:var(--bg-1);color:var(--ink-2);font-family:var(--serif);font-size:13.5px;cursor:pointer;transition:all 0.25s;letter-spacing:0.02em;}
   .pain-chip:hover{border-color:var(--ember-b);color:var(--ember);background:var(--ember-d);}
   .onb-summary-card{background:var(--bg-1);border:1px solid var(--ember-b);border-radius:5px;padding:22px 20px;font-family:var(--serif);font-size:16px;line-height:1.9;color:var(--ink);letter-spacing:0.03em;text-align:left;margin-top:6px;}
+  .unmet-task-card{background:var(--bg-1);border:1px solid var(--rule-2);border-left:2px solid var(--ember-b);border-radius:0 4px 4px 0;padding:18px 20px;font-family:var(--serif);font-size:18px;color:var(--ink);letter-spacing:0.04em;line-height:1.6;}
+  .step-archive-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--rule);}
+  .step-archive-text{font-family:var(--serif);font-size:15px;color:var(--ink);line-height:1.6;flex:1;}
+  .step-archive-text.undone{color:var(--ink-3);}
+  .step-status{flex-shrink:0;font-family:var(--serif);font-size:11px;padding:3px 10px;border-radius:100px;letter-spacing:0.05em;}
+  .step-status-done{background:var(--ember-d);color:var(--ember);border:1px solid var(--ember-b);}
+  .step-status-unmet{background:transparent;color:var(--ink-4);border:1px solid var(--rule-2);}
+  .step-status-carry{background:transparent;color:var(--ink-3);border:1px solid var(--rule-2);}
+  .step-status-end{background:transparent;color:var(--ink-4);border:1px solid var(--rule-2);}
   @keyframes bloom{0%{opacity:0.3;transform:scale(0.96);}60%{transform:scale(1.02);opacity:1;}100%{transform:scale(1);}}
   .blooming{animation:bloom 1s cubic-bezier(0.16,1,0.3,1);}
   @media (prefers-reduced-motion:reduce){.blooming{animation:none;}}
@@ -446,7 +464,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v14';
+const STORE='okoso_v15';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -458,8 +476,10 @@ let S = {
   assets: {},
   logs: [],
   journals: [],
+  stepDecisions: [],           // 未達タスクの意思決定 [{id,text,date,decision,ts,reflection?}]
   translations: {},            // 前進の翻訳 {7:{text,ts,days},30:{...},...}
   onboarded: false,
+  lastRolloverCheck: '',       // 最後に未達タスク確認をした日付キー
   updatedAt: 0                 // このデータの最終更新時刻（同期のマージ判定に使う）
 };
 function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.parse(r)};}catch(e){} }
@@ -547,6 +567,7 @@ function mergeData(local, remote){
   out.idealHistory=mergeById(local.idealHistory,remote.idealHistory,'ts');
   out.achievedGoals=mergeById(local.achievedGoals,remote.achievedGoals);
   out.achievedFocuses=mergeById(local.achievedFocuses,remote.achievedFocuses);
+  out.stepDecisions=mergeById(local.stepDecisions,remote.stepDecisions);
 
   // steps（日付キーごと）：日付単位で、未達成リストはIDマージ
   out.steps={...remote.steps,...local.steps};
@@ -630,7 +651,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const dk=(d=new Date())=>`${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)}`;
 const fmtDate=()=>{const d=new Date();return `${d.getFullYear()}.${('0'+(d.getMonth()+1)).slice(-2)}.${('0'+d.getDate()).slice(-2)} ${'日月火水木金土'[d.getDay()]}`;};
 const todaySteps=()=>{if(!S.steps[dk()])S.steps[dk()]=[];return S.steps[dk()];};
-function autosize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,130)+'px';}
+function autosize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,280)+'px';}
 
 // 相対日付
 function relDay(ts){
@@ -999,6 +1020,156 @@ function confirmDeleteLog(id){
     <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">やめる</button><button class="sbtn" onclick="doDeleteLog()" style="border-color:var(--ember-b);color:var(--ember)">削除する</button></div>`);
 }
 
+// ── ジャーナルの編集・削除 ──
+function openJournalMenu(id){
+  const j=S.journals.find(x=>x.id===id);
+  if(!j) return;
+  openSheet(`<h2>このことば</h2>
+    <p class="sheet-note">${relDay(j.ts)}</p>
+    <div class="sheet-btns" style="flex-direction:column;gap:8px">
+      <button class="sbtn" onclick="editJournal('${id}')" style="width:100%">編集する</button>
+      <button class="sbtn" onclick="confirmDeleteJournal('${id}')" style="width:100%;color:var(--ink-3)">削除する</button>
+      <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+    </div>`);
+}
+
+function editJournal(id){
+  const j=S.journals.find(x=>x.id===id);
+  if(!j) return;
+  window.saveEditJournal=()=>{
+    const v=(document.getElementById('edit-jrnl').value||'').trim();
+    if(!v){ quietToast('内容を入力してください'); return; }
+    j.text=v;
+    persist(); renderProof(); if(typeof renderCalendar==='function' && document.getElementById('scr-archive')?.classList.contains('active')) renderCalendar();
+    closeModal(); quietToast('ことばを直しました');
+  };
+  openSheet(`<h2>ことばを編集</h2>
+    <div class="field-box"><textarea id="edit-jrnl" rows="5" style="width:100%;resize:vertical;line-height:1.8">${esc(j.text)}</textarea></div>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="saveEditJournal()">更新する</button></div>`);
+  setTimeout(()=>document.getElementById('edit-jrnl')?.focus(),300);
+}
+
+function confirmDeleteJournal(id){
+  const j=S.journals.find(x=>x.id===id);
+  if(!j) return;
+  window.doDeleteJournal=()=>{
+    const i=S.journals.findIndex(x=>x.id===id);
+    if(i>=0) S.journals.splice(i,1);
+    persist(); renderProof(); if(typeof renderCalendar==='function' && document.getElementById('scr-archive')?.classList.contains('active')) renderCalendar();
+    closeModal(); quietToast('ことばを削除しました');
+  };
+  openSheet(`<h2>本当に削除しますか？</h2>
+    <p class="sheet-note">このことばを削除します。<br>この操作は取り消せません。</p>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">やめる</button><button class="sbtn" onclick="doDeleteJournal()" style="border-color:var(--ember-b);color:var(--ember)">削除する</button></div>`);
+}
+
+// ── 達成した目標・焦点の取り消し／削除 ──
+function openAchievedMenu(kind, id){
+  const arr = kind==='goal' ? S.achievedGoals : S.achievedFocuses;
+  const item=(arr||[]).find(x=>x.id===id);
+  if(!item) return;
+  const label = kind==='goal' ? '達成した目標' : '達成した今月の焦点';
+  openSheet(`<h2>${esc(item.text)}</h2>
+    <p class="sheet-note">${label}　・　${fmtYMD(item.doneTs)}</p>
+    <div class="sheet-btns" style="flex-direction:column;gap:8px">
+      <button class="sbtn" onclick="undoAchieve('${kind}','${id}')" style="width:100%">未達成に戻す</button>
+      <button class="sbtn" onclick="confirmDeleteAchieve('${kind}','${id}')" style="width:100%;color:var(--ink-3)">削除する</button>
+      <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+    </div>`);
+}
+
+function undoAchieve(kind, id){
+  if(kind==='goal'){
+    const i=(S.achievedGoals||[]).findIndex(x=>x.id===id);
+    if(i<0) return;
+    const g=S.achievedGoals[i];
+    S.goals.push({id:g.id, text:g.text});
+    S.achievedGoals.splice(i,1);
+  } else {
+    const i=(S.achievedFocuses||[]).findIndex(x=>x.id===id);
+    if(i<0) return;
+    const f=S.achievedFocuses[i];
+    S.monthFocuses.push({id:f.id, text:f.text});
+    S.achievedFocuses.splice(i,1);
+  }
+  // 達成ジャーナルも消す（同じtext由来のachieveジャーナル直近1件）
+  persist(); renderFlow(); renderProof(); closeModal();
+  quietToast('未達成に戻しました');
+}
+
+function confirmDeleteAchieve(kind, id){
+  window.doDeleteAchieve=()=>{
+    const arr = kind==='goal' ? S.achievedGoals : S.achievedFocuses;
+    const i=(arr||[]).findIndex(x=>x.id===id);
+    if(i>=0) arr.splice(i,1);
+    persist(); renderProof(); closeModal();
+    quietToast('削除しました');
+  };
+  openSheet(`<h2>本当に削除しますか？</h2>
+    <p class="sheet-note">達成の記録を削除します。<br>この操作は取り消せません。</p>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">やめる</button><button class="sbtn" onclick="doDeleteAchieve()" style="border-color:var(--ember-b);color:var(--ember)">削除する</button></div>`);
+}
+
+// ── 前進資産（項目）の名前・単位の編集／削除 ──
+function openAssetMenu(name){
+  const a=S.assets[name];
+  if(!a) return;
+  openSheet(`<h2>${esc(name)}</h2>
+    <p class="sheet-note">累計 ${a.unit?`${fmtNum(a.total)}${esc(a.unit)}`:`${a.count}回`}</p>
+    <div class="sheet-btns" style="flex-direction:column;gap:8px">
+      <button class="sbtn" onclick="editAsset('${esc(name)}')" style="width:100%">名前・単位を編集</button>
+      <button class="sbtn" onclick="confirmDeleteAsset('${esc(name)}')" style="width:100%;color:var(--ink-3)">この項目を削除</button>
+      <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+    </div>`);
+}
+
+function editAsset(name){
+  const a=S.assets[name];
+  if(!a) return;
+  window.saveEditAsset=()=>{
+    const newName=(document.getElementById('asset-name').value||'').trim();
+    const newUnit=(document.getElementById('asset-unit').value||'').trim();
+    if(!newName){ quietToast('名前を入力してください'); return; }
+    // 単位の変更
+    a.unit=newUnit;
+    // 名前の変更（キーの付け替え＋logs内のitem名も更新）
+    if(newName!==name){
+      if(S.assets[newName]){
+        // 既存項目と統合
+        S.assets[newName].total+=a.total;
+        S.assets[newName].count+=a.count;
+        if(a.firstTs<S.assets[newName].firstTs) S.assets[newName].firstTs=a.firstTs;
+      } else {
+        S.assets[newName]=a;
+      }
+      delete S.assets[name];
+      S.logs.forEach(l=>{ if(l.item===name){ l.item=newName; l.unit=newUnit; } });
+    } else {
+      S.logs.forEach(l=>{ if(l.item===name){ l.unit=newUnit; } });
+    }
+    persist(); renderAssetChips(); renderProof(); closeModal();
+    quietToast('項目を直しました');
+  };
+  openSheet(`<h2>項目を編集</h2>
+    <label class="field-lbl">名前</label>
+    <div class="field-box"><input type="text" id="asset-name" value="${esc(name)}"></div>
+    <label class="field-lbl">単位（空欄なら「回」で数えます）</label>
+    <div class="field-box"><input type="text" id="asset-unit" value="${esc(a.unit||'')}" placeholder="例：ページ、分、回"></div>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="saveEditAsset()">更新する</button></div>`);
+}
+
+function confirmDeleteAsset(name){
+  window.doDeleteAsset=()=>{
+    delete S.assets[name];
+    S.logs=S.logs.filter(l=>l.item!==name);
+    persist(); renderAssetChips(); renderProof(); closeModal();
+    quietToast('項目を削除しました');
+  };
+  openSheet(`<h2>本当に削除しますか？</h2>
+    <p class="sheet-note">「${esc(name)}」と、その記録すべてを削除します。<br>この操作は取り消せません。</p>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">やめる</button><button class="sbtn" onclick="doDeleteAsset()" style="border-color:var(--ember-b);color:var(--ember)">削除する</button></div>`);
+}
+
 function keepJournal(){
   const f=document.getElementById('jrnl-field');
   const t=f.value.trim();
@@ -1101,7 +1272,7 @@ function renderProof(){
     agEl.innerHTML=`<div class="label">達成した目標</div>
       <p class="proof-asset-note">あなたが、成し遂げてきたこと。</p>
       <div class="achieve-list">${ag.map(g=>`
-        <div class="achieve-card">
+        <div class="achieve-card achieve-tappable" onclick="openAchievedMenu('goal','${g.id}')">
           <div class="achieve-check"><svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="achieve-body"><div class="achieve-text">${esc(g.text)}</div><div class="achieve-date">${fmtYMD(g.doneTs)}</div></div>
         </div>`).join('')}</div>
@@ -1115,7 +1286,7 @@ function renderProof(){
     afEl.innerHTML=`<div class="label">達成した今月の焦点</div>
       <p class="proof-asset-note">今年、ここまで前に進んだ。</p>
       <div class="achieve-list">${af.map(f=>`
-        <div class="achieve-card">
+        <div class="achieve-card achieve-tappable" onclick="openAchievedMenu('focus','${f.id}')">
           <div class="achieve-check"><svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <div class="achieve-body"><div class="achieve-text">${esc(f.text)}</div><div class="achieve-date">${f.ym||fmtYMD(f.doneTs)}</div></div>
         </div>`).join('')}</div>
@@ -1139,12 +1310,12 @@ function renderProof(){
         const v = unit ? dlt.total : dlt.count;
         const u = unit ? esc(unit) : '回';
         const zero = v<=0;
-        return `<div class="change-cell"><div class="change-span">${s.lbl}</div><div class="change-val${zero?' zero':''}">${zero?'—':'+'+fmtNum(v)+u}</div></div>`;
+        return `<div class="change-row"><span class="change-span">${s.lbl}</span><span class="change-val${zero?' zero':''}">${zero?'—':'+'+fmtNum(v)+u}</span></div>`;
       }).join('');
       return `<div class="asset-card">
-        <div class="asset-top"><span class="asset-name">${esc(n)}</span><span class="asset-times">0 → ${a.count}回</span></div>
+        <div class="asset-top"><span class="asset-name">${esc(n)}</span><button class="asset-menu-btn" onclick="openAssetMenu('${esc(n)}')">···</button></div>
         <div class="asset-total"><span class="num">${cumLabel}</span><span class="u">${cumUnit}</span></div>
-        <div class="asset-changes">${changeCells}</div>
+        <div class="asset-changes-col">${changeCells}</div>
       </div>`;
     }).join('');
   }
@@ -1167,7 +1338,7 @@ function renderProof(){
         ? `<div class="jrnl-card" style="border-left-color:var(--ember)"><div class="jrnl-text" style="white-space:pre-wrap">${esc(j.text)}</div><div class="jrnl-date">方向転換 ・ ${relDay(j.ts)}</div></div>`
         : j.kind==='achieve'
         ? `<div class="jrnl-card" style="border-left-color:var(--ember)"><div class="jrnl-text" style="white-space:pre-wrap">${esc(j.text)}</div><div class="jrnl-date">達成 ・ ${relDay(j.ts)}</div></div>`
-        : `<div class="jrnl-card"><div class="jrnl-text">${esc(j.text)}</div><div class="jrnl-date">${relDay(j.ts)}</div></div>`).join('');
+        : `<div class="jrnl-card"><div class="jrnl-text">${esc(j.text)}</div><div class="jrnl-foot"><span class="jrnl-date">${relDay(j.ts)}</span><button class="jrnl-menu-btn" onclick="openJournalMenu('${j.id}')">···</button></div></div>`).join('');
 
   // 前進の翻訳（節目のみ）
   renderTranslation();
@@ -1345,8 +1516,7 @@ function renderCalendar(){
   // その月の記録がある日
   const marks={};
   [...S.logs, ...S.journals].forEach(x=>{ const d=new Date(x.ts); if(d.getFullYear()===y&&d.getMonth()===m) marks[d.getDate()]=true; });
-  Object.values(S.steps).flat().forEach(()=>{}); // steps are per-day already keyed
-  Object.keys(S.steps).forEach(key=>{ const [yy,mm,dd]=key.split('-').map(Number); if(yy===y&&mm-1===m&&S.steps[key].some(s=>s.done)) marks[dd]=true; });
+  Object.keys(S.steps).forEach(key=>{ const [yy,mm,dd]=key.split('-').map(Number); if(yy===y&&mm-1===m&&S.steps[key].length) marks[dd]=true; });
   const first=new Date(y,m,1).getDay();
   const days=new Date(y,m+1,0).getDate();
   const todayKey=dk();
@@ -1366,9 +1536,9 @@ function showDay(key){
   const allJrnls=S.journals.filter(j=>dk(new Date(j.ts))===key);
   const shifts=allJrnls.filter(j=>j.kind==='shift');
   const jrnls=allJrnls.filter(j=>j.kind!=='shift');
-  const steps=(S.steps[key]||[]).filter(s=>s.done);
+  const allSteps=(S.steps[key]||[]);
   const el=document.getElementById('cal-detail');
-  if(!logs.length&&!allJrnls.length&&!steps.length){
+  if(!logs.length&&!allJrnls.length&&!allSteps.length){
     el.innerHTML=`<div class="cal-detail-date">${y}年${m}月${d}日</div><div class="empty-msg" style="padding-top:0">この日の記録はありません。</div>`;
     return;
   }
@@ -1385,13 +1555,28 @@ function showDay(key){
       </div>`;
     }).join('');
   }
+  // 今日の一歩（完了／未達／延期／終了を区別）
+  if(allSteps.length){
+    html+=`<div class="label">今日の一歩</div>`;
+    html+=allSteps.map(s=>{
+      let status, cls;
+      if(s.done){ status='完了'; cls='done'; }
+      else if(s.carried){ status='延期'; cls='carry'; }
+      else if(s.ended){ status='終了'; cls='end'; }
+      else { status='未達'; cls='unmet'; }
+      return `<div class="step-archive-row">
+        <span class="step-archive-text${s.done?'':' undone'}">${esc(s.text)}</span>
+        <span class="step-status step-status-${cls}">${status}</span>
+      </div>`;
+    }).join('');
+  }
   if(logs.length){
-    html+=`<div class="label">前進記録</div>`;
+    html+=`<div class="label" style="margin-top:24px">前進記録</div>`;
     html+=logs.map(l=>`<div class="recent-entry"><div class="recent-day">${('0'+new Date(l.ts).getHours()).slice(-2)}:${('0'+new Date(l.ts).getMinutes()).slice(-2)}</div><div class="recent-text">${esc(l.item)}${l.amount!=null?` ${fmtNum(l.amount)}${esc(l.unit||'')}`:''}</div></div>`).join('');
   }
   if(jrnls.length){
     html+=`<div class="label" style="margin-top:24px">ジャーナル</div>`;
-    html+=jrnls.map(j=>`<div class="jrnl-card"><div class="jrnl-text">${esc(j.text)}</div></div>`).join('');
+    html+=jrnls.map(j=>`<div class="jrnl-card"><div class="jrnl-text" style="white-space:pre-wrap">${esc(j.text)}</div></div>`).join('');
   }
   el.innerHTML=html;
 }
@@ -1745,6 +1930,89 @@ function init(){
     updateSyncBadge('off');
   }
   if(!S.onboarded) startOnboarding();
+  else checkUnmetTasks();
+}
+
+// ════════════════════════════════
+//  未達タスクの引き継ぎ（日付切り替え時）
+// ════════════════════════════════
+function checkUnmetTasks(){
+  const today=dk();
+  if(S.lastRolloverCheck===today) return;   // 今日はもう確認済み
+  // 過去の日付で、未達成（done=false）のタスクを集める
+  const unmet=[];
+  Object.keys(S.steps||{}).forEach(key=>{
+    if(key>=today) return;   // 今日以降は対象外
+    (S.steps[key]||[]).forEach(s=>{ if(!s.done && !s.carried && !s.ended) unmet.push({...s, fromDate:key}); });
+  });
+  if(!unmet.length){ S.lastRolloverCheck=today; persist(); return; }
+  showUnmetDialog(unmet);
+}
+
+function showUnmetDialog(unmet){
+  // 1件ずつ意思決定してもらう
+  let idx=0;
+  const renderOne=()=>{
+    if(idx>=unmet.length){
+      S.lastRolloverCheck=dk();
+      persist(); renderFlow();
+      const o=document.getElementById('onb-mount'); if(o) o.innerHTML='';
+      return;
+    }
+    const t=unmet[idx];
+    const m=document.getElementById('onb-mount');
+    m.innerHTML=`<div class="onb show" id="unmet-veil"><div class="onb-inner">
+      <div class="onb-step-eyebrow">前の日に、できなかったこと</div>
+      <div class="unmet-task-card">${esc(t.text)}</div>
+      <div class="onb-sub" style="margin:18px 0 22px">できなかった日も、人生の一部です。<br>どうするか、あなたが決めてください。</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="onb-btn" onclick="decideUnmet(${idx},'carry')">明日に引き継ぐ</button>
+        <button class="onb-btn ghost" onclick="decideUnmet(${idx},'reflect')">振り返りを残す</button>
+        <button class="onb-btn ghost" onclick="decideUnmet(${idx},'end')">今はやらないと決める</button>
+      </div>
+      ${unmet.length>1?`<div class="onb-progress">${unmet.map((_,n)=>`<div class="onb-dot${n===idx?' on':''}"></div>`).join('')}</div>`:''}
+    </div></div>`;
+  };
+  window.decideUnmet=(i,decision)=>{
+    const t=unmet[i];
+    // 元タスクに印をつける
+    const arr=S.steps[t.fromDate]||[];
+    const orig=arr.find(s=>s.id===t.id);
+    if(decision==='carry'){
+      if(orig) orig.carried=true;
+      // 今日に引き継ぐ
+      const ts=todaySteps();
+      ts.push({id:uid(), text:t.text, tag:t.tag||'', done:false});
+      S.stepDecisions.push({id:uid(), text:t.text, date:t.fromDate, decision:'carry', ts:Date.now()});
+      idx++; renderOne();
+    } else if(decision==='end'){
+      if(orig) orig.ended=true;
+      S.stepDecisions.push({id:uid(), text:t.text, date:t.fromDate, decision:'end', ts:Date.now()});
+      idx++; renderOne();
+    } else if(decision==='reflect'){
+      // 振り返り入力へ
+      const m=document.getElementById('onb-mount');
+      m.innerHTML=`<div class="onb show"><div class="onb-inner">
+        <div class="onb-step-eyebrow">振り返りを残す</div>
+        <div class="unmet-task-card">${esc(t.text)}</div>
+        <div class="onb-sub" style="margin:16px 0 14px">なぜできなかったか、書いておきますか。</div>
+        <textarea class="onb-input" id="unmet-reflect" rows="3" style="resize:none;line-height:1.7" placeholder="例：疲れていて手がつかなかった"></textarea>
+        <button class="onb-btn" onclick="saveUnmetReflection(${i})" style="margin-top:14px">残す</button>
+      </div></div>`;
+      setTimeout(()=>document.getElementById('unmet-reflect')?.focus(),300);
+    }
+  };
+  window.saveUnmetReflection=(i)=>{
+    const t=unmet[i];
+    const v=(document.getElementById('unmet-reflect').value||'').trim();
+    const arr=S.steps[t.fromDate]||[];
+    const orig=arr.find(s=>s.id===t.id);
+    if(orig) orig.ended=true;
+    S.stepDecisions.push({id:uid(), text:t.text, date:t.fromDate, decision:'reflect', reflection:v, ts:Date.now()});
+    if(v) S.journals.push({id:uid(), text:`「${t.text}」はできなかった。\n${v}`, ts:Date.now()});
+    idx++; renderOne();
+  };
+  renderOne();
 }
 // keepLogボタンは doKeepLog を呼ぶ
 window.keepLog=doKeepLog;
