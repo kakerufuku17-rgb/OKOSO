@@ -328,6 +328,19 @@
   .deepen-typing{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.08em;padding:6px 4px 18px;}
   .deepen-input-wrap{display:flex;flex-direction:column;gap:10px;}
   .deepen-summarize{background:none;border:none;color:var(--ink-4);font-family:var(--serif);font-size:13px;letter-spacing:0.04em;cursor:pointer;padding:6px;text-decoration:underline;text-underline-offset:3px;transition:color 0.25s;}
+  .deepen-choices{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+  .dchoice{text-align:left;padding:14px 16px;border:1px solid var(--rule-2);border-radius:8px;background:var(--bg-1);color:var(--ink);font-family:var(--serif);font-size:15px;line-height:1.5;letter-spacing:0.02em;cursor:pointer;transition:all 0.2s;}
+  .dchoice:hover{border-color:var(--ember-b);}
+  .dchoice.on{border-color:var(--ember);background:var(--ember-d);color:var(--ember);}
+  .dchoice-send{text-align:center;background:var(--ember-d);border-color:var(--ember-b);color:var(--ember);font-weight:500;margin-top:2px;}
+  .deepen-free{margin-bottom:8px;}
+  .deepen-free summary{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.04em;cursor:pointer;padding:4px 0;list-style:none;text-decoration:underline;text-underline-offset:3px;}
+  .deepen-progress{margin-top:26px;padding-top:18px;border-top:1px solid var(--rule);}
+  .deepen-progress-label{font-family:var(--serif);font-size:11.5px;color:var(--ink-4);letter-spacing:0.06em;margin-bottom:8px;text-align:center;}
+  .deepen-progress-bar{height:4px;background:var(--rule-2);border-radius:100px;overflow:hidden;}
+  .deepen-progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--ember-b),var(--ember));border-radius:100px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1);}
+  .deepen-progress-pct{font-family:var(--mono);font-size:11px;color:var(--ember);letter-spacing:0.08em;margin-top:7px;text-align:center;}
+  .deepen-free summary::-webkit-details-marker{display:none;}
   .deepen-summarize:hover{color:var(--ember);}
   .unmet-task-card{background:var(--bg-1);border:1px solid var(--rule-2);border-left:2px solid var(--ember-b);border-radius:0 4px 4px 0;padding:18px 20px;font-family:var(--serif);font-size:18px;color:var(--ink);letter-spacing:0.04em;line-height:1.6;}
   .step-archive-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--rule);}
@@ -469,7 +482,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v19';
+const STORE='okoso_v23';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -485,6 +498,9 @@ let S = {
   translations: {},            // 前進の翻訳 {7:{text,ts,days},30:{...},...}
   onboarded: false,
   lastRolloverCheck: '',       // 最後に未達タスク確認をした日付キー
+  idealStartTs: 0,             // 今の向かう先を決めた日時（アップデート提案の起点）
+  lastIdealReviewTs: 0,        // 最後に理想の見直しを提案した日時
+  dismissedReviewTs: 0,        // ユーザーが「まだいい」と見送った日時
   updatedAt: 0                 // このデータの最終更新時刻（同期のマージ判定に使う）
 };
 function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.parse(r)};}catch(e){} }
@@ -790,11 +806,12 @@ function openIdealSheet(){
   const changeNote = hasExisting
     ? `<p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">理想は、変えてかまいません。<br>過去の理想は消えず、人生アーカイブに「変化の記録」として残ります。<br>理想が変わることは、失敗ではなく、人生の変化です。</p>`
     : `<p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">これは人生の北極星。<br>数値化も、達成判定もしません。終わりもありません。</p>`;
-  openSheet(`<h2>向かう先（理想）${hasExisting?'を変える':''}</h2>
+  openSheet(`<h2>向かう先（理想）${hasExisting?'を育てる':''}</h2>
     <p class="sheet-note">あなたはどんな人生を生きたいですか。<br>達成したいことではなく、本当に望む人生の姿を。</p>
     <div class="field-box"><input type="text" id="id-inp" placeholder="例：家族との時間を増やしながら自由に働く" value="${esc(S.ideal||'')}"></div>
     ${changeNote}
-    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="saveIdeal()">${hasExisting?'これに変える':'これにする'}</button></div>`);
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="saveIdeal()">${hasExisting?'これに変える':'これにする'}</button></div>
+    ${hasExisting?`<button class="sbtn" onclick="closeModal();setTimeout(startIdealReview,250)" style="width:100%;margin-top:10px;color:var(--ember)">AIと一緒に見直す</button>`:''}`);
   setTimeout(()=>document.getElementById('id-inp')?.focus(),300);
 }
 
@@ -1739,7 +1756,7 @@ const ONB_EXAMPLES={
   month:['ポートフォリオ完成','工業簿記終了','投稿30本'],
   step:['LPを1画面作る','問題集10ページ','投稿を1本作る']
 };
-const PAIN_CATEGORIES=['仕事','お金','健康','体型','恋愛・結婚','家族との関係','子育て','人間関係','自信','将来への不安','時間がない','習慣が続かない','やりたいことが見つからない','毎日がつまらない','その他'];
+const PAIN_CATEGORIES=['仕事を変えたい','収入を増やしたい','働き方を変えたい','やりたいことが分からない','お金の不安','健康・体力','体型・見た目','恋愛・結婚','家族との関係','子育て','人間関係','自信が持てない','将来への不安','時間がない','習慣が続かない','毎日がつまらない','その他'];
 let onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',heartMoves:[],dialogTurns:[],convo:[],convoCount:0};
 
 function startOnboarding(){
@@ -1825,7 +1842,7 @@ function onbRender(stage){
     return;
   }
   if(stage==='welcome'){
-    onbShow(`<div class="onb-welcome-body">変わろうとして<br>ここに来た。<br><br>それは、大切な一歩。<br><br>あなたはもう、<br>人生を起こそうとしている。</div>
+    onbShow(`<div class="onb-welcome-body">変わろうとして<br>ここに来た。<br><br>それは、大切な一歩。<br><br>完璧な理想は、<br>まだなくていい。<br>今日から歩ける方向を、<br>一緒に見つけましょう。</div>
       <button class="onb-btn" onclick="onbNext('wantchange')">はじめる</button>`);
     return;
   }
@@ -1834,20 +1851,22 @@ function onbRender(stage){
   if(stage==='wantchange'){
     onbShow(`
       <div class="onb-step-eyebrow">STEP 1</div>
-      <div class="onb-q">あなたは今の人生を、<br>変えたいと思っていますか？</div>
+      <div class="onb-q">今の人生に、<br>満足していますか？</div>
+      <div class="onb-sub">どちらでも大丈夫。<br>正直な気持ちで選んでください。</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
-        <button class="onb-btn" onclick="onbNext('route')">はい</button>
-        <button class="onb-btn ghost" onclick="onbNext('notyet')">いいえ</button>
+        <button class="onb-btn ghost" onclick="onbNext('pain1')">あまり満足していない</button>
+        <button class="onb-btn ghost" onclick="onbNext('pain1')">どちらとも言えない</button>
+        <button class="onb-btn ghost" onclick="onbNext('satisfied')">満足している</button>
       </div>`);
     return;
   }
-  // 「いいえ」：別導線（押し付けず、そっと寄り添う）
-  if(stage==='notyet'){
+  // 「満足している」：それでも、もっと良くしたい部分を一緒に探す
+  if(stage==='satisfied'){
     onbShow(`
-      <div class="onb-step-eyebrow">それでも、いい</div>
-      <div class="onb-welcome-body" style="margin-bottom:30px">変えなきゃ、と<br>気負わなくていい。<br><br>ただ、毎日を少し整えたい。<br>その気持ちだけでも、<br>OKOSOは隣を歩けます。</div>
+      <div class="onb-step-eyebrow">いいですね</div>
+      <div class="onb-welcome-body" style="margin-bottom:28px">満足できているのは、<br>素敵なことです。<br><br>その上で、もし「もっとこうなれたら」<br>と思うことがあれば、<br>一緒に育てていきましょう。</div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="onb-btn" onclick="onbNext('route')">とりあえず、始めてみる</button>
+        <button class="onb-btn" onclick="onbNext('pain1')">もっと良くしたい部分を探す</button>
         <button class="onb-btn ghost" onclick="onbNext('wantchange')">戻る</button>
       </div>`);
     return;
@@ -1880,25 +1899,14 @@ function onbRender(stage){
     return;
   }
 
-  // ── Bルート：理想が整理できていない ──
+  // ── Bルート：選択肢で整理していく ──
   if(stage==='pain1'){
     onbShow(`
-      <div class="onb-step-eyebrow">STEP 3</div>
-      <div class="onb-q">今の人生で、<br>一番変えたいことは<br>何ですか？</div>
-      <div class="onb-sub">一番向き合いたいものを、ひとつだけ。</div>
-      <div class="chip-grid" id="pain-cat-grid">${PAIN_CATEGORIES.map(c=>`<button class="pain-chip" onclick="selectPainCategory('${esc(c)}')">${esc(c)}</button>`).join('')}</div>`);
-    return;
-  }
-  if(stage==='pain2'){
-    onbInputStep({eyebrow:'STEP 4',q:'その悩みを一番強く感じるのは、<br>どんな時ですか？',sub:'感情が動く場面を、教えてください。',
-      ph:'例：日曜の夜、残業帰り、朝起きた時',value:onbDraft.painMoment,
-      onNext:`()=>onbSave('painMoment','pain3')`});
-    return;
-  }
-  if(stage==='pain3'){
-    onbInputStep({eyebrow:'STEP 5',q:'その悩みがなくなったら、<br>どんな毎日になっていたいですか？',sub:'理想像ではなく、理想の毎日を想像してみてください。',
-      ph:'例：家族と夕食を食べたい、心に余裕を持ちたい',value:onbDraft.idealDailyLife,multiline:true,
-      onNext:`()=>onbSave('idealDailyLife','deepen')`});
+      <div class="onb-step-eyebrow">STEP 2</div>
+      <div class="onb-q">今の人生で、<br>一番気になっているのは<br>どんなことですか？</div>
+      <div class="onb-sub">深く考えなくて大丈夫。<br>一番近いものを、ひとつだけ選んでください。</div>
+      <div class="chip-grid" id="pain-cat-grid">${PAIN_CATEGORIES.map(c=>`<button class="pain-chip" onclick="selectPainCategory('${esc(c)}')">${esc(c)}</button>`).join('')}</div>
+      <button class="deepen-summarize" onclick="onbNext('ideal')" style="margin-top:20px">理想がもうはっきりしている →</button>`);
     return;
   }
 
@@ -1919,10 +1927,10 @@ function onbRender(stage){
     onbShow(`
       <div class="onb-step-eyebrow">STEP 7</div>
       <div class="onb-summary-card" style="margin-bottom:22px">${esc(onbDraft.idealSummary)}</div>
-      <div class="onb-q" style="font-size:20px">この言葉を読んで、<br>どれくらい心が動きましたか？</div>
+      <div class="onb-q" style="font-size:20px">この方向に歩いてみたい、と<br>どれくらい心が動きましたか？</div>
       <div class="onb-sub">正しいかどうかではなく、心が動いたかどうかで選んでください。</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
-        <button class="onb-btn" onclick="onbHeart('これだ')">これだ。この言葉なら前へ進めそう</button>
+        <button class="onb-btn" onclick="onbHeart('これだ')">この方向に歩いてみたい</button>
         <button class="onb-btn ghost" onclick="onbHeart('惜しい')">惜しい。あと少し</button>
         <button class="onb-btn ghost" onclick="onbHeart('半分')">半分くらい。まだ何か違う</button>
         <button class="onb-btn ghost" onclick="onbHeart('違和感')">まだ違和感がある</button>
@@ -1935,8 +1943,8 @@ function onbRender(stage){
     onbShow(`
       <div class="onb-step-eyebrow">あなたの、向かう先</div>
       <div class="onb-summary-card" style="margin-bottom:22px">${esc(onbDraft.idealSummary)}</div>
-      <div class="onb-dialog-ai" style="line-height:2.0">これが今のあなたの向かう先ですね。<br><br>もちろん、理想は歩きながら変わるものです。今日のあなたが言葉にできた“向かう先”を、OKOSOはこれから一緒に育てていきます。</div>
-      <button class="onb-btn" onclick="onbNext('goal2')" style="margin-top:24px">この向かう先で、進む</button>`);
+      <div class="onb-dialog-ai" style="line-height:2.05">現段階では、あなたが向かいたい方向は、この姿に近いように感じました。<br><br>もちろん、理想は歩きながら変わっていくものです。これからOKOSOで前進を積み重ねながら、一緒に育てていきましょう。</div>
+      <button class="onb-btn" onclick="onbNext('goal2')" style="margin-top:24px">この方向で、歩き始める</button>`);
     return;
   }
 
@@ -1979,7 +1987,7 @@ function onbRender(stage){
 
 function selectPainCategory(cat){
   onbDraft.painCategory=cat;
-  onbNext('pain2');
+  onbNext('deepen');   // 自由入力は挟まず、選択肢で整理する対話へ直接入る
 }
 
 function onbSave(key,next){
@@ -1994,7 +2002,8 @@ function onbSave(key,next){
 // AIは「要約AI」ではなく「質問AI」。回答を素材として受け取り、
 // その奥にある価値観・本音を、質問で一段ずつ引き出す。
 
-const DEEPEN_MIN_TURNS=2;   // 最低この回数はユーザーに語ってもらう
+const DEEPEN_MIN_TURNS=3;     // 最低この回数は整理してから「まとめ」を出す
+const DEEPEN_TARGET_TURNS=5;  // 理想が見えてくる想定ターン数（進捗バーの分母）
 
 function renderDeepen(){
   const firstTime = !onbDraft.convo || !onbDraft.convo.length;
@@ -2005,16 +2014,45 @@ function renderDeepen(){
     <div class="deepen-chat" id="deepen-chat"></div>
     <div class="deepen-typing" id="deepen-typing" style="display:none">考えています…</div>
     <div class="deepen-input-wrap" id="deepen-input-wrap" style="display:none">
-      <textarea class="onb-input" id="deepen-inp" rows="2" style="resize:none;line-height:1.7" placeholder="思っていることを、そのまま"></textarea>
-      <button class="onb-btn" id="deepen-send" onclick="onbDeepenSend()">伝える</button>
+      <div class="deepen-choices" id="deepen-choices"></div>
+      <details class="deepen-free" id="deepen-free">
+        <summary>自分の言葉で書く</summary>
+        <textarea class="onb-input" id="deepen-inp" rows="2" style="resize:none;line-height:1.7;margin-top:10px" placeholder="思っていることを、そのまま"></textarea>
+        <button class="onb-btn" id="deepen-send" onclick="onbDeepenSend()" style="margin-top:8px">伝える</button>
+      </details>
       <button class="deepen-summarize" id="deepen-summarize" onclick="onbDeepenSummarize()" style="display:none">そろそろ、まとめてもらう</button>
+    </div>
+    <div class="deepen-progress" id="deepen-progress">
+      <div class="deepen-progress-label" id="deepen-progress-label">理想が見えてくるまで</div>
+      <div class="deepen-progress-bar"><div class="deepen-progress-fill" id="deepen-progress-fill"></div></div>
+      <div class="deepen-progress-pct" id="deepen-progress-pct">0%</div>
     </div>`);
   renderDeepenChat();
+  updateDeepenProgress();
   if(firstTime){
     askNextDeepenQuestion();   // 最初の深掘り質問を生成
   } else {
     setDeepenBusy(false);      // 戻ってきた時は入力可能に
-    setTimeout(()=>document.getElementById('deepen-inp')?.focus(),200);
+    renderChoices(onbDraft._lastChoices||[]);
+  }
+}
+
+// 進捗バー：今のターン数 / 目安ターン数（まとめるまでは最大95%）
+function updateDeepenProgress(done){
+  const fill=document.getElementById('deepen-progress-fill');
+  const pct=document.getElementById('deepen-progress-pct');
+  const label=document.getElementById('deepen-progress-label');
+  if(!fill||!pct) return;
+  let p;
+  if(done){ p=100; }
+  else { p=Math.round((onbDraft.convoCount/DEEPEN_TARGET_TURNS)*100); if(p>95) p=95; }
+  fill.style.width=p+'%';
+  pct.textContent=p+'%';
+  if(label){
+    label.textContent = p>=95 ? 'そろそろ、まとまりそうです'
+      : p>=60 ? 'だんだん、見えてきました'
+      : p>=30 ? '少しずつ、整理されています'
+      : '理想が見えてくるまで';
   }
 }
 
@@ -2029,55 +2067,125 @@ function renderDeepenChat(){
   chat.scrollTop=chat.scrollHeight;
 }
 
+// AIが提示した選択肢をチップで描く（タップで回答、複数選択可）
+function renderChoices(choices){
+  onbDraft._lastChoices=choices||[];
+  onbDraft._picked=[];
+  const wrap=document.getElementById('deepen-choices');
+  if(!wrap) return;
+  if(!choices||!choices.length){ wrap.innerHTML=''; return; }
+  wrap.innerHTML=choices.map((c,i)=>`<button class="dchoice" data-i="${i}" onclick="toggleChoice(${i})">${esc(c)}</button>`).join('')
+    + `<button class="dchoice dchoice-send" id="dchoice-send" onclick="sendChoices()" style="display:none">これで伝える</button>`;
+}
+function toggleChoice(i){
+  if(!onbDraft._picked) onbDraft._picked=[];
+  const btn=document.querySelector(`.dchoice[data-i="${i}"]`);
+  const pos=onbDraft._picked.indexOf(i);
+  if(pos>=0){ onbDraft._picked.splice(pos,1); btn.classList.remove('on'); }
+  else { onbDraft._picked.push(i); btn.classList.add('on'); }
+  const send=document.getElementById('dchoice-send');
+  if(send) send.style.display=onbDraft._picked.length?'inline-block':'none';
+}
+function sendChoices(){
+  const picks=(onbDraft._picked||[]).map(i=>onbDraft._lastChoices[i]).filter(Boolean);
+  if(!picks.length) return;
+  const text=picks.join('、');
+  submitDeepenAnswer(text);
+}
+
 function setDeepenBusy(busy){
   const typing=document.getElementById('deepen-typing');
   const wrap=document.getElementById('deepen-input-wrap');
   if(typing) typing.style.display=busy?'block':'none';
   if(wrap) wrap.style.display=busy?'none':'block';
-  // 最低ターンを超えたら「まとめてもらう」を出す
   const sm=document.getElementById('deepen-summarize');
   if(sm) sm.style.display=(!busy && onbDraft.convoCount>=DEEPEN_MIN_TURNS)?'block':'none';
 }
 
-// AIに次の深掘り質問を出させる
+// AIに次の深掘り質問（＋選択肢）を出させる
 async function askNextDeepenQuestion(){
   setDeepenBusy(true);
   let reply=null;
   try{ reply=await callDeepenAPI(); }catch(e){ reply=null; }
   if(!reply){
-    // フォールバック：素材に応じた定型の深掘り質問（情景を聞く）
-    reply={mode:'ask', text:fallbackDeepenQuestion()};
+    const fb=fallbackDeepenQuestion();
+    // フォールバックの質問が尽きた（null）→ ローカルで要約してまとめる
+    if(!fb){
+      onbDraft.idealSummary = localSummaryFromConvo();
+      updateDeepenProgress(true);
+      onbNext('summaryreveal');
+      return;
+    }
+    reply={mode:'ask', text:fb.text, choices:fb.choices};
+  }
+  // 直前のAI発言と同じ質問なら、ループ防止のためまとめへ
+  const lastAi=[...(onbDraft.convo||[])].reverse().find(m=>m.role==='ai');
+  if(reply.mode==='ask' && lastAi && lastAi.text===reply.text){
+    onbDraft.idealSummary = localSummaryFromConvo();
+    updateDeepenProgress(true);
+    onbNext('summaryreveal');
+    return;
   }
   if(reply.mode==='summary'){
-    // AIが頃合いと判断 → 要約へ
     onbDraft.idealSummary=reply.text;
+    updateDeepenProgress(true);
     onbNext('summaryreveal');
     return;
   }
   onbDraft.convo.push({role:'ai', text:reply.text});
   renderDeepenChat();
   setDeepenBusy(false);
-  setTimeout(()=>document.getElementById('deepen-inp')?.focus(),200);
+  renderChoices(reply.choices||[]);
+  updateDeepenProgress();
 }
 
+// フォールバック質問の銀行（カテゴリ非依存で、毎ターン必ず違う質問。尽きたらnull）
 function fallbackDeepenQuestion(){
-  // 会話の深さに応じて、情景を聞く質問を返す（「どんな？いつ？誰と？」）
-  const qs=[
-    `その毎日の中で、いちばん「いいな」と感じるのは、どんな瞬間でしょう？\n例えば、朝の時間、誰かと過ごす時間、ひとりの時間…近いものはありますか？`,
-    `その時、あなたの隣には誰がいて、どんな表情をしていますか？`,
-    `もしその毎日が手に入ったら、今のあなたと何がいちばん変わっていそうですか？`
+  const c=onbDraft.convoCount;
+  if(c===0){
+    const cat=onbDraft.painCategory||'今の暮らし';
+    return { text:`「${cat}」が気になっているんですね。それを一番感じるのは、どんな時ですか？`,
+      choices:['朝、一日が始まる時','仕事の合間や帰り道','夜、一日が終わった時','休日、ふと立ち止まった時','人と自分を比べた時'] };
+  }
+  const steps=[
+    {text:`その時、心の中ではどんな気持ちになっていますか？`,
+     choices:['焦りや不安がある','このままでいいのかと思う','疲れて余裕がない','本当はこうしたいと感じる','自分を責めてしまう']},
+    {text:`もしその気持ちが軽くなったら、どんな毎日になっていたら嬉しいですか？`,
+     choices:['家族や大切な人との時間が増える','心に余裕を持って過ごせる','好きなことに打ち込めている','自分を認められている','毎日が少し楽しみになる']},
+    {text:`その毎日の中で、いちばん大切にしたいのはどれですか？`,
+     choices:['人とのつながり','自分の時間や自由','仕事や挑戦の手応え','心の安心と余裕','健康や体の調子']},
+    {text:`最後に、その毎日が手に入ったら、今のあなたから何が変わっていそうですか？`,
+     choices:['自分を好きでいられる','毎日が楽しみになる','不安が減って安心できる','自信を持って動ける','大切な人を笑顔にできる']}
   ];
-  return qs[Math.min(onbDraft.convoCount, qs.length-1)];
+  const idx=c-1;
+  if(idx>=steps.length) return null;   // 尽きたら null（→まとめへ）
+  return steps[idx];
 }
 
+// API無し時のローカル要約（ユーザーの選択をそのまま繋ぐ。夢を足さない）
+function localSummaryFromConvo(){
+  const picks=(onbDraft.convo||[]).filter(m=>m.role==='user').map(m=>m.text);
+  const uniq=[...new Set(picks.join('、').split('、').map(s=>s.trim()).filter(Boolean))];
+  if(!uniq.length) return (onbDraft.painCategory||'今の暮らし')+'を、もう少し自分らしくしていきたい';
+  // 後半の選択（価値観に近い）を優先して2〜3個つなぐ
+  const tail=uniq.slice(-3);
+  return `${tail.join('、')}を大切にできる毎日へ、進んでいきたい`;
+}
+
+// 回答を送る（選択でも自由入力でも、最終的にここを通る）
+function submitDeepenAnswer(text){
+  onbDraft.convo.push({role:'user', text});
+  onbDraft.convoCount=(onbDraft.convoCount||0)+1;
+  renderDeepenChat();
+  updateDeepenProgress();
+  const inp=document.getElementById('deepen-inp'); if(inp) inp.value='';
+  const wrap=document.getElementById('deepen-choices'); if(wrap) wrap.innerHTML='';
+  askNextDeepenQuestion();
+}
 function onbDeepenSend(){
   const v=(document.getElementById('deepen-inp').value||'').trim();
   if(!v){ quietToast('思っていることを書いてください'); return; }
-  onbDraft.convo.push({role:'user', text:v});
-  onbDraft.convoCount=(onbDraft.convoCount||0)+1;
-  renderDeepenChat();
-  document.getElementById('deepen-inp').value='';
-  askNextDeepenQuestion();   // 次の深掘り（or 頃合いなら要約提案）
+  submitDeepenAnswer(v);
 }
 
 // ユーザーが「そろそろまとめて」を押した
@@ -2085,17 +2193,18 @@ async function onbDeepenSummarize(){
   setDeepenBusy(true);
   let summary=null;
   try{ summary=await callDeepenAPI(true); }catch(e){ summary=null; }
-  onbDraft.idealSummary = (summary && summary.text) ? summary.text
-    : (onbDraft.idealDailyLife || onbDraft.painCategory+'について、もっと違う毎日を生きたい');
+  onbDraft.idealSummary = (summary && summary.text) ? summary.text : localSummaryFromConvo();
+  updateDeepenProgress(true);
   onbNext('summaryreveal');
 }
 
 // 要約のお披露目（STEP6→7のあいだ）
 function onbRenderSummaryReveal(){
   onbShow(`
-    <div class="onb-step-eyebrow">あなたの言葉から</div>
-    <div class="onb-q">あなたが向かいたい姿</div>
-    <div class="onb-summary-card" style="margin-top:14px">${esc(onbDraft.idealSummary)}</div>
+    <div class="onb-step-eyebrow">いまの時点で、感じたこと</div>
+    <div class="onb-q" style="font-size:21px">あなたが向かいたい方向は、<br>この姿に近いかもしれません。</div>
+    <div class="onb-summary-card" style="margin-top:16px">${esc(onbDraft.idealSummary)}</div>
+    <div class="onb-sub" style="margin-top:14px">100点の理想でなくて大丈夫。<br>今日から歩き始められる方向が見つかれば、それで十分です。</div>
     <div style="margin-top:18px">
       <button class="onb-btn" onclick="onbNext('heartcheck')">読んでみる</button>
     </div>`);
@@ -2106,16 +2215,22 @@ function onbHeart(choice){
   if(!onbDraft.heartMoves) onbDraft.heartMoves=[];
   onbDraft.heartMoves.push(choice);
   if(choice==='これだ'){
-    onbNext('arrival');   // STEP9へ
+    if(onbDraft._reviewMode){ finishIdealUpdate(); return; }   // アップデート確定
+    onbNext('arrival');   // 通常オンボ：STEP9へ
     return;
   }
-  // それ以外 → 対話に戻して、違和感を深掘り
+  // それ以外 → 対話に戻して、違和感を深掘り（選択肢つき）
   const seeds={
-    '惜しい':'ありがとうございます。あと少し、ということは、近い部分もあるんですね。今の言葉で、一番しっくりこなかったのはどこでしたか？',
-    '半分':'ありがとうございます。まだ言葉にできていない想いが、ありそうですね。今の文章の中で「これは違う」と感じた部分を教えてください。',
-    '違和感':'大丈夫です。焦らなくて構いません。今の文章を読んで、「本当はこうなりたい」と思ったことを、そのまま教えてください。'
+    '惜しい':{text:'ありがとうございます。あと少し、ということは、近い部分もあるんですね。今の言葉で、一番しっくりこなかったのはどこでしたか？',
+      choices:['言葉が少し大げさに感じた','大事なものが入っていない','方向は合うが、表現が硬い','もっと具体的にしたい']},
+    '半分':{text:'ありがとうございます。まだ言葉にできていない想いが、ありそうですね。今の文章の中で「これは違う」と感じたのは？',
+      choices:['ここに書かれた価値観が違う','本当はもっと別のことを望んでいる','半分は合うが半分は違う','うまく言えないけど違和感がある']},
+    '違和感':{text:'大丈夫です。焦らなくて構いません。今の文章を読んで、「本当はこうなりたい」と心に浮かんだことに近いのは？',
+      choices:['もっと家族や人とのつながりを','もっと自分の時間や自由を','もっと仕事や挑戦の手応えを','もっと心の安心や余裕を','まだ言葉にできない']}
   };
-  onbDraft.convo.push({role:'ai', text:seeds[choice]||seeds['違和感']});
+  const seed=seeds[choice]||seeds['違和感'];
+  onbDraft.convo.push({role:'ai', text:seed.text});
+  onbDraft._lastChoices=seed.choices;
   onbNext('deepen');
 }
 
@@ -2125,43 +2240,101 @@ function onbEditSummary(){
     onNext:`()=>onbSave('idealSummary','heartcheck')`});
 }
 
-// ── 深掘り対話のAPI（質問AI）──
+// 理想アップデートの確定（過去を否定せず履歴に残す）
+function finishIdealUpdate(){
+  const prev=S.ideal;
+  const next=onbDraft.idealSummary;
+  if(next && next!==prev){
+    if(!S.idealHistory) S.idealHistory=[];
+    const now=Date.now();
+    S.idealHistory.push({ from:prev, to:next, ts:now });
+    // 方向転換としてジャーナルにも残す（人生アーカイブに刻まれる）
+    S.journals.push({ id:uid(), text:`向かう先を、育て直した。\n\n以前：${prev}\n今：${next}`, ts:now, kind:'shift' });
+    S.ideal=next;
+    S.idealStartTs=now;          // 起点をリセット
+  }
+  S.lastIdealReviewTs=Date.now();
+  S.dismissedReviewTs=0;
+  persist(); renderFlow();
+  const o=document.getElementById('onb');
+  if(o){ o.classList.remove('show'); setTimeout(()=>{const m=document.getElementById('onb-mount');if(m)m.innerHTML='';},500); }
+  // やさしいメッセージ
+  setTimeout(()=>showIdealUpdatedToast(prev,next), 300);
+}
+
+function showIdealUpdatedToast(prev,next){
+  const mount=document.getElementById('onb-mount');
+  if(!mount) return;
+  mount.innerHTML=`<div class="onb show"><div class="onb-inner">
+    <div class="onb-step-eyebrow">向かう先を、育てました</div>
+    <div class="shift-flow" style="margin:10px 0 22px">
+      <span class="shift-from">${esc(prev)}</span>
+      <span class="shift-arrow">▼</span>
+      <span class="shift-to">${esc(next)}</span>
+    </div>
+    <div class="onb-dialog-ai" style="line-height:2.05">前の向かう先が、間違いだったわけではありません。そこまで歩いたからこそ、今の言葉にたどり着けました。<br><br>これも、あなたの大切な前進です。</div>
+    <button class="onb-btn" onclick="closeIdealUpdated()" style="margin-top:24px">歩き続ける</button>
+  </div></div>`;
+}
+function closeIdealUpdated(){
+  const o=document.getElementById('onb');
+  if(o){ o.classList.remove('show'); setTimeout(()=>{const m=document.getElementById('onb-mount');if(m)m.innerHTML='';},500); }
+  else { const m=document.getElementById('onb-mount'); if(m) m.innerHTML=''; }
+}
+
+// ── 深掘り対話のAPI（整理＋選択肢を出す伴走AI）──
 async function callDeepenAPI(forceSummary){
-  const sys=`あなたはOKOSOというアプリの「伴走者」です。ユーザー自身もまだ言葉にできていない「本当に望んでいる人生」を、対話を通して一緒に見つける役割です。
+  const sys=`あなたはOKOSOというアプリの「伴走者」です。ユーザー自身もまだ言葉にできていない「本当に望んでいる人生（向かう方向）」を、対話を通して一緒に整理して見つける役割です。
 
-# あなたは「質問AI」であって「要約AI」ではない
-- ユーザーの回答は完成された答えではなく、すべて「素材」です。その奥にある価値観・感情・本音を探してください。
-- 回答を綺麗に言い換えただけで終わってはいけません。そのまま理想として採用してもいけません。
-- あなたが話す量より、ユーザーが話す量が多くなることを目指してください。
+# このフェーズのゴール（重要）
+100点の完成された理想を作ることではありません。ユーザーが「360度ある人生の中で、今の自分はこの方向へ歩いてみたいかもしれない」と思える、"今日から歩き始められる方向"を一緒に見つけることがゴールです。
 
-# 毎回の思考手順
-① ユーザーは何と言ったか → ② なぜそう思ったのか → ③ 背景にある価値観は → ④ それを知るには何を聞けばいいか → ⑤ その質問を返す
+# あなたが必ずやること（最重要）
+1. ユーザーの回答を「素材」として受け取り、一段深く"整理"する。ユーザーが「そうそう、それが言いたかった」と思える整理をする。
+2. 質問には、必ず「選択肢」を添える。OKOSOのユーザーは考えることに疲れています。書くより選ぶ方が得意です。「あ、これ私だ」と思える選択肢を、3〜6個、具体的に用意してください。
+3. 選択肢はユーザーの回答に合わせて、その人専用に組み立てる。固定の一般論ではなく、直前の発言の奥にある価値観の違いを切り分ける選択肢にする。
 
-# 良い質問の条件
-- ユーザーが「考えたことがなかった」と思う、新しい情報が返ってくる質問。
-- 「なぜ？」より「どんな？」「いつ？」「誰と？」「何をしている？」「どんな毎日？」を使い、理由より情景を聞く。
-- 必要なら選択肢の例を2〜5個添えて、答えやすくする。
+# 禁止事項
+- ユーザーの回答をそのまま要約しただけ・言い換えただけで終わる（オウム返し禁止）
+- ユーザーの言葉をそのまま理想として採用する
+- 質問だけを返し、選択肢を出さない
+- ユーザー任せにする／答えを急がせる／一回で理想を完成させようとする
+
+# 思考手順
+① ユーザーは何と言ったか → ② なぜそう思ったのか → ③ 背景にある価値観は → ④ その価値観の"違い"を切り分けるにはどんな選択肢を出せばいいか → ⑤ 短い整理＋質問＋選択肢を返す
+
+# 相手の現在地に合わせる
+- レベル1（理想がほぼ見えていない）：未来を聞きすぎない。今の悩み・感情・生活・痛みを選択肢で整理する。
+- レベル2（少し希望が見えてきた）：「どんな毎日なら嬉しいか」を選択肢で。
+- レベル3（未来が話せる）：理想の方向を選択肢で整理していく。
+
+# 質問の作り方
+「なぜ？」より「どんな？」「いつ？」「誰と？」「何をしている？」「どんな毎日？」。理由より情景を聞く。
 
 # 出力形式（厳守・JSONのみ）
-{"mode":"ask","text":"次の深掘り質問（120字以内・やさしい口調・必要なら例を改行で添える）"}
-または、ユーザーが十分に語り、理想が情景として見えてきたと判断したら：
-{"mode":"summary","text":"60〜100字で、ユーザー自身の言葉に近い『向かいたい姿』。生活が想像でき、読んだ瞬間に心が動く文章。あなたが夢を足さない"}
-JSON以外は一切出力しない。`;
+{"mode":"ask","text":"短い整理（1文）＋深掘りの質問（1文）。合わせて100字以内、やさしい口調","choices":["選択肢1","選択肢2","選択肢3","選択肢4"]}
+または、向かいたい方向が見えてきたら：
+{"mode":"summary","text":"60〜100字で、ユーザー自身の言葉に近い『向かいたい方向』。断定せず仮説として、生活が想像でき、少し心が動く文章。夢を足さない"}
+choicesは"ask"の時は必ず3個以上。JSON以外は一切出力しない。`;
 
   // 会話履歴を素材としてまとめる
-  const materials=`【ユーザーの背景（オンボーディングの回答）】
-- 最も変えたいこと：${onbDraft.painCategory||'(未回答)'}
-- その悩みを強く感じる時：${onbDraft.painMoment||'(未回答)'}
-- 悩みがなくなったらどんな毎日になっていたいか：${onbDraft.idealDailyLife||'(未回答)'}`;
+  const materials = onbDraft._reviewMode
+    ? `【今の向かう先（見直し中）】\n${S.ideal}\n\n【これは「アップデート」です】過去の理想を否定せず、今のユーザーが向かいたい方向を一緒に見つけ直してください。`
+    : `【ユーザーが最初に選んだ、一番気になっていること】\n${onbDraft.painCategory||'(未選択)'}\n\nここから先は、ユーザーが「考えなくても自然と整理されていく」よう、毎回あなたが選択肢を提示しながら、価値観を一段ずつ整理してください。`;
 
   const convoText=(onbDraft.convo||[]).map(m=>`${m.role==='ai'?'あなた(AI)':'ユーザー'}：${m.text}`).join('\n');
+  const lastAiQ=[...(onbDraft.convo||[])].reverse().find(m=>m.role==='ai');
+  const noRepeat = lastAiQ ? `\n直前のあなたの質問は「${lastAiQ.text}」です。これと同じ質問は絶対に繰り返さず、必ず新しい角度の質問にしてください。` : '';
+  const cc=onbDraft.convoCount||0;
   const instruction = forceSummary
     ? `\n\n【指示】ユーザーが「そろそろまとめてほしい」と希望しました。ここまでの対話すべてを踏まえ、必ず {"mode":"summary",...} を返してください。`
-    : ((onbDraft.convoCount||0) < DEEPEN_MIN_TURNS
-        ? `\n\n【指示】まだ対話が浅いので、必ず {"mode":"ask",...} で、一段深い質問を返してください。`
-        : `\n\n【指示】まだ理想が情景として見えていなければ {"mode":"ask",...} を、十分に語られ理想が見えてきたら {"mode":"summary",...} を返してください。`);
+    : (cc < DEEPEN_MIN_TURNS
+        ? `\n\n【指示】まだ対話が浅いので、必ず {"mode":"ask",...}（整理＋質問＋選択肢3個以上）を返してください。毎回、前と違う新しい角度で深掘りすること。${noRepeat}`
+        : cc >= DEEPEN_TARGET_TURNS
+          ? `\n\n【指示】十分に語られました。今度は必ず {"mode":"summary",...} を返して、向かいたい方向をまとめてください。`
+          : `\n\n【指示】まだ方向が見えていなければ {"mode":"ask",...}（整理＋質問＋選択肢／前と違う新しい角度）を、方向が見えてきたら {"mode":"summary",...} を返してください。${noRepeat}`);
 
-  const userMsg=`${materials}\n\n【ここまでの対話】\n${convoText||'(まだ対話していません。最初の深掘り質問をしてください)'}${instruction}`;
+  const userMsg=`${materials}\n\n【ここまでの対話】\n${convoText||'(まだ対話していません。最初の問いかけを、整理＋質問＋選択肢の形でしてください)'}${instruction}`;
 
   const res=await fetch('/api/translate',{
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -2171,11 +2344,24 @@ JSON以外は一切出力しない。`;
   const data=await res.json();
   let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
   if(!txt) throw new Error('empty');
-  // JSON抽出（前後の余計な文字を除去）
+  // マークダウンのコードフェンスを除去
+  txt=txt.replace(/```(?:json)?/gi,'').trim();
+  // JSON部分だけ抽出
   const m=txt.match(/\{[\s\S]*\}/);
   if(m) txt=m[0];
-  const obj=JSON.parse(txt);
+  // 全角の引用符などを正規化（AIがたまに使う）
+  txt=txt.replace(/[“”]/g,'"').replace(/[‘’]/g,"'");
+  let obj;
+  try{ obj=JSON.parse(txt); }
+  catch(e){
+    // それでも壊れていたら、textだけでも救う
+    const tm=txt.match(/"text"\s*:\s*"([^"]+)"/);
+    const mm=txt.match(/"mode"\s*:\s*"(ask|summary)"/);
+    if(tm){ obj={ mode:(mm?mm[1]:'ask'), text:tm[1], choices:[] }; }
+    else throw new Error('badjson');
+  }
   if(!obj.mode||!obj.text) throw new Error('badjson');
+  if(obj.mode==='ask' && !Array.isArray(obj.choices)) obj.choices=[];
   return obj;
 }
 
@@ -2186,6 +2372,7 @@ function onbFinish(){
   const focusTag = onbDraft.month||'';
   if(onbDraft.step){ todaySteps().push({id:uid(),text:onbDraft.step,tag:focusTag,done:false}); }
   S.onboarded=true;
+  S.idealStartTs=Date.now();
   persist();
   renderFlow();
   const o=document.getElementById('onb');
@@ -2344,7 +2531,137 @@ function init(){
     updateSyncBadge('off');
   }
   if(!S.onboarded) startOnboarding();
-  else checkUnmetTasks();
+  else { checkUnmetTasks(); setTimeout(maybeSuggestIdealReview, 800); }
+}
+
+// ════════════════════════════════
+//  理想アップデート（AIが自然に見直しを提案）
+// ════════════════════════════════
+// 30日経過＋記録の蓄積をきっかけに、AIから「向かう先を見直しませんか？」と声を掛ける。
+// 「編集」ではなく「アップデート」。過去の理想は否定せず履歴に残す。
+const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
+const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
+const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
+
+function maybeSuggestIdealReview(){
+  if(!S.onboarded || !S.ideal) return;
+  if(document.getElementById('onb')) return;          // オンボ等の最中は出さない
+  const now=Date.now();
+  const start=S.idealStartTs||0;
+  if(!start) { S.idealStartTs=now; persist(); return; }
+  const daysSince=(now-start)/86400000;
+  if(daysSince < IDEAL_REVIEW_DAYS) return;
+  // 直近の提案・見送りからクールダウン
+  const lastTouch=Math.max(S.lastIdealReviewTs||0, S.dismissedReviewTs||0);
+  if(lastTouch && (now-lastTouch)/86400000 < IDEAL_REVIEW_COOLDOWN_DAYS) return;
+  // 記録が十分たまっているか
+  const records=(S.journals?.length||0)+(S.logs?.length||0);
+  if(records < IDEAL_REVIEW_MIN_RECORDS) return;
+  S.lastIdealReviewTs=now; persist();
+  showIdealReviewInvite();
+}
+
+// 見直しの誘い（やわらかく）
+function showIdealReviewInvite(){
+  const mount=document.getElementById('onb-mount');
+  if(!mount) return;
+  const days=Math.floor(((Date.now()-(S.idealStartTs||Date.now()))/86400000));
+  mount.innerHTML=`<div class="onb show" id="review-veil"><div class="onb-inner">
+    <div class="onb-step-eyebrow">${days}日、歩いてきました</div>
+    <div class="onb-dialog-ai" style="line-height:2.05">ここまで、よく積み重ねてきましたね。<br><br>歩いていると、大切にしたいことが少しずつ変わっていくことがあります。今のあなたが向かいたい方向を、一緒に見直してみませんか？</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:24px">
+      <button class="onb-btn" onclick="startIdealReview()">見直してみる</button>
+      <button class="onb-btn ghost" onclick="dismissIdealReview()">今はこのままでいい</button>
+    </div>
+    <p class="onb-sub" style="margin-top:18px">今の向かう先：<br>「${esc(S.ideal)}」</p>
+  </div></div>`;
+}
+function dismissIdealReview(){
+  S.dismissedReviewTs=Date.now(); persist();
+  const m=document.getElementById('onb-mount'); if(m) m.innerHTML='';
+  quietToast('またいつでも、見直せます');
+}
+
+// 見直し開始：蓄積データをAIが分析し、価値観の変化を提案
+async function startIdealReview(){
+  const mount=document.getElementById('onb-mount');
+  mount.innerHTML=`<div class="onb show"><div class="onb-inner">
+    <div class="onb-step-eyebrow">これまでの記録から</div>
+    <div class="deepen-typing" style="display:block">あなたの歩みを、振り返っています…</div>
+  </div></div>`;
+  let analysis=null;
+  try{ analysis=await callIdealReviewAPI(); }catch(e){ analysis=null; }
+  if(!analysis){
+    // フォールバック：分析はせず、素直に「今の言葉はまだしっくりくる？」と問う
+    analysis={ observation:'', question:'今のあなたにとって、この向かう先はまだしっくりきますか？それとも、少し変わってきた感じがありますか？',
+      choices:['まだ、この方向でいい','少し変わってきた気がする','大切なものが増えた','うまく言えないけど違う気がする'] };
+  }
+  renderIdealReviewDialog(analysis);
+}
+
+function renderIdealReviewDialog(a){
+  // a: {observation, question, choices}
+  onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',heartMoves:[],dialogTurns:[],convo:[],convoCount:0,_review:true};
+  // 観察（あれば）をAIの最初の発言として見せる
+  const first = (a.observation? a.observation+'\n\n':'')+a.question;
+  onbDraft.convo=[{role:'ai', text:first}];
+  onbDraft._lastChoices=a.choices||[];
+  onbDraft._reviewMode=true;
+  const mount=document.getElementById('onb-mount');
+  mount.innerHTML=`<div class="onb show"><div class="onb-inner">
+    <div class="onb-step-eyebrow">向かう先を、育てる</div>
+    <div class="deepen-chat" id="deepen-chat"></div>
+    <div class="deepen-typing" id="deepen-typing" style="display:none">考えています…</div>
+    <div class="deepen-input-wrap" id="deepen-input-wrap" style="display:none">
+      <div class="deepen-choices" id="deepen-choices"></div>
+      <details class="deepen-free" id="deepen-free"><summary>自分の言葉で書く</summary>
+        <textarea class="onb-input" id="deepen-inp" rows="2" style="resize:none;line-height:1.7;margin-top:10px" placeholder="思っていることを、そのまま"></textarea>
+        <button class="onb-btn" id="deepen-send" onclick="onbDeepenSend()" style="margin-top:8px">伝える</button>
+      </details>
+      <button class="deepen-summarize" id="deepen-summarize" onclick="onbDeepenSummarize()" style="display:none">そろそろ、まとめてもらう</button>
+    </div>
+  </div></div>`;
+  renderDeepenChat();
+  setDeepenBusy(false);
+  renderChoices(a.choices||[]);
+}
+
+// 蓄積データを分析して価値観の変化を見つける
+async function callIdealReviewAPI(){
+  const sys=`あなたはOKOSOというアプリの「伴走者」です。ユーザーがこれまで積み重ねた記録を振り返り、価値観の変化にそっと気づかせ、向かう先（理想）を一緒に見直す役割です。
+
+# 大切な姿勢
+- 過去の理想を「間違いだった」とは絶対に言わない。当時のその人にとって最善だったものとして扱う。理想が変わるのはブレではなく成長です。
+- 断定しない。「〜かもしれません」「〜のように見えます」と仮説として、やさしく問いかける。
+- 説教・評価をしない。あなたが話す量より、ユーザーが話す量が多くなるように。
+
+# やること
+1. ユーザーの記録（ジャーナル・今日の一歩・前進記録）から、最初の頃と最近で、よく出てくる言葉やテーマの変化を見つける。
+2. その変化を、責めずにそっと言葉にして伝える（observation）。
+3. 「今の向かいたい方向は、少し変わってきたかもしれません。どう感じますか？」と、選択肢つきで問う。
+
+# 出力形式（厳守・JSONのみ）
+{"observation":"記録から気づいた変化を1〜2文でやさしく（例：最初は収入の話が多めでしたが、最近は家族や心の余裕という言葉が増えているように見えます）。変化が見つからなければ空文字","question":"今の向かう先について、どう感じるか問う1文","choices":["選択肢1","選択肢2","選択肢3","選択肢4"]}
+JSON以外は一切出力しない。`;
+
+  const recentJournals=(S.journals||[]).slice(-15).map(j=>j.text).join(' / ');
+  const recentSteps=Object.values(S.steps||{}).flat().slice(-20).map(s=>s.text).join(' / ');
+  const assetNames=Object.keys(S.assets||{}).join('、');
+  const history=(S.idealHistory||[]).map(h=>`${fmtYMD(h.ts)}：${h.to}`).join('\n');
+
+  const userMsg=`【今の向かう先】\n${S.ideal}\n\n【向かう先の履歴】\n${history||'(まだ変更なし)'}\n\n【最近のジャーナル】\n${recentJournals||'(なし)'}\n\n【最近の今日の一歩】\n${recentSteps||'(なし)'}\n\n【積み上げている前進資産】\n${assetNames||'(なし)'}\n\n上記から、価値観の変化を見つけて、向かう先の見直しを提案してください。`;
+
+  const res=await fetch('/api/translate',{ method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ system:sys, user:userMsg }) });
+  if(!res.ok) throw new Error('api');
+  const data=await res.json();
+  let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  if(!txt) throw new Error('empty');
+  const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+  const obj=JSON.parse(txt);
+  if(!obj.question) throw new Error('badjson');
+  if(!Array.isArray(obj.choices)) obj.choices=[];
+  return obj;
 }
 
 // ════════════════════════════════
