@@ -116,6 +116,11 @@
 
   /* 役割の宣言カード（前進記録／ジャーナルの違いを明示） */
   .role-card{background:var(--bg-1);border:1px solid var(--rule-2);border-radius:4px;padding:14px 16px;margin-bottom:16px;}
+  .step-measure{font-family:var(--mono);font-size:10.5px;color:var(--ember);letter-spacing:0.04em;margin-top:4px;opacity:0.85;}
+  .step-measure-note{font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.8;letter-spacing:0.02em;margin:18px 0 12px;}
+  .tomorrow-lead{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);letter-spacing:0.08em;margin-bottom:10px;}
+  .tomorrow-row{opacity:0.92;}
+  .tomorrow-dot{flex-shrink:0;width:18px;height:18px;border-radius:50%;border:1px dashed var(--ink-4);display:flex;align-items:center;justify-content:center;}
   .role-title{font-family:var(--serif);font-size:15px;font-weight:500;color:var(--ink);letter-spacing:0.04em;margin-bottom:7px;}
   .role-sub{font-family:var(--serif);font-size:12px;color:var(--ink-3);line-height:1.85;letter-spacing:0.03em;}
   .role-key{color:var(--ember);font-weight:500;}
@@ -316,6 +321,14 @@
   .pain-chip{padding:13px 10px;border:1px solid var(--rule-2);border-radius:4px;background:var(--bg-1);color:var(--ink-2);font-family:var(--serif);font-size:13.5px;cursor:pointer;transition:all 0.25s;letter-spacing:0.02em;}
   .pain-chip:hover{border-color:var(--ember-b);color:var(--ember);background:var(--ember-d);}
   .onb-summary-card{background:var(--bg-1);border:1px solid var(--ember-b);border-radius:5px;padding:22px 20px;font-family:var(--serif);font-size:16px;line-height:1.9;color:var(--ink);letter-spacing:0.03em;text-align:left;margin-top:6px;}
+  .onb-dialog-ai{font-family:var(--serif);font-size:14.5px;line-height:1.95;color:var(--ink-2);letter-spacing:0.03em;text-align:left;background:linear-gradient(180deg,var(--ember-d),transparent 90%);border-left:2px solid var(--ember-b);border-radius:0 4px 4px 0;padding:14px 16px;}
+  .deepen-chat{display:flex;flex-direction:column;gap:14px;max-height:48vh;overflow-y:auto;margin-bottom:18px;padding:4px 2px;}
+  .chat-ai{align-self:flex-start;max-width:88%;font-family:var(--serif);font-size:15px;line-height:1.95;color:var(--ink);letter-spacing:0.02em;background:linear-gradient(180deg,var(--ember-d),transparent 95%);border-left:2px solid var(--ember-b);border-radius:0 8px 8px 8px;padding:14px 16px;}
+  .chat-user{align-self:flex-end;max-width:88%;font-family:var(--sans);font-weight:300;font-size:14.5px;line-height:1.8;color:var(--ink-2);background:var(--bg-1);border:1px solid var(--rule-2);border-radius:8px 0 8px 8px;padding:12px 15px;}
+  .deepen-typing{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.08em;padding:6px 4px 18px;}
+  .deepen-input-wrap{display:flex;flex-direction:column;gap:10px;}
+  .deepen-summarize{background:none;border:none;color:var(--ink-4);font-family:var(--serif);font-size:13px;letter-spacing:0.04em;cursor:pointer;padding:6px;text-decoration:underline;text-underline-offset:3px;transition:color 0.25s;}
+  .deepen-summarize:hover{color:var(--ember);}
   .unmet-task-card{background:var(--bg-1);border:1px solid var(--rule-2);border-left:2px solid var(--ember-b);border-radius:0 4px 4px 0;padding:18px 20px;font-family:var(--serif);font-size:18px;color:var(--ink);letter-spacing:0.04em;line-height:1.6;}
   .step-archive-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--rule);}
   .step-archive-text{font-family:var(--serif);font-size:15px;color:var(--ink);line-height:1.6;flex:1;}
@@ -365,37 +378,29 @@
       </div>
     </div>
 
-    <!-- 夜の記録（一本線の下、独立） -->
+    <!-- 朝のジャーナル：今日を整える -->
     <div class="dusk-block">
-      <div class="label">夜の記録</div>
-      <div class="dusk-tabs">
-        <button class="dtab on" id="dtab-log" onclick="switchDusk('log')">前進記録</button>
-        <button class="dtab" id="dtab-j" onclick="switchDusk('journal')">ジャーナル</button>
+      <div class="label">今日を整える</div>
+      <div class="role-card">
+        <div class="role-title">どんな一日にしたいか</div>
+        <div class="role-sub">今の気持ちと、今日の向き合い方を、言葉にする。<br>これが、一日の<span class="role-key">羅針盤</span>になる。</div>
       </div>
-      <div id="dusk-log">
-        <div class="role-card">
-          <div class="role-title">何を積み上げたか</div>
-          <div class="role-sub">今日の行動を、数字で残す。<br>これが、未来の自分の<span class="role-key">自信</span>になる。</div>
-        </div>
-        <div class="asset-chips" id="asset-chips"></div>
-        <div id="log-input" class="log-input-row hidden">
-          <div style="flex:1">
-            <div class="log-current-label"><span id="log-current-name"></span><span class="back" onclick="cancelLogItem()">変更</span></div>
-            <div class="amt-box"><input type="number" id="amt-inp" placeholder="数値（任意）" step="any"><span class="amt-unit" id="amt-unit"></span></div>
-          </div>
-          <button class="keep-btn" id="log-keep" onclick="keepLog()">残す</button>
-        </div>
+      <div class="compose">
+        <textarea id="jrnl-field" rows="1" placeholder="今日は少し眠い。でも午前のうちに簿記だけは進めたい。"></textarea>
+        <button class="keep-btn" id="jrnl-keep" onclick="keepJournal()">残す</button>
       </div>
-      <div id="dusk-journal" style="display:none">
-        <div class="role-card">
-          <div class="role-title">どう感じながら歩いたか</div>
-          <div class="role-sub">今日の気持ちを、言葉で残す。<br>これが、進んだことの<span class="role-key">意味</span>になる。</div>
-        </div>
-        <div class="compose">
-          <textarea id="jrnl-field" rows="1" placeholder="今日は眠かった。でも簿記だけはやった。少し自信が戻った。"></textarea>
-          <button class="keep-btn" id="jrnl-keep" onclick="keepJournal()">残す</button>
-        </div>
+    </div>
+
+    <!-- 夜：明日の自分を助ける -->
+    <div class="dusk-block" style="margin-top:36px">
+      <div class="label">明日の自分を助ける</div>
+      <div class="role-card">
+        <div class="role-title">明日の一歩を、決めておく</div>
+        <div class="role-sub">夜にやることは、これだけ。<br>明日の自分が迷わず動けるよう、<span class="role-key">準備</span>だけしておく。</div>
       </div>
+      <div class="tomorrow-lead" id="tomorrow-lead"></div>
+      <div id="tomorrow-list"></div>
+      <button class="add-btn" onclick="openStepSheet(true)"><span>＋</span> 明日の一歩を決める</button>
     </div>
   </div>
 </div>
@@ -464,7 +469,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v15';
+const STORE='okoso_v19';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -649,8 +654,10 @@ function updateSyncBadge(state){
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const dk=(d=new Date())=>`${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)}`;
+const tomorrowKey=()=>dk(new Date(Date.now()+86400000));
 const fmtDate=()=>{const d=new Date();return `${d.getFullYear()}.${('0'+(d.getMonth()+1)).slice(-2)}.${('0'+d.getDate()).slice(-2)} ${'日月火水木金土'[d.getDay()]}`;};
 const todaySteps=()=>{if(!S.steps[dk()])S.steps[dk()]=[];return S.steps[dk()];};
+const tomorrowSteps=()=>{const k=tomorrowKey();if(!S.steps[k])S.steps[k]=[];return S.steps[k];};
 function autosize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,280)+'px';}
 
 // 相対日付
@@ -684,6 +691,7 @@ function renderFlow(){
   renderFlowMulti('flow-goal-wrap','目標', S.goals, 'goal');
   renderFlowMulti('flow-month-wrap','今月の焦点', S.monthFocuses, 'month');
   renderSteps();
+  renderTomorrow();
 }
 
 function renderMini(id, value, emptyHint){
@@ -845,29 +853,155 @@ function renderSteps(){
     : doneN===steps.length ? `今日の${steps.length}つ、全部前に進んだ。`
     : doneN>0 ? `今日、${doneN}つ前に進んだ。`
     : '今日の一歩が、ここにあります。';
-  list.innerHTML=steps.map((s,i)=>`
+  list.innerHTML=steps.map((s,i)=>{
+    // 数値・単位があれば一歩の下に小さく見せる
+    const measure = s.item ? `<div class="step-measure">${esc(s.item)}${s.amount!=null?` ・ ${fmtNum(s.amount)}${esc(s.unit||'')}`:(s.unit?` ・ ${esc(s.unit)}`:'')}</div>` : '';
+    return `
     <div class="step-row">
       <button class="chk${s.done?' done':''}" onclick="toggleStep(${i})"><svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="step-info"><div class="step-t${s.done?' done':''}">${esc(s.text)}</div>${s.tag?`<div class="step-tag">▸ ${esc(s.tag)}</div>`:''}</div>
+      <div class="step-info"><div class="step-t${s.done?' done':''}">${esc(s.text)}</div>${measure}${s.tag?`<div class="step-tag">▸ ${esc(s.tag)}</div>`:''}</div>
       <button class="step-del" onclick="removeStep(${i})">×</button>
-    </div>`).join('');
+    </div>`;}).join('');
 }
-function toggleStep(i){const s=todaySteps()[i];s.done=!s.done;persist();renderSteps();}
-function removeStep(i){todaySteps().splice(i,1);persist();renderSteps();}
 
-function openStepSheet(){
+// チェック＝完了。完了にすると前進資産へ自動反映。外すと取り消す。
+function toggleStep(i){
+  const s=todaySteps()[i];
+  const now=Date.now();
+  if(!s.done){
+    // 完了にする → 前進資産へ自動反映
+    s.done=true;
+    if(s.item){
+      const name=s.item;
+      if(!S.assets[name]) S.assets[name]={unit:s.unit||'', total:0, count:0, firstTs:now};
+      S.assets[name].count+=1;
+      if(s.amount!=null) S.assets[name].total+=s.amount;
+      const log={id:uid(), item:name, amount:(s.amount!=null?s.amount:null), unit:s.unit||'', ts:now, fromStep:s.id};
+      S.logs.push(log);
+      s.logId=log.id;   // 取り消し用に紐づけ
+    }
+    persist(); renderSteps(); renderAssetChips();
+    if(s.item) showStepDoneCelebrate(s);
+    else quietToast('前に進んだ');
+  } else {
+    // 完了を外す → 自動反映を取り消す
+    s.done=false;
+    if(s.logId){
+      const li=S.logs.findIndex(l=>l.id===s.logId);
+      if(li>=0){
+        const log=S.logs[li];
+        const a=S.assets[log.item];
+        if(a){ a.count-=1; if(log.amount!=null) a.total-=log.amount; if(a.count<0)a.count=0; if(a.total<0)a.total=0; }
+        S.logs.splice(li,1);
+      }
+      s.logId=null;
+    }
+    persist(); renderSteps(); renderAssetChips();
+    quietToast('完了を取り消しました');
+  }
+}
+
+// 完了演出（前進資産に積み上がったことを伝える）
+function showStepDoneCelebrate(s){
+  const a=S.assets[s.item];
+  const mount=document.getElementById('celebrate-mount');
+  const unit=a.unit;
+  mount.innerHTML=`<div class="celebrate" id="celebrate">
+    <div class="celebrate-label">前進資産に積み上がった</div>
+    <div class="cele-asset">
+      <div class="cele-asset-name">${esc(s.item)}</div>
+      <div class="cele-asset-nums"><span class="cele-to">${unit?`${fmtNum(a.total)}<span class="u">${esc(unit)}</span>`:`${a.count}<span class="u">回</span>`}</span></div>
+      ${s.amount!=null&&unit?`<div class="cele-total">今日 +${fmtNum(s.amount)}${esc(unit)}</div>`:''}
+    </div>
+    <div class="cele-hint">タップして閉じる</div>
+  </div>`;
+  const cele=document.getElementById('celebrate');
+  cele.addEventListener('click',()=>{ cele.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},500); });
+  requestAnimationFrame(()=>cele.classList.add('show'));
+  setTimeout(()=>{ if(document.getElementById('celebrate')){ cele.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},500);} }, 3500);
+}
+function removeStep(i){
+  const s=todaySteps()[i];
+  // 完了済みなら資産も巻き戻す
+  if(s.done && s.logId){
+    const li=S.logs.findIndex(l=>l.id===s.logId);
+    if(li>=0){ const log=S.logs[li]; const a=S.assets[log.item]; if(a){a.count-=1; if(log.amount!=null)a.total-=log.amount; if(a.count<0)a.count=0; if(a.total<0)a.total=0;} S.logs.splice(li,1); }
+  }
+  todaySteps().splice(i,1);persist();renderSteps();renderAssetChips();
+}
+
+// 明日の一歩リスト
+function renderTomorrow(){
+  const list=document.getElementById('tomorrow-list');
+  const lead=document.getElementById('tomorrow-lead');
+  if(!list) return;
+  const steps=S.steps[tomorrowKey()]||[];
+  if(lead) lead.textContent = steps.length ? `明日の準備：${steps.length}つ` : '';
+  list.innerHTML=steps.map((s,i)=>{
+    const measure = s.item ? `<div class="step-measure">${esc(s.item)}${s.amount!=null?` ・ ${fmtNum(s.amount)}${esc(s.unit||'')}`:(s.unit?` ・ ${esc(s.unit)}`:'')}</div>` : '';
+    return `<div class="step-row tomorrow-row">
+      <span class="tomorrow-dot"></span>
+      <div class="step-info"><div class="step-t">${esc(s.text)}</div>${measure}${s.tag?`<div class="step-tag">▸ ${esc(s.tag)}</div>`:''}</div>
+      <button class="step-del" onclick="removeTomorrow(${i})">×</button>
+    </div>`;}).join('');
+}
+function removeTomorrow(i){ const arr=S.steps[tomorrowKey()]||[]; arr.splice(i,1); persist(); renderTomorrow(); }
+
+function openStepSheet(forTomorrow){
   const focuses=S.monthFocuses||[];
   let chosenTag = focuses.length===1 ? focuses[0].text : '';
-  const hint = focuses.length
-    ? `<p class="sheet-note">今月の焦点に近づく、<br>今日できる一歩は。</p>`
-    : `<p class="sheet-note">ただのTODOではなく、<br>理想へ向かう意味を持った一歩を。</p>`;
-  // 焦点が複数あるときだけ選択チップを出す
+  const assetNames=Object.keys(S.assets);
+  const title = forTomorrow ? '明日の一歩を決める' : '今日の一歩を決める';
+  const hint = forTomorrow
+    ? `<p class="sheet-note">明日の自分が、迷わず動けるように。<br>やることを、ひとつ決めておきましょう。</p>`
+    : (focuses.length
+      ? `<p class="sheet-note">今月の焦点に近づく、今日できる一歩は。</p>`
+      : `<p class="sheet-note">理想へ向かう意味を持った、一歩を。</p>`);
+  // 焦点が複数あるときだけ選択チップ
   const focusPart = focuses.length>1
     ? `<label class="field-lbl">どの焦点に繋がる？（任意）</label><div class="chip-row" id="sf-row">${focuses.map(f=>`<button class="chip" onclick="pickStepFocus(this,'${esc(f.text)}')">${esc(f.text)}</button>`).join('')}</div>`
     : '';
+  // 既存の前進資産をチップで提示（選ぶと項目名と単位が自動で入る）
+  const itemChips = assetNames.length
+    ? `<div class="chip-row" id="item-chips" style="margin-bottom:4px">${assetNames.map(n=>`<button class="chip" onclick="pickStepItem(this,'${esc(n)}','${esc(S.assets[n].unit||'')}')">${esc(n)}</button>`).join('')}</div>`
+    : '';
+
   window.pickStepFocus=(el,t)=>{ document.querySelectorAll('#sf-row .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); chosenTag=t; };
-  window.doAddStep=()=>{const t=document.getElementById('step-inp').value.trim();if(!t)return;todaySteps().push({id:uid(),text:t,tag:chosenTag||'',done:false});persist();renderSteps();closeModal();};
-  openSheet(`<h2>今日の一歩を決める</h2>${hint}<label class="field-lbl">今日、踏む一歩</label><div class="field-box"><input type="text" id="step-inp" placeholder="例：LPを1画面作る、問題集10ページ"></div>${focusPart}<div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="doAddStep()">決める</button></div>`);
+  window.pickStepItem=(el,name,unit)=>{
+    document.querySelectorAll('#item-chips .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on');
+    document.getElementById('step-item').value=name;
+    if(unit) document.getElementById('step-unit').value=unit;
+    // 一歩のテキストが空なら項目名を入れておく
+    const ti=document.getElementById('step-inp'); if(ti && !ti.value.trim()) ti.value=name;
+  };
+  window.doAddStep=()=>{
+    const text=(document.getElementById('step-inp').value||'').trim();
+    if(!text){ quietToast('一歩を入力してください'); return; }
+    const item=(document.getElementById('step-item').value||'').trim();
+    const rawAmt=(document.getElementById('step-amt').value||'').trim();
+    let amount=rawAmt?parseFloat(rawAmt):null; if(amount==null||isNaN(amount))amount=null;
+    const unit=(document.getElementById('step-unit').value||'').trim();
+    const target = forTomorrow ? tomorrowSteps() : todaySteps();
+    target.push({id:uid(), text, tag:chosenTag||'', done:false, item:item||'', amount, unit});
+    persist();
+    if(forTomorrow) renderTomorrow(); else renderSteps();
+    renderAssetChips();
+    closeModal();
+    quietToast(forTomorrow?'明日の一歩を決めました':'一歩を決めました');
+  };
+  openSheet(`<h2>${title}</h2>${hint}
+    <label class="field-lbl">${forTomorrow?'明日、踏む一歩':'今日、踏む一歩'}</label>
+    <div class="field-box"><input type="text" id="step-inp" placeholder="例：読書20ページ、LPを1画面作る"></div>
+    ${focusPart}
+    <div class="step-measure-note">達成したら前進資産に積み上げたいなら、項目を決めておきます（数値・単位は任意）。</div>
+    ${itemChips}
+    <label class="field-lbl">積み上げる項目（任意）</label>
+    <div class="field-box"><input type="text" id="step-item" placeholder="例：読書、筋トレ"></div>
+    <div style="display:flex;gap:10px">
+      <div style="flex:1"><label class="field-lbl">数値（任意）</label><div class="field-box"><input type="number" id="step-amt" step="any" placeholder="20"></div></div>
+      <div style="flex:1"><label class="field-lbl">単位（任意）</label><div class="field-box"><input type="text" id="step-unit" placeholder="ページ"></div></div>
+    </div>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="doAddStep()">決める</button></div>`);
   setTimeout(()=>document.getElementById('step-inp')?.focus(),300);
 }
 
@@ -883,6 +1017,7 @@ function switchDusk(m){
 let activeItem=null; // 選択中の項目名
 function renderAssetChips(){
   const el=document.getElementById('asset-chips');
+  if(!el) return;   // 夜の手動入力UIは廃止。要素が無ければ何もしない。
   const names=Object.keys(S.assets);
   el.innerHTML = names.map(n=>{
     const a=S.assets[n];
@@ -1604,12 +1739,45 @@ const ONB_EXAMPLES={
   month:['ポートフォリオ完成','工業簿記終了','投稿30本'],
   step:['LPを1画面作る','問題集10ページ','投稿を1本作る']
 };
-const PAIN_CATEGORIES=['仕事','お金','健康','体型','家族との関係','子育て','人間関係','自信','将来への不安','やりたいことが見つからない','毎日がつまらない','時間がない','習慣が続かない','その他'];
-let onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:''};
+const PAIN_CATEGORIES=['仕事','お金','健康','体型','恋愛・結婚','家族との関係','子育て','人間関係','自信','将来への不安','時間がない','習慣が続かない','やりたいことが見つからない','毎日がつまらない','その他'];
+let onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',heartMoves:[],dialogTurns:[],convo:[],convoCount:0};
 
 function startOnboarding(){
-  onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:''};
+  onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',heartMoves:[],dialogTurns:[],convo:[],convoCount:0};
   onbRender('splash');
+}
+
+// 「以前の記録を引き継ぐ」：同期キーを貼り付けて復元
+function onbRestore(){
+  onbShow(`<div class="onb-step-eyebrow">記録を引き継ぐ</div>
+    <div class="onb-q" style="margin-bottom:14px">同期キーを貼り付けてください。</div>
+    <p class="onb-sub" style="margin-bottom:20px">前に使っていた端末の「同期」画面に表示されている、OKOSO- で始まる文字列です。</p>
+    <input class="onb-input" id="onb-restore-key" placeholder="OKOSO-... を貼り付け" style="font-family:var(--mono);font-size:12px">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+      <button class="onb-btn" id="onb-restore-btn" onclick="doOnbRestore()">記録を引き継ぐ</button>
+      <button class="onb-btn ghost" onclick="onbNext('hello')">戻る</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('onb-restore-key')?.focus(),400);
+}
+
+async function doOnbRestore(){
+  const raw=(document.getElementById('onb-restore-key').value||'').trim();
+  const parsed=parseSyncKey(raw);
+  if(!parsed){ quietToast('同期キーが正しくないようです'); return; }
+  const btn=document.getElementById('onb-restore-btn');
+  if(btn){ btn.textContent='引き継いでいます…'; btn.disabled=true; }
+  try{
+    await enableSync(parsed.token, parsed.gistId);  // pull→merge でデータが入る
+    S.onboarded=true;
+    persist(); renderFlow(); renderAssetChips();
+    const o=document.getElementById('onb');
+    if(o){ o.classList.remove('show'); setTimeout(()=>document.getElementById('onb-mount').innerHTML='',500); }
+    updateSyncBadge('ok');
+    quietToast('記録を引き継ぎました');
+  }catch(e){
+    if(btn){ btn.textContent='記録を引き継ぐ'; btn.disabled=false; }
+    quietToast('引き継げませんでした。同期キーをご確認ください');
+  }
 }
 
 function onbShow(html){
@@ -1639,22 +1807,56 @@ function onbInputStep(opts){
 }
 
 function onbRender(stage){
-  // ── Splash / Welcome ──
+  // ── Splash ──
   if(stage==='splash'){
     onbShow(`<div class="onb-splash-logo">okoso</div><div class="onb-splash-title">人生を起こそう</div>`);
-    setTimeout(()=>onbNext('welcome'),2200);
+    setTimeout(()=>onbNext('hello'),2200);
+    return;
+  }
+  // ── はじめまして：新規 or 引き継ぎ ──
+  if(stage==='hello'){
+    onbShow(`<div class="onb-step-eyebrow">OKOSOへ ようこそ</div>
+      <div class="onb-q" style="margin-bottom:30px">はじめましょう。</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button class="onb-btn" onclick="onbNext('welcome')">新しく始める</button>
+        <button class="onb-btn ghost" onclick="onbRestore()">以前の記録を引き継ぐ</button>
+      </div>
+      <p class="onb-sub" style="margin-top:24px">別の端末ですでにOKOSOを使っているなら、「引き継ぐ」を選んでください。</p>`);
     return;
   }
   if(stage==='welcome'){
     onbShow(`<div class="onb-welcome-body">変わろうとして<br>ここに来た。<br><br>それは、大切な一歩。<br><br>あなたはもう、<br>人生を起こそうとしている。</div>
-      <button class="onb-btn" onclick="onbNext('route')">はじめる</button>`);
+      <button class="onb-btn" onclick="onbNext('wantchange')">はじめる</button>`);
     return;
   }
 
-  // ── STEP1：理想の明確度確認（分岐点） ──
+  // ── STEP1：人生を変えたいか ──
+  if(stage==='wantchange'){
+    onbShow(`
+      <div class="onb-step-eyebrow">STEP 1</div>
+      <div class="onb-q">あなたは今の人生を、<br>変えたいと思っていますか？</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+        <button class="onb-btn" onclick="onbNext('route')">はい</button>
+        <button class="onb-btn ghost" onclick="onbNext('notyet')">いいえ</button>
+      </div>`);
+    return;
+  }
+  // 「いいえ」：別導線（押し付けず、そっと寄り添う）
+  if(stage==='notyet'){
+    onbShow(`
+      <div class="onb-step-eyebrow">それでも、いい</div>
+      <div class="onb-welcome-body" style="margin-bottom:30px">変えなきゃ、と<br>気負わなくていい。<br><br>ただ、毎日を少し整えたい。<br>その気持ちだけでも、<br>OKOSOは隣を歩けます。</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="onb-btn" onclick="onbNext('route')">とりあえず、始めてみる</button>
+        <button class="onb-btn ghost" onclick="onbNext('wantchange')">戻る</button>
+      </div>`);
+    return;
+  }
+
+  // ── STEP2：理想の明確度確認（分岐点） ──
   if(stage==='route'){
     onbShow(`
-      <div class="onb-step-eyebrow">はじめに</div>
+      <div class="onb-step-eyebrow">STEP 2</div>
       <div class="onb-q">あなたは今、理想の人生や<br>目指したい姿を、<br>はっきりと言葉で説明できますか？</div>
       <div class="onb-sub">理想が無いわけではありません。<br>まだ言葉になっていないだけかもしれません。</div>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
@@ -1681,58 +1883,78 @@ function onbRender(stage){
   // ── Bルート：理想が整理できていない ──
   if(stage==='pain1'){
     onbShow(`
-      <div class="onb-step-eyebrow">1 / 4</div>
-      <div class="onb-q">今の人生で、<br>最も変えたいことは<br>何ですか？</div>
-      <div class="onb-sub">ひとつだけ選んでください。</div>
-      <div class="chip-grid" id="pain-cat-grid">${PAIN_CATEGORIES.map(c=>`<button class="pain-chip" onclick="selectPainCategory('${esc(c)}')">${esc(c)}</button>`).join('')}</div>
-      <div class="onb-progress">${[0,1,2,3].map(n=>`<div class="onb-dot${n===0?' on':''}"></div>`).join('')}</div>`);
+      <div class="onb-step-eyebrow">STEP 3</div>
+      <div class="onb-q">今の人生で、<br>一番変えたいことは<br>何ですか？</div>
+      <div class="onb-sub">一番向き合いたいものを、ひとつだけ。</div>
+      <div class="chip-grid" id="pain-cat-grid">${PAIN_CATEGORIES.map(c=>`<button class="pain-chip" onclick="selectPainCategory('${esc(c)}')">${esc(c)}</button>`).join('')}</div>`);
     return;
   }
   if(stage==='pain2'){
-    onbInputStep({eyebrow:'2 / 4',q:'その悩みを一番強く感じるのは、<br>どんな時ですか？',sub:'自由に書いてください。',
-      ph:'例：日曜の夜、残業帰り、朝起きた時',value:onbDraft.painMoment,dotIndex:1,dotTotal:4,
+    onbInputStep({eyebrow:'STEP 4',q:'その悩みを一番強く感じるのは、<br>どんな時ですか？',sub:'感情が動く場面を、教えてください。',
+      ph:'例：日曜の夜、残業帰り、朝起きた時',value:onbDraft.painMoment,
       onNext:`()=>onbSave('painMoment','pain3')`});
     return;
   }
   if(stage==='pain3'){
-    onbInputStep({eyebrow:'3 / 4',q:'その悩みがなくなったら、<br>どんな毎日になっていたいですか？',sub:'状態ではなく、理想の日常を。',
-      ph:'例：家族と夕食を食べたい、心に余裕を持ちたい',value:onbDraft.idealDailyLife,multiline:true,dotIndex:2,dotTotal:4,
-      onNext:`()=>onbSave('idealDailyLife','summary')`});
+    onbInputStep({eyebrow:'STEP 5',q:'その悩みがなくなったら、<br>どんな毎日になっていたいですか？',sub:'理想像ではなく、理想の毎日を想像してみてください。',
+      ph:'例：家族と夕食を食べたい、心に余裕を持ちたい',value:onbDraft.idealDailyLife,multiline:true,
+      onNext:`()=>onbSave('idealDailyLife','deepen')`});
     return;
   }
 
-  // ── STEP5：AI要約（翻訳者として）──
-  if(stage==='summary'){
+  // ── STEP6：AIとの対話で理想を深める（質問AI）──
+  if(stage==='deepen'){
+    renderDeepen();
+    return;
+  }
+
+  // ── STEP6.5：要約のお披露目 ──
+  if(stage==='summaryreveal'){
+    onbRenderSummaryReveal();
+    return;
+  }
+
+  // ── STEP7：心が動いたか（最重要変更点）──
+  if(stage==='heartcheck'){
     onbShow(`
-      <div class="onb-step-eyebrow">4 / 4</div>
-      <div class="onb-q">あなたが向かいたい姿</div>
-      <div class="onb-sub" id="summary-loading">あなたの言葉を、整理しています…</div>
-      <div id="summary-body" style="display:none">
-        <div class="onb-summary-card" id="summary-text"></div>
-        <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
-          <button class="onb-btn" onclick="onbNext('goal2')">この内容で進む</button>
-          <button class="onb-btn ghost" onclick="onbEditSummary()">編集する</button>
-        </div>
+      <div class="onb-step-eyebrow">STEP 7</div>
+      <div class="onb-summary-card" style="margin-bottom:22px">${esc(onbDraft.idealSummary)}</div>
+      <div class="onb-q" style="font-size:20px">この言葉を読んで、<br>どれくらい心が動きましたか？</div>
+      <div class="onb-sub">正しいかどうかではなく、心が動いたかどうかで選んでください。</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+        <button class="onb-btn" onclick="onbHeart('これだ')">これだ。この言葉なら前へ進めそう</button>
+        <button class="onb-btn ghost" onclick="onbHeart('惜しい')">惜しい。あと少し</button>
+        <button class="onb-btn ghost" onclick="onbHeart('半分')">半分くらい。まだ何か違う</button>
+        <button class="onb-btn ghost" onclick="onbHeart('違和感')">まだ違和感がある</button>
       </div>`);
-    generateIdealSummary();
     return;
   }
 
-  // ── STEP6〜8：取り組みたいこと / 今日の一歩 / 今月の焦点 ──
+  // ── STEP9：向かう先 決定 ──
+  if(stage==='arrival'){
+    onbShow(`
+      <div class="onb-step-eyebrow">あなたの、向かう先</div>
+      <div class="onb-summary-card" style="margin-bottom:22px">${esc(onbDraft.idealSummary)}</div>
+      <div class="onb-dialog-ai" style="line-height:2.0">これが今のあなたの向かう先ですね。<br><br>もちろん、理想は歩きながら変わるものです。今日のあなたが言葉にできた“向かう先”を、OKOSOはこれから一緒に育てていきます。</div>
+      <button class="onb-btn" onclick="onbNext('goal2')" style="margin-top:24px">この向かう先で、進む</button>`);
+    return;
+  }
+
+  // ── STEP10〜12：取り組みたいこと / 今日の一歩 / 今月の焦点 ──
   if(stage==='goal2'){
-    onbInputStep({eyebrow:'取り組みたいこと',q:'その理想に近づくために、<br>今後取り組んでいきたいことは？',sub:'肩肘張らず、自然に答えてください。',
+    onbInputStep({eyebrow:'STEP 10 ・ 目標',q:'その理想に近づくために、<br>今のあなたが最初に<br>取り組みたいことは何ですか？',sub:'肩肘張らず、自然に答えてください。',
       ph:'例：Web制作を学ぶ、副業を始める、読書習慣をつける',value:onbDraft.goal,dotIndex:0,dotTotal:0,
       onNext:`()=>onbSave('goal','step2')`});
     return;
   }
   if(stage==='step2'){
-    onbInputStep({eyebrow:'今日の一歩',q:'その取り組みに向かって、<br>今日できる小さな一歩は？',sub:'絶対に、小さくていい。',
+    onbInputStep({eyebrow:'STEP 11 ・ 今日の一歩',q:'今日、その目標のために<br>最初の一歩として<br>取り組むことは何ですか？',sub:'絶対に、小さくていい。',
       ph:'例：本を10ページ読む、10分歩く',value:onbDraft.step,dotIndex:0,dotTotal:0,
       onNext:`()=>onbSave('step','month2')`});
     return;
   }
   if(stage==='month2'){
-    onbInputStep({eyebrow:'今月の焦点',q:'今日の一歩を積み重ねた先で、<br>今月末にはどんな状態に<br>なっていたいですか？',sub:'積み重ねの先にある状態を。',
+    onbInputStep({eyebrow:'STEP 12 ・ 今月の焦点',q:'今日の一歩を積み重ねた先で、<br>今月末にはどんな状態に<br>なっていたいですか？',sub:'積み重ねの先にある状態を。',
       ph:'例：本を1冊読み終える、副業候補を3つ調べる',value:onbDraft.month,dotIndex:0,dotTotal:0,
       onNext:`()=>onbSave('month','done')`});
     return;
@@ -1766,53 +1988,180 @@ function onbSave(key,next){
   onbNext(next);
 }
 
-function onbEditSummary(){
-  onbInputStep({eyebrow:'4 / 4 ・ 編集',q:'あなたが向かいたい姿',sub:'あなた自身の言葉に直してください。',
-    ph:'あなたが向かいたい姿', value:onbDraft.idealSummary, multiline:true, dotIndex:3, dotTotal:4,
-    onNext:`()=>onbSave('idealSummary','goal2')`});
-}
+// ════════════════════════════════
+//  STEP6：理想を深める対話（質問AI）
+// ════════════════════════════════
+// AIは「要約AI」ではなく「質問AI」。回答を素材として受け取り、
+// その奥にある価値観・本音を、質問で一段ずつ引き出す。
 
-// AIは翻訳者：ユーザーの言葉を整理するだけ。夢を足さない、理想を作らない、人生を決めない。
-async function generateIdealSummary(){
-  let summary=null;
-  try{
-    summary=await callIdealSummaryAPI({
-      category:onbDraft.painCategory, moment:onbDraft.painMoment, dailyLife:onbDraft.idealDailyLife
-    });
-  }catch(e){ summary=null; }
-  if(!summary){
-    // フォールバック：ユーザーの言葉をそのまま繋げるだけ（AIが夢を足さない原則を守る）
-    summary = onbDraft.idealDailyLife
-      ? `${onbDraft.idealDailyLife}`
-      : `${onbDraft.painCategory}について、もっと違う毎日を生きたい`;
+const DEEPEN_MIN_TURNS=2;   // 最低この回数はユーザーに語ってもらう
+
+function renderDeepen(){
+  const firstTime = !onbDraft.convo || !onbDraft.convo.length;
+  if(firstTime){ onbDraft.convo=[]; onbDraft.convoCount=0; }
+  // 常にチャットの器を描き直す（戻ってきた時もDOMを再構築）
+  onbShow(`
+    <div class="onb-step-eyebrow">一緒に、見つける</div>
+    <div class="deepen-chat" id="deepen-chat"></div>
+    <div class="deepen-typing" id="deepen-typing" style="display:none">考えています…</div>
+    <div class="deepen-input-wrap" id="deepen-input-wrap" style="display:none">
+      <textarea class="onb-input" id="deepen-inp" rows="2" style="resize:none;line-height:1.7" placeholder="思っていることを、そのまま"></textarea>
+      <button class="onb-btn" id="deepen-send" onclick="onbDeepenSend()">伝える</button>
+      <button class="deepen-summarize" id="deepen-summarize" onclick="onbDeepenSummarize()" style="display:none">そろそろ、まとめてもらう</button>
+    </div>`);
+  renderDeepenChat();
+  if(firstTime){
+    askNextDeepenQuestion();   // 最初の深掘り質問を生成
+  } else {
+    setDeepenBusy(false);      // 戻ってきた時は入力可能に
+    setTimeout(()=>document.getElementById('deepen-inp')?.focus(),200);
   }
-  onbDraft.idealSummary=summary;
-  const loading=document.getElementById('summary-loading');
-  const body=document.getElementById('summary-body');
-  const text=document.getElementById('summary-text');
-  if(loading) loading.style.display='none';
-  if(text) text.textContent=summary;
-  if(body) body.style.display='block';
 }
 
-async function callIdealSummaryAPI(d){
-  const sys=`あなたはOKOSOというアプリの、理想を言語化するための「翻訳者」です。
+function renderDeepenChat(){
+  const chat=document.getElementById('deepen-chat');
+  if(!chat) return;
+  chat.innerHTML=onbDraft.convo.map(m=>
+    m.role==='ai'
+      ? `<div class="chat-ai">${esc(m.text).replace(/\n/g,'<br>')}</div>`
+      : `<div class="chat-user">${esc(m.text).replace(/\n/g,'<br>')}</div>`
+  ).join('');
+  chat.scrollTop=chat.scrollHeight;
+}
 
-絶対の禁止事項：
-- ユーザーが言っていないことを足さない。夢を作らない。理想を勝手に作らない。人生を決めない。
-- 説教しない。評価しない。アドバイスしない。
-- あなたの役割は、ユーザー自身の言葉を整理して、短い一文〜二文にまとめることだけです。
+function setDeepenBusy(busy){
+  const typing=document.getElementById('deepen-typing');
+  const wrap=document.getElementById('deepen-input-wrap');
+  if(typing) typing.style.display=busy?'block':'none';
+  if(wrap) wrap.style.display=busy?'none':'block';
+  // 最低ターンを超えたら「まとめてもらう」を出す
+  const sm=document.getElementById('deepen-summarize');
+  if(sm) sm.style.display=(!busy && onbDraft.convoCount>=DEEPEN_MIN_TURNS)?'block':'none';
+}
 
-出力ルール：
-- 60〜90字程度の日本語、一人称は使わず「〜生きられる人生」「〜大切にしながら〜できる毎日」のような体言止め寄りの文体。
-- ユーザーが読んだ時に「それだ、俺が言いたかったのはそれだ」と思える、ユーザー自身の言葉に近い要約にする。
-- 説明や前置きは書かず、要約の本文だけを出力する。`;
+// AIに次の深掘り質問を出させる
+async function askNextDeepenQuestion(){
+  setDeepenBusy(true);
+  let reply=null;
+  try{ reply=await callDeepenAPI(); }catch(e){ reply=null; }
+  if(!reply){
+    // フォールバック：素材に応じた定型の深掘り質問（情景を聞く）
+    reply={mode:'ask', text:fallbackDeepenQuestion()};
+  }
+  if(reply.mode==='summary'){
+    // AIが頃合いと判断 → 要約へ
+    onbDraft.idealSummary=reply.text;
+    onbNext('summaryreveal');
+    return;
+  }
+  onbDraft.convo.push({role:'ai', text:reply.text});
+  renderDeepenChat();
+  setDeepenBusy(false);
+  setTimeout(()=>document.getElementById('deepen-inp')?.focus(),200);
+}
 
-  const userMsg=`このユーザーが最も変えたいこと：${d.category||'(未回答)'}
-その悩みを強く感じる時：${d.moment||'(未回答)'}
-悩みがなくなったらどんな毎日になっていたいか：${d.dailyLife||'(未回答)'}
+function fallbackDeepenQuestion(){
+  // 会話の深さに応じて、情景を聞く質問を返す（「どんな？いつ？誰と？」）
+  const qs=[
+    `その毎日の中で、いちばん「いいな」と感じるのは、どんな瞬間でしょう？\n例えば、朝の時間、誰かと過ごす時間、ひとりの時間…近いものはありますか？`,
+    `その時、あなたの隣には誰がいて、どんな表情をしていますか？`,
+    `もしその毎日が手に入ったら、今のあなたと何がいちばん変わっていそうですか？`
+  ];
+  return qs[Math.min(onbDraft.convoCount, qs.length-1)];
+}
 
-上記から、「あなたが向かいたい姿」というタイトルにふさわしい一文〜二文の要約だけを出力してください。`;
+function onbDeepenSend(){
+  const v=(document.getElementById('deepen-inp').value||'').trim();
+  if(!v){ quietToast('思っていることを書いてください'); return; }
+  onbDraft.convo.push({role:'user', text:v});
+  onbDraft.convoCount=(onbDraft.convoCount||0)+1;
+  renderDeepenChat();
+  document.getElementById('deepen-inp').value='';
+  askNextDeepenQuestion();   // 次の深掘り（or 頃合いなら要約提案）
+}
+
+// ユーザーが「そろそろまとめて」を押した
+async function onbDeepenSummarize(){
+  setDeepenBusy(true);
+  let summary=null;
+  try{ summary=await callDeepenAPI(true); }catch(e){ summary=null; }
+  onbDraft.idealSummary = (summary && summary.text) ? summary.text
+    : (onbDraft.idealDailyLife || onbDraft.painCategory+'について、もっと違う毎日を生きたい');
+  onbNext('summaryreveal');
+}
+
+// 要約のお披露目（STEP6→7のあいだ）
+function onbRenderSummaryReveal(){
+  onbShow(`
+    <div class="onb-step-eyebrow">あなたの言葉から</div>
+    <div class="onb-q">あなたが向かいたい姿</div>
+    <div class="onb-summary-card" style="margin-top:14px">${esc(onbDraft.idealSummary)}</div>
+    <div style="margin-top:18px">
+      <button class="onb-btn" onclick="onbNext('heartcheck')">読んでみる</button>
+    </div>`);
+}
+
+// STEP7：心が動いたかの選択
+function onbHeart(choice){
+  if(!onbDraft.heartMoves) onbDraft.heartMoves=[];
+  onbDraft.heartMoves.push(choice);
+  if(choice==='これだ'){
+    onbNext('arrival');   // STEP9へ
+    return;
+  }
+  // それ以外 → 対話に戻して、違和感を深掘り
+  const seeds={
+    '惜しい':'ありがとうございます。あと少し、ということは、近い部分もあるんですね。今の言葉で、一番しっくりこなかったのはどこでしたか？',
+    '半分':'ありがとうございます。まだ言葉にできていない想いが、ありそうですね。今の文章の中で「これは違う」と感じた部分を教えてください。',
+    '違和感':'大丈夫です。焦らなくて構いません。今の文章を読んで、「本当はこうなりたい」と思ったことを、そのまま教えてください。'
+  };
+  onbDraft.convo.push({role:'ai', text:seeds[choice]||seeds['違和感']});
+  onbNext('deepen');
+}
+
+function onbEditSummary(){
+  onbInputStep({eyebrow:'編集',q:'あなたが向かいたい姿',sub:'あなた自身の言葉に直してください。',
+    ph:'あなたが向かいたい姿', value:onbDraft.idealSummary, multiline:true,
+    onNext:`()=>onbSave('idealSummary','heartcheck')`});
+}
+
+// ── 深掘り対話のAPI（質問AI）──
+async function callDeepenAPI(forceSummary){
+  const sys=`あなたはOKOSOというアプリの「伴走者」です。ユーザー自身もまだ言葉にできていない「本当に望んでいる人生」を、対話を通して一緒に見つける役割です。
+
+# あなたは「質問AI」であって「要約AI」ではない
+- ユーザーの回答は完成された答えではなく、すべて「素材」です。その奥にある価値観・感情・本音を探してください。
+- 回答を綺麗に言い換えただけで終わってはいけません。そのまま理想として採用してもいけません。
+- あなたが話す量より、ユーザーが話す量が多くなることを目指してください。
+
+# 毎回の思考手順
+① ユーザーは何と言ったか → ② なぜそう思ったのか → ③ 背景にある価値観は → ④ それを知るには何を聞けばいいか → ⑤ その質問を返す
+
+# 良い質問の条件
+- ユーザーが「考えたことがなかった」と思う、新しい情報が返ってくる質問。
+- 「なぜ？」より「どんな？」「いつ？」「誰と？」「何をしている？」「どんな毎日？」を使い、理由より情景を聞く。
+- 必要なら選択肢の例を2〜5個添えて、答えやすくする。
+
+# 出力形式（厳守・JSONのみ）
+{"mode":"ask","text":"次の深掘り質問（120字以内・やさしい口調・必要なら例を改行で添える）"}
+または、ユーザーが十分に語り、理想が情景として見えてきたと判断したら：
+{"mode":"summary","text":"60〜100字で、ユーザー自身の言葉に近い『向かいたい姿』。生活が想像でき、読んだ瞬間に心が動く文章。あなたが夢を足さない"}
+JSON以外は一切出力しない。`;
+
+  // 会話履歴を素材としてまとめる
+  const materials=`【ユーザーの背景（オンボーディングの回答）】
+- 最も変えたいこと：${onbDraft.painCategory||'(未回答)'}
+- その悩みを強く感じる時：${onbDraft.painMoment||'(未回答)'}
+- 悩みがなくなったらどんな毎日になっていたいか：${onbDraft.idealDailyLife||'(未回答)'}`;
+
+  const convoText=(onbDraft.convo||[]).map(m=>`${m.role==='ai'?'あなた(AI)':'ユーザー'}：${m.text}`).join('\n');
+  const instruction = forceSummary
+    ? `\n\n【指示】ユーザーが「そろそろまとめてほしい」と希望しました。ここまでの対話すべてを踏まえ、必ず {"mode":"summary",...} を返してください。`
+    : ((onbDraft.convoCount||0) < DEEPEN_MIN_TURNS
+        ? `\n\n【指示】まだ対話が浅いので、必ず {"mode":"ask",...} で、一段深い質問を返してください。`
+        : `\n\n【指示】まだ理想が情景として見えていなければ {"mode":"ask",...} を、十分に語られ理想が見えてきたら {"mode":"summary",...} を返してください。`);
+
+  const userMsg=`${materials}\n\n【ここまでの対話】\n${convoText||'(まだ対話していません。最初の深掘り質問をしてください)'}${instruction}`;
 
   const res=await fetch('/api/translate',{
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -1820,9 +2169,14 @@ async function callIdealSummaryAPI(d){
   });
   if(!res.ok) throw new Error('api');
   const data=await res.json();
-  const txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
   if(!txt) throw new Error('empty');
-  return txt;
+  // JSON抽出（前後の余計な文字を除去）
+  const m=txt.match(/\{[\s\S]*\}/);
+  if(m) txt=m[0];
+  const obj=JSON.parse(txt);
+  if(!obj.mode||!obj.text) throw new Error('badjson');
+  return obj;
 }
 
 function onbFinish(){
@@ -1841,58 +2195,121 @@ function onbFinish(){
 // ════════════════════════════════
 //  同期設定シート
 // ════════════════════════════════
+// 同期キー：token と gistId を1つの文字列にまとめてユーザーに見せる（内部構造を隠す）
+function makeSyncKey(token, gistId){
+  try{ return 'OKOSO-'+btoa(unescape(encodeURIComponent(JSON.stringify({t:token,g:gistId})))); }
+  catch(e){ return ''; }
+}
+function parseSyncKey(key){
+  try{
+    const raw=key.trim().replace(/^OKOSO-/,'');
+    const o=JSON.parse(decodeURIComponent(escape(atob(raw))));
+    if(o&&o.t&&o.g) return {token:o.t, gistId:o.g};
+  }catch(e){}
+  return null;
+}
+
 function openSyncSheet(){
   const on=sync.enabled&&sync.token&&sync.gistId;
-  const status = on
-    ? `<div class="sync-status on">同期は有効です${sync.lastSync?`<br><span style="color:var(--ink-4);font-size:11px">最終同期：${fmtSyncTime(sync.lastSync)}</span>`:''}</div>`
-    : `<div class="sync-status">この端末はまだ同期していません。</div>`;
-
-  const body = on
-    ? `${status}
-      <p style="font-family:var(--serif);font-size:12px;color:var(--ink-3);line-height:1.9;margin:16px 0 8px">この端末は、あなたのGistと繋がっています。<br>スマホでもPCでも、同じTokenとGist IDを入れれば、記録が共有されます。</p>
-      <label class="field-lbl" style="margin-top:14px">Gist ID（他の端末で使う）</label>
+  if(on){
+    const key=makeSyncKey(sync.token, sync.gistId);
+    openSheet(`<h2>記録の同期</h2>
+      <div class="sync-status on">同期はオンです${sync.lastSync?`<br><span style="color:var(--ink-4);font-size:11px">最終同期：${fmtSyncTime(sync.lastSync)}</span>`:''}</div>
+      <p style="font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.95;margin:18px 0 10px">他のスマホやPCでも同じ記録を見るには、下の「同期キー」をコピーして、その端末の同期画面に貼り付けてください。</p>
+      <label class="field-lbl">あなたの同期キー</label>
       <div class="field-box" style="display:flex;align-items:center;gap:8px">
-        <input type="text" id="sync-gist-show" readonly value="${esc(sync.gistId)}" style="flex:1">
-        <button class="sync-copy" onclick="copyGistId()">コピー</button>
+        <input type="text" id="sync-key-show" readonly value="${esc(key)}" style="flex:1;font-family:var(--mono);font-size:11px">
+        <button class="sync-copy" onclick="copySyncKey()">コピー</button>
       </div>
-      <div class="sheet-btns" style="flex-direction:column;gap:8px;margin-top:14px">
+      <p style="font-family:var(--serif);font-size:11.5px;color:var(--ink-4);line-height:1.8;margin:-6px 0 16px">この同期キーは、あなただけの大切な鍵です。他の人には教えないでください。</p>
+      <div class="sheet-btns" style="flex-direction:column;gap:8px">
         <button class="sbtn sbtn-p" onclick="doSyncNow()" style="width:100%">今すぐ同期する</button>
-        <button class="sbtn" onclick="disableSync()" style="width:100%;color:var(--ink-3)">この端末の同期を解除</button>
+        <button class="sbtn" onclick="disableSync()" style="width:100%;color:var(--ink-3)">この端末で同期をやめる</button>
         <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
-      </div>`
-    : `${status}
-      <p style="font-family:var(--serif);font-size:12px;color:var(--ink-3);line-height:1.9;margin:14px 0 18px">GitHubの無料機能（Gist）に、あなたの記録をJSONで保存します。<br>スマホとPCで同じ記録が見られるようになります。月額0円です。</p>
-      <label class="field-lbl">GitHub Personal Access Token</label>
-      <div class="field-box"><input type="password" id="sync-token" placeholder="ghp_... （gistスコープのみ）"></div>
-      <p style="font-family:var(--serif);font-size:11px;color:var(--ink-4);line-height:1.8;margin:-8px 0 16px">GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) で発行。スコープは <span style="color:var(--ember)">gist</span> だけにチェック。</p>
-      <label class="field-lbl">Gist ID（2台目以降のみ・1台目は空欄）</label>
-      <div class="field-box"><input type="text" id="sync-gistid" placeholder="空欄なら新規に作成します"></div>
-      <div class="sheet-btns" style="margin-top:6px">
-        <button class="sbtn" onclick="closeModal()">閉じる</button>
-        <button class="sbtn sbtn-p" onclick="doEnableSync()">同期を始める</button>
-      </div>`;
+      </div>`);
+    return;
+  }
+  // 未設定：2つの選択肢（この端末で新しく始める / 同期キーを貼り付ける）
+  openSheet(`<h2>記録の同期</h2>
+    <p style="font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.95;margin:6px 0 20px">スマホとPCなど、複数の端末で同じ記録を見られるようにします。無料です。</p>
+    <div class="sheet-btns" style="flex-direction:column;gap:10px">
+      <button class="sbtn sbtn-p" onclick="startNewSync()" style="width:100%">この端末で同期を始める</button>
+      <button class="sbtn" onclick="showPasteSyncKey()" style="width:100%">同期キーを貼り付ける</button>
+      <button class="sbtn" onclick="closeModal()" style="width:100%;color:var(--ink-3)">あとで</button>
+    </div>
+    <p style="font-family:var(--serif);font-size:11.5px;color:var(--ink-4);line-height:1.85;margin:18px 0 0">はじめての端末なら「同期を始める」、すでに別の端末で使っているなら「同期キーを貼り付ける」を選んでください。</p>`);
+}
 
-  openSheet(`<h2>端末間で記録を同期</h2>${body}`);
+// この端末で新しく同期を始める（＝GitHubの設定が必要）
+function startNewSync(){
+  openSheet(`<h2>同期を始める</h2>
+    <p style="font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.95;margin:6px 0 18px">同期には、無料の保管場所を用意します。下に「接続コード」を貼り付けてください。</p>
+    <label class="field-lbl">接続コード</label>
+    <div class="field-box"><input type="password" id="sync-token" placeholder="接続コードを貼り付け"></div>
+    <details style="margin:-6px 0 16px">
+      <summary style="font-family:var(--serif);font-size:12px;color:var(--ember);cursor:pointer;letter-spacing:0.04em">接続コードの取り方</summary>
+      <p style="font-family:var(--serif);font-size:11.5px;color:var(--ink-4);line-height:1.95;margin:10px 0 0">
+      ① ブラウザで github.com を開き、無料登録（メールアドレスだけでOK）<br>
+      ② github.com/settings/tokens を開く<br>
+      ③「Generate new token (classic)」を押す<br>
+      ④ 「gist」だけにチェックを入れて発行<br>
+      ⑤ 表示された ghp_ で始まる文字列をコピーして、上に貼り付け<br><br>
+      ※この作業は最初の1台だけ。2台目からは「同期キーを貼り付ける」だけで済みます。</p>
+    </details>
+    <div class="sheet-btns" style="margin-top:6px">
+      <button class="sbtn" onclick="openSyncSheet()">戻る</button>
+      <button class="sbtn sbtn-p" onclick="doStartNewSync()">つなぐ</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('sync-token')?.focus(),300);
+}
+
+// 同期キーを貼り付ける（2台目以降）
+function showPasteSyncKey(){
+  openSheet(`<h2>同期キーを貼り付ける</h2>
+    <p style="font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.95;margin:6px 0 18px">最初の端末の同期画面に表示された「同期キー」を、ここに貼り付けてください。</p>
+    <label class="field-lbl">同期キー</label>
+    <div class="field-box"><input type="text" id="paste-key" placeholder="OKOSO-... を貼り付け" style="font-family:var(--mono);font-size:11px"></div>
+    <div class="sheet-btns" style="margin-top:6px">
+      <button class="sbtn" onclick="openSyncSheet()">戻る</button>
+      <button class="sbtn sbtn-p" onclick="doPasteSyncKey()">つなぐ</button>
+    </div>`);
+  setTimeout(()=>document.getElementById('paste-key')?.focus(),300);
 }
 
 function fmtSyncTime(ts){ const d=new Date(ts); return `${('0'+(d.getMonth()+1)).slice(-2)}/${('0'+d.getDate()).slice(-2)} ${('0'+d.getHours()).slice(-2)}:${('0'+d.getMinutes()).slice(-2)}`; }
 
-function copyGistId(){
-  const inp=document.getElementById('sync-gist-show');
-  if(inp){ inp.select(); try{document.execCommand('copy');}catch(e){} navigator.clipboard&&navigator.clipboard.writeText(inp.value).catch(()=>{}); quietToast('Gist IDをコピーしました'); }
+function copySyncKey(){
+  const inp=document.getElementById('sync-key-show');
+  if(inp){ inp.select(); try{document.execCommand('copy');}catch(e){} navigator.clipboard&&navigator.clipboard.writeText(inp.value).catch(()=>{}); quietToast('同期キーをコピーしました'); }
 }
 
-async function doEnableSync(){
+// 1台目：接続コード（token）から新規Gistを作って同期開始
+async function doStartNewSync(){
   const token=(document.getElementById('sync-token').value||'').trim();
-  const gistId=(document.getElementById('sync-gistid').value||'').trim();
-  if(!token){ quietToast('Tokenを入力してください'); return; }
-  quietToast('接続しています…');
+  if(!token){ quietToast('接続コードを貼り付けてください'); return; }
+  quietToast('つないでいます…');
   try{
-    const id=await enableSync(token, gistId);
+    await enableSync(token, '');   // gistId空→新規作成
     closeModal();
-    quietToast(gistId?'同期しました':'新しいGistを作成して同期しました');
+    quietToast('同期をはじめました');
+    setTimeout(()=>openSyncSheet(),400);   // 同期キーを表示
   }catch(e){
-    quietToast('接続に失敗しました。Tokenを確認してください');
+    quietToast('つながりませんでした。接続コードをご確認ください');
+  }
+}
+
+// 2台目：同期キーから接続
+async function doPasteSyncKey(){
+  const raw=(document.getElementById('paste-key').value||'').trim();
+  const parsed=parseSyncKey(raw);
+  if(!parsed){ quietToast('同期キーが正しくないようです'); return; }
+  quietToast('つないでいます…');
+  try{
+    await enableSync(parsed.token, parsed.gistId);
+    closeModal();
+    quietToast('記録を引き継ぎました');
+  }catch(e){
+    quietToast('つながりませんでした。同期キーをご確認ください');
   }
 }
 
@@ -1905,7 +2322,7 @@ async function doSyncNow(){
 function disableSync(){
   sync={ token:'', gistId:'', enabled:false, lastSync:0 };
   saveSync(); updateSyncBadge('off'); closeModal();
-  quietToast('この端末の同期を解除しました');
+  quietToast('この端末の同期をやめました');
 }
 
 // ════════════════════════════════
@@ -1918,10 +2335,7 @@ function init(){
   document.getElementById('md2').textContent=fmtDate();
   renderFlow(); renderAssetChips();
   const jf=document.getElementById('jrnl-field');
-  jf.addEventListener('input',()=>{autosize(jf);document.getElementById('jrnl-keep').classList.toggle('on',jf.value.trim().length>0);});
-  const ai=document.getElementById('amt-inp');
-  ai.addEventListener('input',()=>{document.getElementById('log-keep').classList.toggle('on',true);});
-  ai.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doKeepLog();}});
+  if(jf) jf.addEventListener('input',()=>{autosize(jf);document.getElementById('jrnl-keep').classList.toggle('on',jf.value.trim().length>0);});
   // 同期が有効なら起動時にpull+merge
   if(sync.enabled&&sync.token&&sync.gistId){
     updateSyncBadge('ok');
