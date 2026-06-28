@@ -247,6 +247,21 @@
   .veil.show .sheet{transform:translateY(0);}
   .sheet h2{font-family:var(--serif);font-size:18px;font-weight:500;margin-bottom:6px;}
   .sheet-note{font-family:var(--serif);font-size:12.5px;color:var(--ink-3);line-height:1.9;margin-bottom:22px;letter-spacing:0.04em;}
+  /* ① 現在の値を表示 */
+  .sheet-current{font-family:var(--serif);font-size:13px;color:var(--ink-2);background:var(--bg-1);border:1px solid var(--rule-2);border-radius:4px;padding:10px 14px;margin-bottom:18px;line-height:1.7;letter-spacing:0.03em;}
+  /* ③ AI候補チップ */
+  .suggest-chips{display:flex;flex-direction:column;gap:9px;margin-bottom:6px;}
+  .suggest-chip{text-align:left;padding:13px 16px;border:1px solid var(--ember-b);border-radius:8px;background:var(--ember-d);color:var(--ember);font-family:var(--serif);font-size:15px;line-height:1.5;letter-spacing:0.02em;cursor:pointer;transition:all 0.2s;}
+  .suggest-chip:hover{background:var(--ember);color:#fff;}
+  .suggest-loading{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.06em;padding:4px 0 14px;animation:pulse 1.5s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
+  /* ② 「または、自分で入力」の仕切り（目立つセパレーター） */
+  .suggest-divider{font-family:var(--serif);font-size:13px;color:var(--ink-3);letter-spacing:0.08em;margin:20px 0 12px;display:flex;align-items:center;gap:12px;}
+  .suggest-divider::before,.suggest-divider::after{content:'';flex:1;height:1px;background:var(--rule-2);}
+  /* 前進資産設定の折りたたみ */
+  .step-asset-details{margin:16px 0 0;}
+  .step-asset-details summary{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.04em;cursor:pointer;padding:4px 0;list-style:none;text-decoration:underline;text-underline-offset:3px;}
+  .step-asset-details summary::-webkit-details-marker{display:none;}
   .field-lbl{font-family:var(--mono);font-size:10px;color:var(--ink-3);letter-spacing:0.2em;display:block;margin-bottom:8px;}
   .field-box{background:var(--bg-2);border:1px solid var(--rule-2);border-radius:3px;padding:12px 14px;margin-bottom:16px;}
   .field-box input,.field-box textarea{width:100%;background:transparent;border:none;outline:none;color:var(--ink);font-family:var(--sans);font-weight:300;font-size:15px;line-height:1.6;resize:none;}
@@ -482,7 +497,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v23';
+const STORE='okoso_v24';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -807,6 +822,7 @@ function openIdealSheet(){
     ? `<p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">理想は、変えてかまいません。<br>過去の理想は消えず、人生アーカイブに「変化の記録」として残ります。<br>理想が変わることは、失敗ではなく、人生の変化です。</p>`
     : `<p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">これは人生の北極星。<br>数値化も、達成判定もしません。終わりもありません。</p>`;
   openSheet(`<h2>向かう先（理想）${hasExisting?'を育てる':''}</h2>
+    ${hasExisting?`<div class="sheet-current">現在の向かう先：「${esc(S.ideal)}」</div>`:''}
     <p class="sheet-note">あなたはどんな人生を生きたいですか。<br>達成したいことではなく、本当に望む人生の姿を。</p>
     <div class="field-box"><input type="text" id="id-inp" placeholder="例：家族との時間を増やしながら自由に働く" value="${esc(S.ideal||'')}"></div>
     ${changeNote}
@@ -815,26 +831,25 @@ function openIdealSheet(){
   setTimeout(()=>document.getElementById('id-inp')?.focus(),300);
 }
 
-// 目標・今月の焦点 共通シート（新規追加 or 既存編集）
-function openMultiSheet(kind, editId){
+// ── ① 現在値を表示、② 自分で入力を目立たせる、③ AI候補を提案 ──
+// 目標・今月の焦点・今日の一歩、全て共通のシートで扱う
+async function openMultiSheet(kind, editId){
   const isGoal = kind==='goal';
   const list = isGoal ? S.goals : S.monthFocuses;
   const editing = editId ? list.find(x=>x.id===editId) : null;
   const title = isGoal ? '目標' : '今月の焦点';
   const ph = isGoal ? '例：副業収入10万円、簿記2級合格' : '例：ポートフォリオ完成、投稿30本';
-  let hint;
-  if(isGoal){
-    hint = S.ideal ? `<p class="sheet-note">理想「<strong style="color:var(--ink)">${esc(S.ideal)}</strong>」に近づくために、<br>何を達成しますか。</p>` : `<p class="sheet-note">理想に近づくために、何を達成しますか。</p>`;
-  } else {
-    const goalNames = S.goals.map(g=>g.text).join('・');
-    hint = goalNames ? `<p class="sheet-note">目標「<strong style="color:var(--ink)">${esc(goalNames)}</strong>」に近づくために、<br>今月、集中することは。</p>` : `<p class="sheet-note">今月、集中することは。<br>目標と今日を繋ぐ橋です。</p>`;
-  }
-  const note = isGoal
-    ? '目標は、理想へ近づくための通過点。<br>いくつあってもかまいません。'
-    : '焦点はいくつでも。<br>でも、絞るほど今日が明確になります。';
+
+  // ① 現在値（編集時）の表示
+  const currentNote = editing
+    ? `<div class="sheet-current">現在の${title}：「${esc(editing.text)}」</div>` : '';
+  // ① 向かう先を上部に表示（新規追加時）
+  const idealNote = !editing && S.ideal
+    ? `<div class="sheet-current">向かう先：「${esc(S.ideal)}」</div>` : '';
+
   window.saveMulti=()=>{
     const v=(document.getElementById('multi-inp').value||'').trim();
-    if(!v){ if(editing){ /* 空で保存＝削除扱いにしない、何もしない */ } closeModal(); return; }
+    if(!v){ closeModal(); return; }
     if(editing){ editing.text=v; }
     else { (isGoal?S.goals:S.monthFocuses).push({id:uid(),text:v}); }
     persist(); renderFlow(); closeModal();
@@ -845,14 +860,73 @@ function openMultiSheet(kind, editId){
     if(i>=0) arr.splice(i,1);
     persist(); renderFlow(); closeModal();
   };
-  openSheet(`<h2>${title}${editing?'を編集':''}</h2>${hint}
+  window.pickSuggestion=(text)=>{
+    const inp=document.getElementById('multi-inp');
+    if(inp){ inp.value=text; inp.focus(); }
+  };
+
+  openSheet(`<h2>${title}${editing?'を編集':''}</h2>
+    ${currentNote}${idealNote}
+    <div id="multi-suggest-area">
+      <div class="suggest-loading" id="multi-suggest-loading">AIが候補を考えています…</div>
+      <div id="multi-suggest-chips" class="suggest-chips"></div>
+    </div>
+    <div class="suggest-divider">または、自分で入力</div>
     <div class="field-box"><input type="text" id="multi-inp" placeholder="${ph}" value="${editing?esc(editing.text):''}"></div>
-    <p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin-bottom:18px">${note}</p>
     <div class="sheet-btns">
       ${editing?`<button class="sbtn" onclick="delMulti()" style="color:var(--ink-3)">削除</button>`:`<button class="sbtn" onclick="closeModal()">閉じる</button>`}
       <button class="sbtn sbtn-p" onclick="saveMulti()">${editing?'更新する':'追加する'}</button>
     </div>`);
   setTimeout(()=>document.getElementById('multi-inp')?.focus(),300);
+
+  // ③ AI候補を取得して描画（非同期。読み込み中はローディング表示）
+  try{
+    const suggestions=await callSuggestAPI(kind);
+    const loading=document.getElementById('multi-suggest-loading');
+    const chips=document.getElementById('multi-suggest-chips');
+    if(loading) loading.style.display='none';
+    if(chips && suggestions.length){
+      chips.innerHTML=suggestions.map(s=>
+        `<button class="suggest-chip" onclick="pickSuggestion('${esc(s)}')">${esc(s)}</button>`).join('');
+    } else if(loading){ loading.textContent=''; }
+  }catch(e){
+    const loading=document.getElementById('multi-suggest-loading');
+    if(loading) loading.style.display='none';
+  }
+}
+
+// AI候補を5個生成するAPI呼び出し
+async function callSuggestAPI(kind){
+  const kindLabel = kind==='goal' ? '目標（理想への通過点）'
+    : kind==='month' ? '今月の焦点（今月末に達成したい状態）'
+    : '今日の一歩（今日できる小さな行動）';
+  const ideal=S.ideal||onbDraft.idealSummary||'(未設定)';
+  const goal=S.goals.map(g=>g.text).join('・')||(onbDraft.goal||'(未設定)');
+  const month=S.monthFocuses.map(m=>m.text).join('・')||(onbDraft.month||'(未設定)');
+
+  const sys=`あなたはOKOSOというアプリの伴走者です。ユーザーの向かう先（理想）をもとに、「${kindLabel}」の候補を5個提案してください。
+
+ルール：
+- ユーザーが「あ、これにしよう」と思える具体的な候補を出す
+- AIが決めるのではなく、ユーザーが選びやすくすることが目的
+- 難しすぎず、今すぐ始められそうな現実的なものにする
+- 1候補は10〜25字程度、体言止め
+- 出力形式（JSONのみ）：{"suggestions":["候補1","候補2","候補3","候補4","候補5"]}`;
+
+  const user=`向かう先（理想）：${ideal}\n目標：${goal}\n今月の焦点：${month}\n\n上記をもとに「${kindLabel}」の候補を5個、JSONで返してください。`;
+
+  const res=await fetch('/api/translate',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ system:sys, user })
+  });
+  if(!res.ok) throw new Error('api');
+  const data=await res.json();
+  let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  txt=txt.replace(/```(?:json)?/gi,'').trim();
+  const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+  const obj=JSON.parse(txt);
+  if(!Array.isArray(obj.suggestions)) throw new Error('bad');
+  return obj.suggestions.filter(Boolean);
 }
 
 function renderSteps(){
@@ -964,21 +1038,20 @@ function renderTomorrow(){
 }
 function removeTomorrow(i){ const arr=S.steps[tomorrowKey()]||[]; arr.splice(i,1); persist(); renderTomorrow(); }
 
-function openStepSheet(forTomorrow){
+async function openStepSheet(forTomorrow){
   const focuses=S.monthFocuses||[];
   let chosenTag = focuses.length===1 ? focuses[0].text : '';
   const assetNames=Object.keys(S.assets);
   const title = forTomorrow ? '明日の一歩を決める' : '今日の一歩を決める';
-  const hint = forTomorrow
-    ? `<p class="sheet-note">明日の自分が、迷わず動けるように。<br>やることを、ひとつ決めておきましょう。</p>`
-    : (focuses.length
-      ? `<p class="sheet-note">今月の焦点に近づく、今日できる一歩は。</p>`
-      : `<p class="sheet-note">理想へ向かう意味を持った、一歩を。</p>`);
-  // 焦点が複数あるときだけ選択チップ
+
+  // ① 現在の向かう先・今月の焦点を上部に表示
+  const contextNote = (S.ideal||focuses.length)
+    ? `<div class="sheet-current">${S.ideal?`向かう先：「${esc(S.ideal)}」`:''}${S.ideal&&focuses.length?' ／ ':''} ${focuses.length===1?`今月：「${esc(focuses[0].text)}」`:focuses.length>1?`今月：${focuses.map(f=>esc(f.text)).join('、')}`:''}
+       </div>` : '';
+
   const focusPart = focuses.length>1
     ? `<label class="field-lbl">どの焦点に繋がる？（任意）</label><div class="chip-row" id="sf-row">${focuses.map(f=>`<button class="chip" onclick="pickStepFocus(this,'${esc(f.text)}')">${esc(f.text)}</button>`).join('')}</div>`
     : '';
-  // 既存の前進資産をチップで提示（選ぶと項目名と単位が自動で入る）
   const itemChips = assetNames.length
     ? `<div class="chip-row" id="item-chips" style="margin-bottom:4px">${assetNames.map(n=>`<button class="chip" onclick="pickStepItem(this,'${esc(n)}','${esc(S.assets[n].unit||'')}')">${esc(n)}</button>`).join('')}</div>`
     : '';
@@ -988,8 +1061,11 @@ function openStepSheet(forTomorrow){
     document.querySelectorAll('#item-chips .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on');
     document.getElementById('step-item').value=name;
     if(unit) document.getElementById('step-unit').value=unit;
-    // 一歩のテキストが空なら項目名を入れておく
     const ti=document.getElementById('step-inp'); if(ti && !ti.value.trim()) ti.value=name;
+  };
+  window.pickSuggestion=(text)=>{
+    const inp=document.getElementById('step-inp');
+    if(inp){ inp.value=text; inp.focus(); }
   };
   window.doAddStep=()=>{
     const text=(document.getElementById('step-inp').value||'').trim();
@@ -1006,20 +1082,46 @@ function openStepSheet(forTomorrow){
     closeModal();
     quietToast(forTomorrow?'明日の一歩を決めました':'一歩を決めました');
   };
-  openSheet(`<h2>${title}</h2>${hint}
-    <label class="field-lbl">${forTomorrow?'明日、踏む一歩':'今日、踏む一歩'}</label>
+
+  openSheet(`<h2>${title}</h2>
+    ${contextNote}
+    <div id="step-suggest-area">
+      <div class="suggest-loading" id="step-suggest-loading">AIが候補を考えています…</div>
+      <div id="step-suggest-chips" class="suggest-chips"></div>
+    </div>
+    <div class="suggest-divider">または、自分で入力</div>
     <div class="field-box"><input type="text" id="step-inp" placeholder="例：読書20ページ、LPを1画面作る"></div>
     ${focusPart}
-    <div class="step-measure-note">達成したら前進資産に積み上げたいなら、項目を決めておきます（数値・単位は任意）。</div>
-    ${itemChips}
-    <label class="field-lbl">積み上げる項目（任意）</label>
-    <div class="field-box"><input type="text" id="step-item" placeholder="例：読書、筋トレ"></div>
-    <div style="display:flex;gap:10px">
-      <div style="flex:1"><label class="field-lbl">数値（任意）</label><div class="field-box"><input type="number" id="step-amt" step="any" placeholder="20"></div></div>
-      <div style="flex:1"><label class="field-lbl">単位（任意）</label><div class="field-box"><input type="text" id="step-unit" placeholder="ページ"></div></div>
-    </div>
+    <details class="step-asset-details">
+      <summary>前進資産に積み上げる設定（任意）</summary>
+      <div style="margin-top:12px">
+        <div class="step-measure-note">チェック完了時に資産へ自動反映。項目・数値・単位を決めておきます。</div>
+        ${itemChips}
+        <label class="field-lbl">積み上げる項目</label>
+        <div class="field-box"><input type="text" id="step-item" placeholder="例：読書、筋トレ"></div>
+        <div style="display:flex;gap:10px">
+          <div style="flex:1"><label class="field-lbl">数値</label><div class="field-box"><input type="number" id="step-amt" step="any" placeholder="20"></div></div>
+          <div style="flex:1"><label class="field-lbl">単位</label><div class="field-box"><input type="text" id="step-unit" placeholder="ページ"></div></div>
+        </div>
+      </div>
+    </details>
     <div class="sheet-btns"><button class="sbtn" onclick="closeModal()">閉じる</button><button class="sbtn sbtn-p" onclick="doAddStep()">決める</button></div>`);
   setTimeout(()=>document.getElementById('step-inp')?.focus(),300);
+
+  // ③ AI候補を取得して表示
+  try{
+    const suggestions=await callSuggestAPI('step');
+    const loading=document.getElementById('step-suggest-loading');
+    const chips=document.getElementById('step-suggest-chips');
+    if(loading) loading.style.display='none';
+    if(chips && suggestions.length){
+      chips.innerHTML=suggestions.map(s=>
+        `<button class="suggest-chip" onclick="pickSuggestion('${esc(s)}')">${esc(s)}</button>`).join('');
+    }
+  }catch(e){
+    const loading=document.getElementById('step-suggest-loading');
+    if(loading) loading.style.display='none';
+  }
 }
 
 // ── 夜の記録：タブ切替 ──
@@ -1823,6 +1925,42 @@ function onbInputStep(opts){
   setTimeout(()=>document.getElementById('onb-inp')?.focus(),400);
 }
 
+// ③ オンボーディング用：AI候補＋自分で入力の両方を提示
+async function onbAIInputStep(opts){
+  // opts: {eyebrow, kind, q, ph, saveKey, next}
+  // ① 向かう先を上部に表示
+  const idealShown=onbDraft.idealSummary||onbDraft.ideal||'';
+  const currentNote = idealShown
+    ? `<div class="sheet-current" style="margin-bottom:18px">向かう先：「${esc(idealShown)}」</div>` : '';
+
+  onbShow(`
+    <div class="onb-step-eyebrow">${opts.eyebrow}</div>
+    ${currentNote}
+    <div class="onb-q">${opts.q}</div>
+    <div id="onb-suggest-area" style="margin:18px 0 0">
+      <div class="suggest-loading" id="onb-suggest-loading">AIが候補を考えています…</div>
+      <div id="onb-suggest-chips" class="suggest-chips"></div>
+    </div>
+    <div class="suggest-divider">または、自分で入力</div>
+    <input class="onb-input" id="onb-inp" placeholder="${opts.ph}" value="${esc(onbDraft[opts.saveKey]||'')}">
+    <button class="onb-btn" id="onb-next-btn" onclick="onbSave('${opts.saveKey}','${opts.next}')" style="margin-top:14px">次へ</button>`);
+
+  // ③ AI候補を非同期で取得
+  try{
+    const suggestions=await callSuggestAPI(opts.kind);
+    const loading=document.getElementById('onb-suggest-loading');
+    const chips=document.getElementById('onb-suggest-chips');
+    if(loading) loading.style.display='none';
+    if(chips && suggestions.length){
+      chips.innerHTML=suggestions.map(s=>
+        `<button class="suggest-chip" onclick="document.getElementById('onb-inp').value='${esc(s)}'">${esc(s)}</button>`).join('');
+    }
+  }catch(e){
+    const loading=document.getElementById('onb-suggest-loading');
+    if(loading) loading.style.display='none';
+  }
+}
+
 function onbRender(stage){
   // ── Splash ──
   if(stage==='splash'){
@@ -1950,21 +2088,21 @@ function onbRender(stage){
 
   // ── STEP10〜12：取り組みたいこと / 今日の一歩 / 今月の焦点 ──
   if(stage==='goal2'){
-    onbInputStep({eyebrow:'STEP 10 ・ 目標',q:'その理想に近づくために、<br>今のあなたが最初に<br>取り組みたいことは何ですか？',sub:'肩肘張らず、自然に答えてください。',
-      ph:'例：Web制作を学ぶ、副業を始める、読書習慣をつける',value:onbDraft.goal,dotIndex:0,dotTotal:0,
-      onNext:`()=>onbSave('goal','step2')`});
+    onbAIInputStep({eyebrow:'STEP 10 ・ 目標', kind:'goal',
+      q:'その理想に近づくために、<br>今のあなたが最初に<br>取り組みたいことは何ですか？',
+      ph:'例：Web制作を学ぶ、副業を始める',saveKey:'goal',next:'step2'});
     return;
   }
   if(stage==='step2'){
-    onbInputStep({eyebrow:'STEP 11 ・ 今日の一歩',q:'今日、その目標のために<br>最初の一歩として<br>取り組むことは何ですか？',sub:'絶対に、小さくていい。',
-      ph:'例：本を10ページ読む、10分歩く',value:onbDraft.step,dotIndex:0,dotTotal:0,
-      onNext:`()=>onbSave('step','month2')`});
+    onbAIInputStep({eyebrow:'STEP 11 ・ 今日の一歩', kind:'step',
+      q:'今日、その目標のために<br>できる小さな一歩は？',
+      ph:'例：本を10ページ読む、10分歩く',saveKey:'step',next:'month2'});
     return;
   }
   if(stage==='month2'){
-    onbInputStep({eyebrow:'STEP 12 ・ 今月の焦点',q:'今日の一歩を積み重ねた先で、<br>今月末にはどんな状態に<br>なっていたいですか？',sub:'積み重ねの先にある状態を。',
-      ph:'例：本を1冊読み終える、副業候補を3つ調べる',value:onbDraft.month,dotIndex:0,dotTotal:0,
-      onNext:`()=>onbSave('month','done')`});
+    onbAIInputStep({eyebrow:'STEP 12 ・ 今月の焦点', kind:'month',
+      q:'今日の一歩を積み重ねた先で、<br>今月末にはどんな状態に<br>なっていたいですか？',
+      ph:'例：本を1冊読み終える、副業候補を3つ調べる',saveKey:'month',next:'done'});
     return;
   }
 
