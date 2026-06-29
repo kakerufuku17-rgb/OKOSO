@@ -286,6 +286,26 @@
   /* ③ AI候補チップ */
   .suggest-chips{display:flex;flex-direction:column;gap:9px;margin-bottom:6px;}
   .suggest-chip{text-align:left;padding:13px 16px;border:1px solid var(--ember-b);border-radius:8px;background:var(--ember-d);color:var(--ember);font-family:var(--serif);font-size:15px;line-height:1.5;letter-spacing:0.02em;cursor:pointer;transition:all 0.2s;}
+  /* 目標 複数選択チップ（チェックボックス式） */
+  .goal-multi-chips{display:flex;flex-direction:column;gap:9px;margin-bottom:6px;}
+  .goal-chip{position:relative;text-align:left;padding:13px 16px 13px 44px;border:1px solid var(--rule-2);border-radius:8px;background:var(--bg-1);color:var(--ink);font-family:var(--serif);font-size:15px;line-height:1.5;letter-spacing:0.02em;cursor:pointer;transition:all 0.2s;}
+  .goal-chip::before{content:'';position:absolute;left:15px;top:50%;transform:translateY(-50%);width:18px;height:18px;border:1.5px solid var(--ink-4);border-radius:5px;transition:all 0.2s;}
+  .goal-chip.on{border-color:var(--ember);background:var(--ember-d);color:var(--ember);}
+  .goal-chip.on::before{border-color:var(--ember);background:var(--ember);}
+  .goal-chip.on::after{content:'✓';position:absolute;left:19px;top:50%;transform:translateY(-50%);color:#fff;font-size:12px;font-weight:bold;}
+  .goal-chosen{margin-top:14px;}
+  .goal-chosen-lbl{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;color:var(--ember);text-transform:uppercase;margin-bottom:8px;}
+  .goal-chosen-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;background:var(--ember-d);border:1px solid var(--ember-b);border-radius:6px;margin-bottom:7px;font-family:var(--serif);font-size:14px;color:var(--ink);}
+  .goal-chosen-row button{background:none;border:none;color:var(--ink-3);font-size:16px;cursor:pointer;padding:0 4px;line-height:1;}
+  /* 目標・今月の焦点 一覧管理 */
+  .lm-list{margin:16px 0;}
+  .lm-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid var(--rule);}
+  .lm-row:first-child{border-top:none;}
+  .lm-chk{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--ink-4);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s;}
+  .lm-chk:hover{border-color:var(--ember);background:var(--ember-d);}
+  .lm-text{flex:1;font-family:var(--serif);font-size:15px;line-height:1.6;color:var(--ink);cursor:pointer;letter-spacing:0.02em;}
+  .lm-empty{font-family:var(--serif);font-size:13px;color:var(--ink-4);padding:14px 0;text-align:center;}
+  .tn-empty .tn-val{font-style:normal;}
   .suggest-chip:hover{background:var(--ember);color:#fff;}
   .suggest-loading{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.06em;padding:4px 0 14px;animation:pulse 1.5s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:0.4}50%{opacity:1}}
@@ -550,7 +570,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v27';
+const STORE='okoso_v28';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -780,21 +800,56 @@ function renderFlow(){
   renderTomorrow();
 }
 
-// ③ 今日の一歩の上部に、向かう先と目標をコンパクトに表示
+// ③ 今日の一歩の上部に、向かう先・目標・今月の焦点を階層表示
 function renderTodayNorth(){
   const el=document.getElementById('today-north');
   if(!el) return;
   if(!S.ideal){ el.innerHTML=''; return; }
   const goalText = S.goals.length ? S.goals.map(g=>esc(g.text)).join('、') : '';
+  const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>esc(m.text)).join('、') : '';
   el.innerHTML=`
     <div class="tn-row tn-ideal" onclick="openIdealSheet()">
       <div class="tn-lbl">向かう先</div>
       <div class="tn-val">${esc(S.ideal)}</div>
     </div>
-    ${goalText?`<div class="tn-row tn-goal" onclick="(${S.goals.length===1?`()=>openMultiSheet('goal','${S.goals[0].id}')`:`()=>document.getElementById('flow-goal-wrap').scrollIntoView()`})()">
+    ${goalText?`<div class="tn-row tn-goal" onclick="openListManager('goal')">
       <div class="tn-lbl">目標</div>
       <div class="tn-val">${goalText}</div>
-    </div>`:''}`;
+    </div>`:`<div class="tn-row tn-goal tn-empty" onclick="openMultiSheet('goal')">
+      <div class="tn-lbl">目標</div>
+      <div class="tn-val" style="color:var(--ink-4)">目標を決める →</div>
+    </div>`}
+    ${monthText?`<div class="tn-row tn-month" onclick="openListManager('month')">
+      <div class="tn-lbl">今月</div>
+      <div class="tn-val">${monthText}</div>
+    </div>`:`<div class="tn-row tn-month tn-empty" onclick="openMultiSheet('month')">
+      <div class="tn-lbl">今月</div>
+      <div class="tn-val" style="color:var(--ink-4)">今月の焦点を決める →</div>
+    </div>`}`;
+}
+
+// 目標・今月の焦点の一覧管理（複数対応：追加・編集・削除・達成）
+function openListManager(kind){
+  const isGoal=kind==='goal';
+  const list=isGoal?S.goals:S.monthFocuses;
+  const title=isGoal?'目標':'今月の焦点';
+  const sub=isGoal
+    ? '向かう先へ近づくためのルート。<br>いくつでも持てます。'
+    : '目標の中で、今月いちばん力を入れる道。<br>これも、いくつでも。';
+  const rows=list.length
+    ? list.map(it=>`<div class="lm-row">
+        <button class="lm-chk" onclick="achieveItem('${kind}','${it.id}');closeModal();" title="達成にする"><svg width="10" height="8" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <span class="lm-text" onclick="closeModal();openMultiSheet('${kind}','${it.id}')">${esc(it.text)}</span>
+      </div>`).join('')
+    : `<div class="lm-empty">まだありません</div>`;
+  openSheet(`<h2>${title}</h2>
+    <p class="sheet-note">${sub}</p>
+    ${S.ideal?`<div class="sheet-current">向かう先：「${esc(S.ideal)}」</div>`:''}
+    <div class="lm-list">${rows}</div>
+    <div class="sheet-btns" style="flex-direction:column;gap:8px">
+      <button class="sbtn sbtn-p" onclick="closeModal();openMultiSheet('${kind}')" style="width:100%">＋ ${title}を追加</button>
+      <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+    </div>`);
 }
 
 // ④⑤ 朝の挨拶：昨日の前進・連続日数で「今日もやろう」を作る
@@ -1017,8 +1072,8 @@ async function callSuggestAPI(kind){
   const kindLabel = kind==='goal' ? '目標（理想への通過点）'
     : kind==='month' ? '今月の焦点（今月末に達成したい状態）'
     : '今日の一歩（今日できる小さな行動）';
-  const ideal=S.ideal||onbDraft.idealSummary||'(未設定)';
-  const goal=S.goals.map(g=>g.text).join('・')||(onbDraft.goal||'(未設定)');
+  const ideal=S.ideal||onbDraft.idealTitle||onbDraft.idealSummary||'(未設定)';
+  const goal=S.goals.map(g=>g.text).join('・')||(onbDraft.goals&&onbDraft.goals.join('・'))||(onbDraft.goal||'(未設定)');
   const month=S.monthFocuses.map(m=>m.text).join('・')||(onbDraft.month||'(未設定)');
 
   const sys=`あなたはOKOSOというアプリの伴走者です。ユーザーの向かう先（理想）をもとに、「${kindLabel}」の候補を5個提案してください。
@@ -2015,10 +2070,10 @@ const ONB_EXAMPLES={
   step:['LPを1画面作る','問題集10ページ','投稿を1本作る']
 };
 const PAIN_CATEGORIES=['仕事を変えたい','収入を増やしたい','働き方を変えたい','やりたいことが分からない','お金の不安','健康・体力','体型・見た目','恋愛・結婚','家族との関係','子育て','人間関係','自信が持てない','将来への不安','時間がない','習慣が続かない','毎日がつまらない','その他'];
-let onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',idealTitle:'',heartMoves:[],dialogTurns:[],convo:[],convoCount:0};
+let onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',idealTitle:'',goals:[],heartMoves:[],dialogTurns:[],convo:[],convoCount:0};
 
 function startOnboarding(){
-  onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',idealTitle:'',heartMoves:[],dialogTurns:[],convo:[],convoCount:0};
+  onbDraft={ideal:'',goal:'',month:'',step:'',painCategory:'',painMoment:'',idealDailyLife:'',idealSummary:'',idealTitle:'',goals:[],heartMoves:[],dialogTurns:[],convo:[],convoCount:0};
   onbHistory=[]; onbCurrentStage='';
   onbRender('splash');
 }
@@ -2286,9 +2341,7 @@ function onbRender(stage, opts){
 
   // ── STEP10〜12：取り組みたいこと / 今日の一歩 / 今月の焦点 ──
   if(stage==='goal2'){
-    onbAIInputStep({eyebrow:'STEP 10 ・ 目標', kind:'goal',
-      q:'その理想に近づくために、<br>今のあなたが最初に<br>取り組みたいことは何ですか？',
-      ph:'例：Web制作を学ぶ、副業を始める',saveKey:'goal',next:'step2'});
+    onbGoalMultiStep();
     return;
   }
   if(stage==='step2'){
@@ -2306,12 +2359,13 @@ function onbRender(stage, opts){
 
   // ── 完了 ──
   if(stage==='done'){
-    const idealShown = onbDraft.idealSummary || onbDraft.ideal;
+    const idealShown = onbDraft.idealTitle || onbDraft.idealSummary || onbDraft.ideal;
+    const goalsLine = (onbDraft.goals&&onbDraft.goals.length) ? onbDraft.goals.join('、') : (onbDraft.goal||'—');
     onbShow(`
       <div class="onb-step-eyebrow">準備完了</div>
       <div style="margin-bottom:30px">
-        <div class="onb-done-line">理想　<span class="v">${esc(idealShown||'—')}</span></div>
-        <div class="onb-done-line">取り組み　<span class="v">${esc(onbDraft.goal||'—')}</span></div>
+        <div class="onb-done-line">向かう先　<span class="v">${esc(idealShown||'—')}</span></div>
+        <div class="onb-done-line">目標　<span class="v">${esc(goalsLine)}</span></div>
         <div class="onb-done-line">今月　<span class="v">${esc(onbDraft.month||'—')}</span></div>
         <div class="onb-done-line">今日　<span class="v">${esc(onbDraft.step||'—')}</span></div>
       </div>
@@ -2319,6 +2373,79 @@ function onbRender(stage, opts){
       <button class="onb-btn" onclick="onbFinish()">OKOSOを始める</button>`);
     return;
   }
+}
+
+// ── STEP10：目標を複数選ぶ（AIが3〜5個提案・複数選択可・自分でも入力） ──
+async function onbGoalMultiStep(){
+  if(!onbDraft.goals) onbDraft.goals=[];
+  const idealShown=onbDraft.idealTitle||onbDraft.idealSummary||onbDraft.ideal||'';
+  const currentNote = idealShown
+    ? `<div class="sheet-current" style="margin-bottom:18px">向かう先：「${esc(idealShown)}」</div>` : '';
+
+  onbShow(`
+    <div class="onb-step-eyebrow">STEP 10 ・ 目標</div>
+    ${currentNote}
+    <div class="onb-q" style="font-size:19px">向かう先から考えると、<br>今、取り組むと良さそうなのは？</div>
+    <div class="onb-sub">いくつ選んでもかまいません。<br>あとから増やしたり減らしたりもできます。</div>
+    <div id="goal-suggest-area" style="margin:16px 0 0">
+      <div class="suggest-loading" id="goal-suggest-loading">AIが、あなたに合いそうな目標を考えています…</div>
+      <div id="goal-suggest-chips" class="goal-multi-chips"></div>
+    </div>
+    <div class="suggest-divider">または、自分で追加</div>
+    <div style="display:flex;gap:8px">
+      <input class="onb-input" id="goal-own-inp" placeholder="自分の言葉で目標を書く" style="flex:1">
+      <button class="onb-btn" onclick="onbAddOwnGoal()" style="width:auto;padding:0 18px;margin:0;white-space:nowrap">追加</button>
+    </div>
+    <div class="goal-chosen" id="goal-chosen"></div>
+    <button class="onb-btn" id="goal-next-btn" onclick="onbGoalsNext()" style="margin-top:18px">この目標で進む</button>`);
+  renderChosenGoals();
+
+  // AI候補（複数選択チップ）
+  try{
+    const suggestions=await callSuggestAPI('goal');
+    const loading=document.getElementById('goal-suggest-loading');
+    const chips=document.getElementById('goal-suggest-chips');
+    if(loading) loading.style.display='none';
+    if(chips && suggestions.length){
+      chips.innerHTML=suggestions.map(s=>
+        `<button class="goal-chip" onclick="onbToggleGoal('${esc(s)}',this)">${esc(s)}</button>`).join('');
+      // 既に選ばれているものはonに
+      document.querySelectorAll('.goal-chip').forEach(b=>{ if(onbDraft.goals.includes(b.textContent)) b.classList.add('on'); });
+    }
+  }catch(e){
+    const loading=document.getElementById('goal-suggest-loading');
+    if(loading) loading.style.display='none';
+  }
+}
+function onbToggleGoal(text, el){
+  const i=onbDraft.goals.indexOf(text);
+  if(i>=0){ onbDraft.goals.splice(i,1); if(el)el.classList.remove('on'); }
+  else { onbDraft.goals.push(text); if(el)el.classList.add('on'); }
+  renderChosenGoals();
+}
+function onbAddOwnGoal(){
+  const inp=document.getElementById('goal-own-inp');
+  const v=(inp.value||'').trim();
+  if(!v) return;
+  if(!onbDraft.goals.includes(v)) onbDraft.goals.push(v);
+  inp.value='';
+  renderChosenGoals();
+}
+function renderChosenGoals(){
+  const el=document.getElementById('goal-chosen');
+  if(!el) return;
+  if(!onbDraft.goals.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="goal-chosen-lbl">選んだ目標（${onbDraft.goals.length}）</div>`+
+    onbDraft.goals.map((g,i)=>`<div class="goal-chosen-row"><span>${esc(g)}</span><button onclick="onbRemoveChosenGoal(${i})">×</button></div>`).join('');
+}
+function onbRemoveChosenGoal(i){
+  onbDraft.goals.splice(i,1);
+  renderChosenGoals();
+  document.querySelectorAll('.goal-chip').forEach(b=>{ if(!onbDraft.goals.includes(b.textContent)) b.classList.remove('on'); });
+}
+function onbGoalsNext(){
+  if(!onbDraft.goals.length){ quietToast('ひとつ以上、目標を選んでください'); return; }
+  onbNext('step2');
 }
 
 function selectPainCategory(cat){
@@ -2803,7 +2930,12 @@ choicesは"ask"の時は必ず3個以上。JSON以外は一切出力しない。
 function onbFinish(){
   // ① idealTitle（短い向かう先）をS.idealに保存
   S.ideal = onbDraft.idealTitle || onbDraft.idealSummary || onbDraft.ideal || '';
-  S.goals = onbDraft.goal ? [{id:uid(),text:onbDraft.goal}] : [];
+  // 目標は複数（onbDraft.goals）。後方互換でonbDraft.goalも拾う
+  if(onbDraft.goals && onbDraft.goals.length){
+    S.goals = onbDraft.goals.map(t=>({id:uid(),text:t}));
+  } else {
+    S.goals = onbDraft.goal ? [{id:uid(),text:onbDraft.goal}] : [];
+  }
   S.monthFocuses = onbDraft.month ? [{id:uid(),text:onbDraft.month}] : [];
   const focusTag = onbDraft.month||'';
   if(onbDraft.step){ todaySteps().push({id:uid(),text:onbDraft.step,tag:focusTag,done:false}); }
