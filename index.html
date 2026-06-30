@@ -434,6 +434,10 @@
   .deepen-choices{display:flex;flex-direction:column;gap:9px;margin-bottom:0;}
   .deepen-choices:not(:empty){margin-top:16px;}
   .dchoice{text-align:left;padding:14px 16px;border:1px solid var(--rule-2);border-radius:8px;background:var(--bg-1);color:var(--ink);font-family:var(--serif);font-size:15px;line-height:1.5;letter-spacing:0.02em;cursor:pointer;transition:all 0.2s;}
+  /* ③ 確認モード：提案された理想カード＋確認ボタン */
+  .confirm-proposal{text-align:center;font-family:var(--serif);font-size:19px;font-weight:600;line-height:1.6;color:var(--ink);letter-spacing:0.03em;background:var(--ember-d);border:1px solid var(--ember-b);border-radius:10px;padding:20px 18px;margin-bottom:12px;box-shadow:0 4px 24px -14px rgba(200,120,60,0.4);}
+  .dchoice-confirm{text-align:center;background:var(--ember);border-color:var(--ember);color:#fff;font-weight:600;}
+  .dchoice-confirm:hover{background:var(--ember-d);color:var(--ember);}
   .dchoice:hover{border-color:var(--ember-b);}
   .dchoice.on{border-color:var(--ember);background:var(--ember-d);color:var(--ember);}
   .dchoice-send{text-align:center;background:var(--ember-d);border-color:var(--ember-b);color:var(--ember);font-weight:500;margin-top:2px;}
@@ -587,7 +591,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v29';
+const STORE='okoso_v30';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -2567,13 +2571,18 @@ function updateDeepenProgress(done){
   if(!fill||!pct) return;
   let p;
   if(done){ p=100; }
-  else { p=Math.round((onbDraft.convoCount/DEEPEN_TARGET_TURNS)*100); if(p>95) p=95; }
+  else {
+    // ターン数で打ち切らないので、漸近的に増やす（85%で頭打ち。確認/まとめで100%）
+    const n=onbDraft.convoCount||0;
+    p=Math.round(85*(1-Math.pow(0.78,n)));
+    if(p>85) p=85;
+  }
   fill.style.width=p+'%';
   pct.textContent=p+'%';
   if(label){
-    label.textContent = p>=95 ? 'そろそろ、まとまりそうです'
-      : p>=60 ? 'だんだん、見えてきました'
-      : p>=30 ? '少しずつ、整理されています'
+    label.textContent = done ? '言葉になりました'
+      : p>=70 ? 'もうすぐ、見えてきそうです'
+      : p>=40 ? '少しずつ、整理されています'
       : '理想が見えてくるまで';
   }
 }
@@ -2621,27 +2630,38 @@ async function askNextDeepenQuestion(){
   try{ reply=await callDeepenAPI(); }catch(e){ reply=null; }
   if(!reply){
     const fb=fallbackDeepenQuestion();
-    // フォールバックの質問が尽きた（null）→ ローカルで要約してまとめる
     if(!fb){
-      onbDraft.idealSummary = localSummaryFromConvo();
-      updateDeepenProgress(true);
-      onbNext('summaryreveal');
-      return;
+      // フォールバックが尽きた。再深掘り中でなければ確認を促す。再深掘り中なら掘り下げ続ける
+      if(onbDraft._reDeepening){
+        reply={mode:'ask', text:reDeepenFallbackQuestion(), choices:reDeepenFallbackChoices()};
+      } else {
+        const ls=localSummaryFromConvo();
+        reply={mode:'confirm', title:ls, text:'少しずつ、あなたの向かいたい方向が言葉になってきました。これで確認してみますか？', choices:['この理想を確認する','まだ少し違う']};
+      }
+    } else {
+      reply={mode:'ask', text:fb.text, choices:fb.choices};
     }
-    reply={mode:'ask', text:fb.text, choices:fb.choices};
   }
-  // 直前のAI発言と同じ質問なら、ループ防止のためまとめへ
+  // 直前のAI発言と同じ質問なら、別の角度のフォールバックに差し替え（まとめに走らせない）
   const lastAi=[...(onbDraft.convo||[])].reverse().find(m=>m.role==='ai');
   if(reply.mode==='ask' && lastAi && lastAi.text===reply.text){
-    const ls=localSummaryFromConvo();
-    onbDraft.idealTitle=ls; onbDraft.idealSummary='';
-    updateDeepenProgress(true);
-    onbNext('summaryreveal');
+    reply={mode:'ask', text:reDeepenFallbackQuestion(), choices:reDeepenFallbackChoices()};
+  }
+  // ③ confirm：理想が言葉になってきた → 確認を促す（決めるのはユーザー）
+  if(reply.mode==='confirm'){
+    onbDraft._proposedTitle=reply.title||'';
+    onbDraft.convo.push({role:'ai', text:reply.text});
+    renderDeepenChat();
+    setDeepenBusy(false);
+    renderConfirmChoices(reply.title||'', reply.choices||['この理想を確認する','まだ少し違う']);
+    updateDeepenProgress();
     return;
   }
+  // ② ユーザーが明示要求した時だけ summary（通常フローではここに来ない）
   if(reply.mode==='summary'){
     onbDraft.idealTitle=reply.title||reply.text.slice(0,35);
     onbDraft.idealSummary=reply.text;
+    onbDraft._reDeepening=false;
     updateDeepenProgress(true);
     onbNext('summaryreveal');
     return;
@@ -2651,6 +2671,59 @@ async function askNextDeepenQuestion(){
   setDeepenBusy(false);
   renderChoices(reply.choices||[]);
   updateDeepenProgress();
+}
+
+// ③ 確認用の選択肢（「この理想を確認する」で確定 / 「まだ少し違う」で再深掘り）
+function renderConfirmChoices(title, choices){
+  onbDraft._lastChoices=choices;
+  const wrap=document.getElementById('deepen-choices');
+  if(!wrap) return;
+  const confirmLabel=choices[0]||'この理想を確認する';
+  const keepLabel=choices[1]||'まだ少し違う';
+  wrap.innerHTML=`
+    <div class="confirm-proposal">${esc(title)}</div>
+    <button class="dchoice dchoice-confirm" onclick="onbConfirmIdeal()">${esc(confirmLabel)}</button>
+    <button class="dchoice" onclick="onbRejectIdeal()">${esc(keepLabel)}</button>`;
+}
+// 「この理想を確認する」→ 確定して向かう先お披露目へ
+function onbConfirmIdeal(){
+  onbDraft.idealTitle=onbDraft._proposedTitle||localSummaryFromConvo();
+  onbDraft.idealSummary='';
+  onbDraft._reDeepening=false;
+  updateDeepenProgress(true);
+  onbNext('summaryreveal');
+}
+// 「まだ少し違う」→ その違和感を素材に、掘り下げ続ける
+function onbRejectIdeal(){
+  onbDraft._reDeepening=true;
+  onbDraft.convo.push({role:'user', text:'まだ少し違う気がする'});
+  onbDraft.convoCount=(onbDraft.convoCount||0)+1;
+  renderDeepenChat();
+  const wrap=document.getElementById('deepen-choices'); if(wrap) wrap.innerHTML='';
+  askNextDeepenQuestion();
+}
+
+// 再深掘り用のフォールバック質問（「その奥の想い」を掘る）
+const REDEEPEN_QUESTIONS=[
+  'なるほど、まだしっくりこないんですね。その「違う」と感じた奥には、どんな想いがありそうですか？',
+  '大切なことだと思います。本当はどうなっていたら、心から「これだ」と思えそうですか？',
+  'もう少しだけ聞かせてください。今の言葉に足りないのは、どんな要素だと感じますか？',
+  'その感覚を大事にしたいです。理想を思い浮かべた時、いちばん心が動くのはどの部分ですか？',
+  'ありがとうございます。では、今のあなたが本当に手放したくないものは何ですか？'
+];
+const REDEEPEN_CHOICES=[
+  ['もっと自分らしさを出したい','もっと人との繋がりを','もっと自由や余白を','もっと挑戦や成長を','うまく言葉にできない'],
+  ['安心できる毎日','誇れる自分','大切な人の笑顔','心が満たされる時間','自分で選べる人生'],
+  ['具体的な場面が欲しい','もっと前向きな言葉に','もっと自分の本音を','落ち着く・整う感じを','分からない']
+];
+function reDeepenFallbackQuestion(){
+  const i=(onbDraft._reDeepenQIdx||0)%REDEEPEN_QUESTIONS.length;
+  onbDraft._reDeepenQIdx=(onbDraft._reDeepenQIdx||0)+1;
+  return REDEEPEN_QUESTIONS[i];
+}
+function reDeepenFallbackChoices(){
+  const i=(onbDraft._reDeepenQIdx||1)%REDEEPEN_CHOICES.length;
+  return REDEEPEN_CHOICES[i];
 }
 
 // フォールバック質問の銀行（カテゴリ非依存で、毎ターン必ず違う質問。尽きたらnull）
@@ -2702,7 +2775,7 @@ function onbDeepenSend(){
   submitDeepenAnswer(v);
 }
 
-// ユーザーが「そろそろまとめて」を押した
+// ② ユーザーが「そろそろまとめて」を押した（明示的な終了）
 async function onbDeepenSummarize(){
   setDeepenBusy(true);
   let summary=null;
@@ -2714,6 +2787,7 @@ async function onbDeepenSummarize(){
     const ls=localSummaryFromConvo();
     onbDraft.idealTitle=ls; onbDraft.idealSummary='';
   }
+  onbDraft._reDeepening=false;
   updateDeepenProgress(true);
   onbNext('summaryreveal');
 }
@@ -2787,13 +2861,15 @@ function onbHeart(choice){
     onbNext('arrival');   // 通常オンボ：STEP9へ
     return;
   }
-  // それ以外 → 対話に戻して、違和感を深掘り（選択肢つき）
+  // それ以外（惜しい/半分/違和感）→ その"違い"を素材に、何ターンでも掘り下げる
+  onbDraft._reDeepening=true;
+  onbDraft._reDeepenSince=onbDraft.convoCount||0;
   const seeds={
-    '惜しい':{text:'ありがとうございます。あと少し、ということは、近い部分もあるんですね。今の言葉で、一番しっくりこなかったのはどこでしたか？',
-      choices:['言葉が少し大げさに感じた','大事なものが入っていない','方向は合うが、表現が硬い','もっと具体的にしたい']},
-    '半分':{text:'ありがとうございます。まだ言葉にできていない想いが、ありそうですね。今の文章の中で「これは違う」と感じたのは？',
-      choices:['ここに書かれた価値観が違う','本当はもっと別のことを望んでいる','半分は合うが半分は違う','うまく言えないけど違和感がある']},
-    '違和感':{text:'大丈夫です。焦らなくて構いません。今の文章を読んで、「本当はこうなりたい」と心に浮かんだことに近いのは？',
+    '惜しい':{text:'ありがとうございます。「あと少し」ということは、近い部分もあるんですね。その"あと少し"の奥には、まだ言葉になっていないどんな想いがありそうですか？',
+      choices:['言葉が少し大げさに感じた','大事なものが入っていない','方向は合うが、表現が硬い','もっと具体的にしたい','うまく言えないけど違う']},
+    '半分':{text:'正直に教えてくれてありがとうございます。半分は合っている。では、まだ言葉にできていない"もう半分"には、どんな想いが隠れていそうですか？',
+      choices:['ここに書かれた価値観が違う','本当はもっと別のことを望んでいる','大切なものが抜けている','表現がしっくりこない','まだうまく言えない']},
+    '違和感':{text:'大丈夫です、焦らなくて構いません。その違和感こそ大切な手がかりです。今は違うと感じる——では本当は、心のどこかでどんな毎日を望んでいそうですか？',
       choices:['もっと家族や人とのつながりを','もっと自分の時間や自由を','もっと仕事や挑戦の手応えを','もっと心の安心や余裕を','まだ言葉にできない']}
   };
   const seed=seeds[choice]||seeds['違和感'];
@@ -2870,14 +2946,23 @@ async function callDeepenAPI(forceSummary){
 2. 質問には、必ず「選択肢」を添える。OKOSOのユーザーは考えることに疲れています。書くより選ぶ方が得意です。「あ、これ私だ」と思える選択肢を、3〜6個、具体的に用意してください。
 3. 選択肢はユーザーの回答に合わせて、その人専用に組み立てる。固定の一般論ではなく、直前の発言の奥にある価値観の違いを切り分ける選択肢にする。
 
+# 一度の質問で終わらせない（最重要）
+- 深掘りは「1ターン」で終わらせてはいけません。一度の質問で理想を完成させようとしないでください。
+- ユーザーが「少し違う」「結構違う」「全然違う」と答えたら、その回答こそ最も大切な素材です。その"違い"を手がかりに、新しい仮説を立てて質問を続けてください。
+- あなたの役割は、ユーザーの回答を言い換えることでも、ユーザーが言ったことをそのまま理想として採用することでもありません。
+- 「その奥には、まだ言葉になっていないどんな想いがあるのだろう？」という姿勢で対話を続けてください。
+- ユーザー自身が「それだ」と心から思えるまで、何ターンでも対話を続けてください。「まだ言葉になっていない想い」がある限り、あなたから対話を終了してはいけません。
+- 終わってよいのは次の時だけ：(a) ユーザーが明示的に「まとめて」と頼んだ時、(b) あなたが「もう理想が言葉になってきた」と判断し、confirmで確認を促し、ユーザーがそれを選んだ時。
+
 # 禁止事項
 - ユーザーの回答をそのまま要約しただけ・言い換えただけで終わる（オウム返し禁止）
 - ユーザーの言葉をそのまま理想として採用する
 - 質問だけを返し、選択肢を出さない
 - ユーザー任せにする／答えを急がせる／一回で理想を完成させようとする
+- ターン数が増えたからという理由で、まだ想いが定まっていないのにまとめようとする
 
 # 思考手順
-① ユーザーは何と言ったか → ② その裏にある感情・価値観は何か → ③ この人が本当に求めているものは何か → ④ それを確かめる／整理するにはどんな選択肢を出せばいいか → ⑤ 短い理解の言葉＋質問＋選択肢を返す
+① ユーザーは何と言ったか → ② その裏にある感情・価値観は何か → ③ この人が本当に求めているものは何か → ④ まだ言葉になっていない想いは残っていないか → ⑤ 残っているなら新しい仮説で問い直す／定まってきたなら確認を促す
 
 # 相手の現在地に合わせる
 - レベル1（理想がほぼ見えていない）：未来を聞きすぎない。今の悩み・感情・生活・痛みを選択肢で整理する。
@@ -2887,16 +2972,19 @@ async function callDeepenAPI(forceSummary){
 # 質問の作り方
 「なぜ？」より「どんな？」「いつ？」「誰と？」「何をしている？」「どんな毎日？」。理由より情景を聞く。
 
-# 「向かう先」の作り方（summaryを返すとき・最重要）
+# 「向かう先」の作り方（summary/confirmのtitleを作るとき・最重要）
 これは要約ではありません。ユーザーの回答を素材として、その人の理想を【一段抽象化・整理】し、毎日見たくなる「人生の方向性」を、短く覚えやすい言葉へ【再構成】してください。
 禁止：回答をそのまま並べる／言い換えただけ／箇条書きを一文にしただけ。
 目標：ユーザーが「これが今の自分の向かう先だ」と思える、シンプルで印象に残る理想。
 
 # 出力形式（厳守・JSONのみ）
+まだ掘り下げる時：
 {"mode":"ask","text":"短い共感・受け止め（1文）＋深掘りの質問（1文）。合わせて100字以内、やさしい口調。毎回違う言い回しで","choices":["選択肢1","選択肢2","選択肢3","選択肢4"]}
-または、向かいたい方向が見えてきたら：
+理想が言葉になってきて、ユーザーに確認を促す時：
+{"mode":"confirm","title":"20〜40字の人生の方向性（再構成した、覚えやすい言葉）","text":"理想が言葉になってきたことを伝え、確認を促す短い一文","choices":["この理想を確認する","まだ少し違う"]}
+ユーザーが明示的にまとめを求めた時：
 {"mode":"summary","title":"20〜40字。一目で覚えられ、毎日見たくなる人生の方向性。抽象化して再構成した、シンプルで印象に残る言葉。「〜できる毎日へ」「〜を大切に生きる」のような体言止め。回答をそのまま並べない","text":"補足1〜2文（60字以内）。なぜこの方向なのか、背景や意味をやさしく説明する"}
-choicesは"ask"の時は必ず3個以上。JSON以外は一切出力しない。`;
+choicesは"ask"と"confirm"の時は必ず用意する。JSON以外は一切出力しない。`;
 
   // 会話履歴を素材としてまとめる
   const materials = onbDraft._reviewMode
@@ -2907,13 +2995,15 @@ choicesは"ask"の時は必ず3個以上。JSON以外は一切出力しない。
   const lastAiQ=[...(onbDraft.convo||[])].reverse().find(m=>m.role==='ai');
   const noRepeat = lastAiQ ? `\n直前のあなたの質問は「${lastAiQ.text}」です。これと同じ質問は絶対に繰り返さず、必ず新しい角度の質問にしてください。` : '';
   const cc=onbDraft.convoCount||0;
+  // 再深掘り（heartcheckで「違う」を選んだ後）は、その"違い"を素材に仮説を立て直す
+  const reDeepenNote = onbDraft._reDeepening
+    ? `\n\n【最重要・再深掘り中】ユーザーは一度提示した理想に対して「まだ少し違う／違う」と答えました。この"違う"という感覚こそ、最も大切な素材です。前の理想を言い換えるのではなく、「その奥には、まだ言葉になっていないどんな想いがあるのだろう？」という姿勢で、新しい仮説を立てて問い直してください。絶対に、一度の質問でまとめようとしないこと。`
+    : '';
   const instruction = forceSummary
     ? `\n\n【指示】ユーザーが「そろそろまとめてほしい」と希望しました。ここまでの対話すべてを踏まえ、必ず {"mode":"summary",...} を返してください。`
     : (cc < DEEPEN_MIN_TURNS
-        ? `\n\n【指示】まだ対話が浅いので、必ず {"mode":"ask",...}（整理＋質問＋選択肢3個以上）を返してください。毎回、前と違う新しい角度で深掘りすること。${noRepeat}`
-        : cc >= DEEPEN_TARGET_TURNS
-          ? `\n\n【指示】十分に語られました。今度は必ず {"mode":"summary",...} を返して、向かいたい方向をまとめてください。`
-          : `\n\n【指示】まだ方向が見えていなければ {"mode":"ask",...}（整理＋質問＋選択肢／前と違う新しい角度）を、方向が見えてきたら {"mode":"summary",...} を返してください。${noRepeat}`);
+        ? `\n\n【指示】まだ対話が浅いので、必ず {"mode":"ask",...}（共感＋質問＋選択肢3個以上）を返してください。毎回、前と違う新しい角度で深掘りすること。一度の質問で理想を完成させようとしないこと。${noRepeat}${reDeepenNote}`
+        : `\n\n【指示】まだ「言葉になっていない想い」が残っている限り、{"mode":"ask",...} で掘り下げ続けてください。ターン数で打ち切らないこと。\nただし、ユーザーの想いが十分に語られ、向かいたい方向が見えてきたとあなたが判断したら、{"mode":"confirm","title":"...","text":"...","choices":["この理想を確認する","まだ少し違う"]} を返してください（confirmは「理想が言葉になってきました。確認しますか？」とユーザーに尋ねる形。決めるのはユーザーです）。\nまだ迷いや違和感が残っていそうなら、まとめずに ask を続けてください。${noRepeat}${reDeepenNote}`);
 
   const userMsg=`${materials}\n\n【ここまでの対話】\n${convoText||'(まだ対話していません。最初の問いかけを、整理＋質問＋選択肢の形でしてください)'}${instruction}`;
 
@@ -2937,15 +3027,19 @@ choicesは"ask"の時は必ず3個以上。JSON以外は一切出力しない。
   catch(e){
     const tm=txt.match(/"text"\s*:\s*"([^"]+)"/);
     const ttm=txt.match(/"title"\s*:\s*"([^"]+)"/);
-    const mm=txt.match(/"mode"\s*:\s*"(ask|summary)"/);
+    const mm=txt.match(/"mode"\s*:\s*"(ask|summary|confirm)"/);
     if(tm){ obj={ mode:(mm?mm[1]:'ask'), title:(ttm?ttm[1]:''), text:tm[1], choices:[] }; }
     else throw new Error('badjson');
   }
   if(!obj.mode||!obj.text) throw new Error('badjson');
-  if(obj.mode==='ask' && !Array.isArray(obj.choices)) obj.choices=[];
-  // ① summary の場合: title（短い）と text（補足）に分ける
-  if(obj.mode==='summary'){
-    if(!obj.title) obj.title=obj.text.slice(0,35);   // titleがなければtextの頭35字を使う
+  if((obj.mode==='ask'||obj.mode==='confirm') && !Array.isArray(obj.choices)) obj.choices=[];
+  // summary/confirm: title（短い）が無ければ補う
+  if(obj.mode==='summary' || obj.mode==='confirm'){
+    if(!obj.title) obj.title=obj.text.slice(0,35);
+  }
+  // confirmの選択肢が無ければ既定を入れる
+  if(obj.mode==='confirm' && (!obj.choices||!obj.choices.length)){
+    obj.choices=['この理想を確認する','まだ少し違う'];
   }
   return obj;
 }
