@@ -305,6 +305,8 @@
   .lm-chk:hover{border-color:var(--ember);background:var(--ember-d);}
   .lm-text{flex:1;font-family:var(--serif);font-size:15px;line-height:1.6;color:var(--ink);cursor:pointer;letter-spacing:0.02em;}
   .lm-empty{font-family:var(--serif);font-size:13px;color:var(--ink-4);padding:14px 0;text-align:center;}
+  .lm-edit{flex-shrink:0;background:none;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-3);font-family:var(--serif);font-size:11.5px;padding:5px 12px;cursor:pointer;letter-spacing:0.04em;transition:all 0.2s;white-space:nowrap;}
+  .lm-edit:hover{border-color:var(--ember-b);color:var(--ember);}
   .tn-empty .tn-val{font-style:normal;}
   .suggest-chip:hover{background:var(--ember);color:#fff;}
   .suggest-loading{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.06em;padding:4px 0 14px;animation:pulse 1.5s ease-in-out infinite;}
@@ -362,7 +364,7 @@
   @keyframes up{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 
   /* ── オンボーディング ── */
-  .onb{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:40px 32px;text-align:center;opacity:0;transition:opacity 0.6s;}
+  .onb{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(48px + env(safe-area-inset-top)) 32px calc(40px + env(safe-area-inset-bottom));text-align:center;opacity:0;transition:opacity 0.6s;}
   .onb.show{opacity:1;}
   .onb::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 90% 50% at 50% 8%,rgba(196,122,62,0.1),transparent 65%);pointer-events:none;}
   /* コンテンツが画面に収まる時は中央寄せ、超える時は全部スクロールできるように */
@@ -413,7 +415,7 @@
   .deepen-chat{display:flex;flex-direction:column;gap:14px;padding:4px 2px;}
   /* チャット形式レイアウト：ヘッダー固定・会話スクロール・操作部下固定 */
   .onb-chat{justify-content:flex-start !important;padding:0 !important;overflow:hidden !important;}
-  .onb-chat-header{flex-shrink:0;width:100%;max-width:464px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:18px 24px 14px;border-bottom:1px solid var(--rule);}
+  .onb-chat-header{flex-shrink:0;width:100%;max-width:464px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:calc(16px + env(safe-area-inset-top)) 24px 14px;border-bottom:1px solid var(--rule);}
   .onb-back-chat{position:static !important;width:32px;height:32px;flex-shrink:0;}
   .deepen-progress-mini{margin-left:auto;display:flex;align-items:center;gap:8px;min-width:90px;}
   .dpm-bar{width:60px;height:3px;background:var(--rule-2);border-radius:100px;overflow:hidden;}
@@ -591,7 +593,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v30';
+const STORE='okoso_v31';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -755,12 +757,18 @@ async function syncNow(){
   try{
     const remote=await pullFromGist();
     const merged=mergeData(S, remote);
+    const changed = JSON.stringify(merged)!==JSON.stringify(S);
     S=merged;
     try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}
-    // 画面再描画
-    renderFlow(); renderAssetChips();
-    if(document.getElementById('scr-proof').classList.contains('active')) renderProof();
-    if(document.getElementById('scr-archive').classList.contains('active')) renderCalendar();
+    // 画面再描画（操作の邪魔をしない：シート・オンボ表示中や入力中はスキップ）
+    const modalOpen=!!document.getElementById('veil');
+    const onbOpen=!!document.getElementById('onb');
+    const typing=document.activeElement && (document.activeElement.tagName==='TEXTAREA'||document.activeElement.tagName==='INPUT');
+    if(changed && !modalOpen && !onbOpen && !typing){
+      renderFlow(); renderAssetChips();
+      if(document.getElementById('scr-proof').classList.contains('active')) renderProof();
+      if(document.getElementById('scr-archive').classList.contains('active')) renderCalendar();
+    }
     syncing=false;
     await pushToGist();   // マージ結果を書き戻す
     sync.lastSync=Date.now(); saveSync(); updateSyncBadge('ok');
@@ -860,15 +868,16 @@ function openListManager(kind){
   const rows=list.length
     ? list.map(it=>`<div class="lm-row">
         <button class="lm-chk" onclick="achieveItem('${kind}','${it.id}');closeModal();" title="達成にする"><svg width="10" height="8" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span class="lm-text" onclick="closeModal();openMultiSheet('${kind}','${it.id}')">${esc(it.text)}</span>
+        <span class="lm-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}</span>
+        <button class="lm-edit" onclick="openMultiSheet('${kind}','${it.id}')" title="編集">✎ 編集</button>
       </div>`).join('')
     : `<div class="lm-empty">まだありません</div>`;
   openSheet(`<h2>${title}</h2>
-    <p class="sheet-note">${sub}</p>
+    <p class="sheet-note">${sub}<br><span style="color:var(--ink-4);font-size:11.5px">左の○＝達成にする ／ ✎＝編集</span></p>
     ${S.ideal?`<div class="sheet-current">向かう先：「${esc(S.ideal)}」</div>`:''}
     <div class="lm-list">${rows}</div>
     <div class="sheet-btns" style="flex-direction:column;gap:8px">
-      <button class="sbtn sbtn-p" onclick="closeModal();openMultiSheet('${kind}')" style="width:100%">＋ ${title}を追加</button>
+      <button class="sbtn sbtn-p" onclick="openMultiSheet('${kind}')" style="width:100%">＋ ${title}を追加</button>
       <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
     </div>`);
 }
@@ -2072,14 +2081,22 @@ function showDay(key){
 // ════════════════════════════════
 //  MODAL
 // ════════════════════════════════
+let _sheetGen=0;   // シートの世代番号（closeModalの遅延削除が、後から開いたシートを消さないように）
 function openSheet(html){
+  _sheetGen++;
   const mount=document.getElementById('modal');
   mount.innerHTML=`<div class="veil" id="veil"><div class="sheet">${html}</div></div>`;
   const veil=document.getElementById('veil');
   veil.addEventListener('click',e=>{if(e.target===veil)closeModal();});
   requestAnimationFrame(()=>veil.classList.add('show'));
 }
-function closeModal(){const v=document.getElementById('veil');if(!v)return;v.classList.remove('show');setTimeout(()=>document.getElementById('modal').innerHTML='',400);}
+function closeModal(){
+  const v=document.getElementById('veil');
+  if(!v)return;
+  v.classList.remove('show');
+  const gen=_sheetGen;
+  setTimeout(()=>{ if(gen===_sheetGen) document.getElementById('modal').innerHTML=''; },400);
+}
 
 // ════════════════════════════════
 //  オンボーディング（理想の明確度で分岐）
@@ -3215,8 +3232,41 @@ function init(){
   } else {
     updateSyncBadge('off');
   }
+  setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
   else { checkUnmetTasks(); setTimeout(maybeSuggestIdealReview, 800); }
+}
+
+// ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
+let _lastAutoSync=0;
+const AUTO_SYNC_MIN_INTERVAL=15*1000;    // 連続発火の抑制（15秒）
+const AUTO_SYNC_PERIODIC=3*60*1000;      // 開きっぱなしでも3分ごとに同期
+function autoSyncNow(reason){
+  if(!sync.enabled||!sync.token||!sync.gistId) return;
+  if(syncing) return;
+  const now=Date.now();
+  if(now-_lastAutoSync<AUTO_SYNC_MIN_INTERVAL) return;
+  _lastAutoSync=now;
+  syncNow().catch(()=>updateSyncBadge('error'));
+}
+function setupAutoSync(){
+  // スマホでアプリに戻ってきた時（iOSはページ再読込せずに復帰するため、ここが最重要）
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible') autoSyncNow('visible');
+  });
+  // PCでタブ・ウィンドウにフォーカスが戻った時
+  window.addEventListener('focus',()=>autoSyncNow('focus'));
+  // ページ表示（bfcacheからの復帰含む）
+  window.addEventListener('pageshow',(e)=>{ if(e.persisted) autoSyncNow('pageshow'); });
+  // 開きっぱなしでも定期同期
+  setInterval(()=>{ if(document.visibilityState==='visible') autoSyncNow('interval'); }, AUTO_SYNC_PERIODIC);
+  // アプリを離れる直前に、未送信の変更を送る
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='hidden' && sync.enabled && sync.token && sync.gistId){
+      clearTimeout(pushTimer);
+      pushToGist().catch(()=>{});
+    }
+  });
 }
 
 // ════════════════════════════════
