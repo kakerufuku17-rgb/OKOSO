@@ -38,6 +38,9 @@
   .sync-badge{background:none;border:none;color:var(--ink-4);font-size:11px;cursor:pointer;padding:2px 4px;line-height:1;transition:color 0.3s;font-family:var(--mono);}
   .sync-badge.on{color:var(--ember);}
   .sync-badge.err{color:#c4603e;}
+  .google-login-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:10px;padding:15px 16px;border:1px solid var(--ember);border-radius:8px;background:var(--ember);color:#fff;font-family:var(--serif);font-size:15.5px;font-weight:600;letter-spacing:0.05em;cursor:pointer;transition:all 0.2s;}
+  .google-login-btn:hover{background:var(--ember-d);color:var(--ember);}
+  .g-mark{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#fff;color:#4285F4;font-family:var(--sans);font-weight:700;font-size:13px;}
   .sync-status{font-family:var(--serif);font-size:13px;color:var(--ink-2);line-height:1.7;letter-spacing:0.03em;padding:12px 14px;background:var(--bg-2);border:1px solid var(--rule-2);border-radius:4px;}
   .sync-status.on{border-color:var(--ember-b);color:var(--ember);}
   .sync-copy{flex-shrink:0;background:var(--ember-d);border:1px solid var(--ember-b);color:var(--ember);font-family:var(--serif);font-size:12px;padding:7px 12px;border-radius:3px;cursor:pointer;}
@@ -111,6 +114,7 @@
   /* ④⑤ 朝の挨拶カード */
   .morning-card{font-family:var(--serif);font-size:15px;line-height:2.0;color:var(--ink);letter-spacing:0.04em;background:linear-gradient(160deg,var(--ember-d),transparent 80%);border:1px solid var(--ember-b);border-radius:8px;padding:20px 22px;margin-bottom:22px;}
   .morning-card strong{color:var(--ember);font-weight:600;}
+  .morning-yj{margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-3);line-height:1.8;}
   /* ③ 向かう先・目標 コンパクト表示 */
   .today-north{margin-bottom:22px;}
   .tn-row{display:flex;gap:12px;align-items:baseline;padding:11px 14px;background:var(--bg-1);border:1px solid var(--rule-2);cursor:pointer;transition:border-color 0.2s;}
@@ -140,6 +144,19 @@
   .done-asset-plus{font-family:var(--mono);font-size:11px;color:var(--ink-3);}
   .done-streak{margin-top:16px;font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--ink-3);}
   .done-hint{margin-top:24px;font-family:var(--serif);font-size:11px;color:var(--ink-4);letter-spacing:0.08em;}
+  .done-closing{margin-top:18px;font-family:var(--serif);font-size:13px;color:var(--ember);line-height:1.9;letter-spacing:0.04em;}
+  .ms-card{text-align:center;max-width:340px;background:var(--bg-1);border:1px solid var(--ember-b);border-radius:14px;padding:32px 26px;box-shadow:0 0 60px -20px rgba(200,120,60,0.5);transform:translateY(12px);transition:transform 0.5s cubic-bezier(0.2,0.7,0.2,1);}
+  .ms-veil.show .ms-card{transform:translateY(0);}
+  .ms-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.24em;color:var(--ember);text-transform:uppercase;margin-bottom:14px;}
+  .ms-title{font-family:var(--serif);font-size:20px;font-weight:600;line-height:1.7;color:var(--ink);letter-spacing:0.03em;}
+  .ms-ideal{margin-top:14px;font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.8;}
+  .ms-stats{display:flex;justify-content:center;gap:22px;margin-top:22px;}
+  .ms-stat-n{font-family:var(--mono);font-size:24px;color:var(--ember);letter-spacing:0.02em;}
+  .ms-stat-l{font-family:var(--serif);font-size:10.5px;color:var(--ink-4);margin-top:4px;letter-spacing:0.06em;}
+  .ms-assets{margin-top:18px;display:flex;flex-direction:column;gap:6px;}
+  .ms-asset{display:flex;justify-content:space-between;font-family:var(--serif);font-size:12.5px;color:var(--ink-2);padding:7px 14px;background:var(--ember-d);border-radius:6px;}
+  .ms-asset-v{font-family:var(--mono);color:var(--ember);}
+  .ms-note{margin-top:22px;font-family:var(--serif);font-size:12.5px;color:var(--ink-3);line-height:2.0;letter-spacing:0.04em;}
 
 
   /* ── dusk ── */
@@ -307,6 +324,7 @@
   .lm-empty{font-family:var(--serif);font-size:13px;color:var(--ink-4);padding:14px 0;text-align:center;}
   .lm-edit{flex-shrink:0;background:none;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-3);font-family:var(--serif);font-size:11.5px;padding:5px 12px;cursor:pointer;letter-spacing:0.04em;transition:all 0.2s;white-space:nowrap;}
   .lm-edit:hover{border-color:var(--ember-b);color:var(--ember);}
+  .step-gift{font-family:var(--serif);font-size:10.5px;color:var(--ember);letter-spacing:0.05em;margin-bottom:4px;}
   .tn-empty .tn-val{font-style:normal;}
   .suggest-chip:hover{background:var(--ember);color:#fff;}
   .suggest-loading{font-family:var(--serif);font-size:13px;color:var(--ink-4);letter-spacing:0.06em;padding:4px 0 14px;animation:pulse 1.5s ease-in-out infinite;}
@@ -467,6 +485,22 @@
 </style>
 </head>
 <body>
+<script>
+/* ═══════════════════════════════════════════════════════
+   ★ Firebase設定（Googleログイン用）★
+   Firebaseコンソールで取得した firebaseConfig を
+   下の { } の中に貼り付けてください。
+   まだ設定していない場合はこのままでOK（Googleログインが非表示になるだけ）
+═══════════════════════════════════════════════════════ */
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyADrcAeYahfU89FcQTFtjFtFwlNtz-VemA",
+  authDomain: "okoso-4f4c1.firebaseapp.com",
+  projectId: "okoso-4f4c1",
+  storageBucket: "okoso-4f4c1.firebasestorage.app",
+  messagingSenderId: "732394944686",
+  appId: "1:732394944686:web:8d5fd3b09f19828130153f"
+};
+</script>
 
 <!-- ① 今日（起動画面） -->
 <div class="screen active" id="scr-today">
@@ -593,7 +627,7 @@
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v31';
+const STORE='okoso_v33';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -612,6 +646,7 @@ let S = {
   idealStartTs: 0,             // 今の向かう先を決めた日時（アップデート提案の起点）
   lastIdealReviewTs: 0,        // 最後に理想の見直しを提案した日時
   dismissedReviewTs: 0,        // ユーザーが「まだいい」と見送った日時
+  shownMilestones: [],         // 表示済みの節目（7,30,100...）
   updatedAt: 0                 // このデータの最終更新時刻（同期のマージ判定に使う）
 };
 function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.parse(r)};}catch(e){} }
@@ -633,10 +668,32 @@ function saveSync(){ try{localStorage.setItem(SYNC_KEY,JSON.stringify(sync));}ca
 const GIST_FILENAME='okoso-data.json';
 let syncing=false, pushTimer=null;
 
+// 同期の経路：Googleログイン中なら 'google'、Gist設定済みなら 'gist'、無ければ null
+function cloudMode(){
+  if(window.fb && window.fb.ready && window.fb.user) return 'google';
+  if(sync.enabled && sync.token && sync.gistId) return 'gist';
+  return null;
+}
+async function cloudPull(){
+  const m=cloudMode();
+  if(m==='google') return await window.fb.pull();
+  if(m==='gist') return await pullFromGist();
+  return null;
+}
+async function cloudPush(){
+  const m=cloudMode();
+  if(m==='google'){
+    updateSyncBadge('pushing');
+    try{ await window.fb.push(JSON.stringify(S)); sync.lastSync=Date.now(); saveSync(); updateSyncBadge('ok'); }
+    catch(e){ updateSyncBadge('error'); throw e; }
+    return;
+  }
+  if(m==='gist') return await pushToGist();
+}
 function schedulePush(){
-  if(!sync.enabled||!sync.token||!sync.gistId) return;
+  if(!cloudMode()) return;
   clearTimeout(pushTimer);
-  pushTimer=setTimeout(()=>{ pushToGist().catch(()=>{}); }, 1500);
+  pushTimer=setTimeout(()=>{ cloudPush().catch(()=>{}); }, 1500);
 }
 
 async function gistHeaders(){
@@ -694,6 +751,7 @@ function mergeData(local, remote){
     [...a,...b].forEach(x=>{ const k=x[idKey]||JSON.stringify(x); if(!map.has(k)) map.set(k,x); });
     return [...map.values()].sort((x,y)=>(x.ts||x.doneTs||0)-(y.ts||y.doneTs||0));
   };
+  out.shownMilestones=[...new Set([...(local.shownMilestones||[]),...(remote.shownMilestones||[])])];
   out.logs=mergeById(local.logs,remote.logs);
   out.journals=mergeById(local.journals,remote.journals);
   out.idealHistory=mergeById(local.idealHistory,remote.idealHistory,'ts');
@@ -752,10 +810,10 @@ async function enableSync(token, gistId){
 
 // 今すぐ同期（pull → merge → push）
 async function syncNow(){
-  if(!sync.enabled||!sync.token||!sync.gistId) return;
+  if(!cloudMode()) return;
   syncing=true; updateSyncBadge('pulling');
   try{
-    const remote=await pullFromGist();
+    const remote=await cloudPull();
     const merged=mergeData(S, remote);
     const changed = JSON.stringify(merged)!==JSON.stringify(S);
     S=merged;
@@ -770,7 +828,7 @@ async function syncNow(){
       if(document.getElementById('scr-archive').classList.contains('active')) renderCalendar();
     }
     syncing=false;
-    await pushToGist();   // マージ結果を書き戻す
+    await cloudPush();   // マージ結果を書き戻す
     sync.lastSync=Date.now(); saveSync(); updateSyncBadge('ok');
   }catch(e){ syncing=false; updateSyncBadge('error'); throw e; }
 }
@@ -893,19 +951,29 @@ function renderMorningGreeting(){
 
   const streak=calcStreak();
   const yest=yesterdayDoneCount();
-  const tomorrowReady=(tomorrowSteps().length>0); // 実際は「今日用に繰り越された」前日夜の仕込み
+  const hasGift=todaySteps().some(s=>s.gift&&!s.done);
 
   let msg='';
-  if(yest>0 && streak>=2){
+  if(hasGift){
+    msg=`おはようございます。<br>昨日のあなたが、今日の一歩を<br>用意してくれています。`;
+  } else if(yest>0 && streak>=2){
     msg=`おはようございます。<br>昨日も一歩、前へ進みました。<br><strong>${streak}日続けて</strong>、前進しています。`;
   } else if(yest>0){
     msg=`おはようございます。<br>昨日のあなたは、ちゃんと前へ進みました。<br>今日も、ひとつだけ。`;
-  } else if(todaySteps().some(s=>s.carried)){
-    msg=`おはようございます。<br>昨日のあなたが、今日の一歩を<br>用意してくれています。`;
   } else {
     msg=`おはようございます。<br>今日も、理想へ一歩。<br>それだけで、十分です。`;
   }
-  el.innerHTML=`<div class="morning-card">${msg}</div>`;
+  // ① 昨日のジャーナルの一節で、昨日の自分と繋がる
+  const yj=yesterdayJournal();
+  const jline = yj ? `<div class="morning-yj">昨日のあなた：「${esc(yj.length>42?yj.slice(0,42)+'…':yj)}」</div>` : '';
+  el.innerHTML=`<div class="morning-card">${msg}${jline}</div>`;
+}
+// 昨日のジャーナル（通常のもの）から最初の一節を取る
+function yesterdayJournal(){
+  const y=new Date(); y.setDate(y.getDate()-1);
+  const key=ymdKey(y);
+  const j=(S.journals||[]).filter(x=>!x.kind && ymdKey(new Date(x.ts))===key).pop();
+  return j ? j.text.replace(/\n+/g,' ') : '';
 }
 
 // 連続前進日数（今日の一歩を完了 or 前進記録がある日が連続している数）
@@ -1152,7 +1220,7 @@ function renderSteps(){
     return `
     <div class="step-row">
       <button class="chk${s.done?' done':''}" onclick="toggleStep(${i})"><svg width="11" height="9" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <div class="step-info"><div class="step-t${s.done?' done':''}">${esc(s.text)}</div>${measure}${s.tag?`<div class="step-tag">▸ ${esc(s.tag)}</div>`:''}</div>
+      <div class="step-info">${s.gift?`<div class="step-gift">🎁 昨日のあなたからのプレゼント</div>`:''}<div class="step-t${s.done?' done':''}">${esc(s.text)}</div>${measure}${s.tag?`<div class="step-tag">▸ ${esc(s.tag)}</div>`:''}</div>
       <button class="step-del" onclick="removeStep(${i})">×</button>
     </div>`;}).join('');
 }
@@ -1218,17 +1286,23 @@ function showStepDoneMessage(s){
       ${s.amount!=null&&a.unit?`<span class="done-asset-plus">+${fmtNum(s.amount)}${esc(a.unit)}</span>`:''}
     </div>` : '';
   const streakBlock = streak>=2 ? `<div class="done-streak">${streak}日連続で前進中</div>` : '';
+  const allDone = todaySteps().length>0 && todaySteps().every(x=>x.done);
+  const closingNudge = allDone ? `<div class="done-closing">今日の一歩、すべて完了。<br>最後に、明日の自分へ一歩をプレゼントしませんか。</div>` : '';
   mount.innerHTML=`<div class="done-veil" id="done-veil">
     <div class="done-card">
       <div class="done-spark">✦</div>
       <div class="done-msg">${msg}</div>
       ${assetBlock}
       ${streakBlock}
+      ${closingNudge}
       <div class="done-hint">タップして閉じる</div>
     </div>
   </div>`;
   const veil=document.getElementById('done-veil');
-  veil.addEventListener('click',()=>{ veil.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},450); });
+  veil.addEventListener('click',()=>{ veil.classList.remove('show'); setTimeout(()=>{
+    mount.innerHTML='';
+    if(allDone){ const cb=document.getElementById('closing-block'); if(cb) cb.scrollIntoView({behavior:'smooth',block:'center'}); }
+  },450); });
   requestAnimationFrame(()=>veil.classList.add('show'));
   setTimeout(()=>{ if(document.getElementById('done-veil')){ veil.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},450);} }, 3800);
 }
@@ -1316,7 +1390,7 @@ async function openStepSheet(forTomorrow){
     let amount=rawAmt?parseFloat(rawAmt):null; if(amount==null||isNaN(amount))amount=null;
     const unit=(document.getElementById('step-unit').value||'').trim();
     const target = forTomorrow ? tomorrowSteps() : todaySteps();
-    target.push({id:uid(), text, tag:chosenTag||'', done:false, item:item||'', amount, unit});
+    target.push({id:uid(), text, tag:chosenTag||'', done:false, item:item||'', amount, unit, gift:!!forTomorrow});
     persist();
     if(forTomorrow) renderTomorrow(); else renderSteps();
     renderAssetChips();
@@ -2118,15 +2192,40 @@ function startOnboarding(){
 
 // 「以前の記録を引き継ぐ」：同期キーを貼り付けて復元
 function onbRestore(){
+  const fbReady=(window.fb&&window.fb.ready);
   onbShow(`<div class="onb-step-eyebrow">記録を引き継ぐ</div>
-    <div class="onb-q" style="margin-bottom:14px">同期キーを貼り付けてください。</div>
-    <p class="onb-sub" style="margin-bottom:20px">前に使っていた端末の「同期」画面に表示されている、OKOSO- で始まる文字列です。</p>
+    ${fbReady?`<div class="onb-q" style="margin-bottom:14px">Googleでログインすると、<br>記録が自動でつながります。</div>
+    <button class="google-login-btn" onclick="onbFbLogin()" style="margin-bottom:8px"><span class="g-mark">G</span> Googleでログイン</button>
+    <p class="onb-sub" style="margin-bottom:18px">前の端末で使っていたのと同じ<br>Googleアカウントを選んでください。</p>
+    <div class="suggest-divider">または、同期キーで引き継ぐ</div>`
+    :`<div class="onb-q" style="margin-bottom:14px">同期キーを貼り付けてください。</div>
+    <p class="onb-sub" style="margin-bottom:20px">前に使っていた端末の「同期」画面に表示されている、OKOSO- で始まる文字列です。</p>`}
     <input class="onb-input" id="onb-restore-key" placeholder="OKOSO-... を貼り付け" style="font-family:var(--mono);font-size:12px">
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
       <button class="onb-btn" id="onb-restore-btn" onclick="doOnbRestore()">記録を引き継ぐ</button>
       <button class="onb-btn ghost" onclick="onbNext('hello')">戻る</button>
     </div>`);
-  setTimeout(()=>document.getElementById('onb-restore-key')?.focus(),400);
+}
+// オンボーディング中のGoogleログイン：成功したらクラウドの記録を取り込んで本編へ
+function onbFbLogin(){
+  if(!(window.fb&&window.fb.ready)) return;
+  quietToast('Googleの画面を開きます…');
+  window.fb.login().then(async ()=>{
+    try{
+      const remote=await window.fb.pull();
+      if(remote && remote.onboarded){
+        S=mergeData(S, remote);
+        try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}
+        const o=document.getElementById('onb');
+        if(o){ o.classList.remove('show'); setTimeout(()=>document.getElementById('onb-mount').innerHTML='',500); }
+        renderFlow(); renderAssetChips();
+        quietToast('記録を引き継ぎました');
+      } else {
+        quietToast('このアカウントにはまだ記録がありません。新しく始めましょう');
+        onbNext('welcome');
+      }
+    }catch(e){ quietToast('引き継ぎに失敗しました。もう一度お試しください'); }
+  }).catch(()=>quietToast('ログインできませんでした'));
 }
 
 async function doOnbRestore(){
@@ -2385,15 +2484,10 @@ function onbRender(stage, opts){
   if(stage==='step2'){
     onbAIInputStep({eyebrow:'STEP 11 ・ 今日の一歩', kind:'step',
       q:'今日、その目標のために<br>できる小さな一歩は？',
-      ph:'例：本を10ページ読む、10分歩く',saveKey:'step',next:'month2'});
+      ph:'例：本を10ページ読む、10分歩く',saveKey:'step',next:'done'});
     return;
   }
-  if(stage==='month2'){
-    onbAIInputStep({eyebrow:'STEP 12 ・ 今月の焦点', kind:'month',
-      q:'今日の一歩を積み重ねた先で、<br>今月末にはどんな状態に<br>なっていたいですか？',
-      ph:'例：本を1冊読み終える、副業候補を3つ調べる',saveKey:'month',next:'done'});
-    return;
-  }
+  // ④ 今月の焦点はオンボーディングから外した（ホーム画面でいつでも設定できる）
 
   // ── 完了 ──
   if(stage==='done'){
@@ -2404,7 +2498,6 @@ function onbRender(stage, opts){
       <div style="margin-bottom:30px">
         <div class="onb-done-line">向かう先　<span class="v">${esc(idealShown||'—')}</span></div>
         <div class="onb-done-line">目標　<span class="v">${esc(goalsLine)}</span></div>
-        <div class="onb-done-line">今月　<span class="v">${esc(onbDraft.month||'—')}</span></div>
         <div class="onb-done-line">今日　<span class="v">${esc(onbDraft.step||'—')}</span></div>
       </div>
       <div class="onb-sub" style="margin-bottom:30px">あとは、進むだけ。</div>
@@ -2960,8 +3053,20 @@ async function callDeepenAPI(forceSummary){
 
 # あなたが必ずやること
 1. ユーザーの回答を「素材」として受け取り、その奥の気持ちを汲んで、一段深く"理解"を示す。ユーザーが「そう、それが言いたかった」と思える整理をする。
-2. 質問には、必ず「選択肢」を添える。OKOSOのユーザーは考えることに疲れています。書くより選ぶ方が得意です。「あ、これ私だ」と思える選択肢を、3〜6個、具体的に用意してください。
+2. 質問には、必ず「選択肢」を添える。OKOSOのユーザーは考えることに疲れています。書くより選ぶ方が得意です。
 3. 選択肢はユーザーの回答に合わせて、その人専用に組み立てる。固定の一般論ではなく、直前の発言の奥にある価値観の違いを切り分ける選択肢にする。
+
+# 本音を引き出す技術（最重要・あなたの真価はここで決まる）
+このオンボーディングの目標は「ユーザー自身が気づいていない本音を引き出す」ことです。そのために：
+- 【仮説の言い当て】選択肢は「ユーザーがまだ口にしていないが、感じていそうなこと」を言語化する。表面の言葉の一段奥を突く。例：「仕事を変えたい」→「仕事そのものより、評価されない感覚がつらい」「本当は仕事より家族との時間が削られるのが嫌だ」「このまま10年後も同じ自分でいるのが怖い」のような、ハッとする仮説を混ぜる。
+- 【感情の名指し】曖昧な悩みには、感情の候補を具体的に並べる。「焦り」「虚しさ」「取り残される感覚」「自分に失望」——正確に名指しされた感情は、本人に「見抜かれた」という体験を生む。
+- 【対比で切り分ける】「AとB、どちらがより近いですか」と価値観を対比させる質問は、本人も気づかなかった優先順位を浮かび上がらせる。
+- 【情景を聞く】抽象論ではなく「その気持ちが一番強くなるのは、どんな場面ですか」と情景で聞く。記憶の中の場面には、本音が宿っている。
+- 【禁じ手】当たり障りのない一般的な選択肢だけを並べること。それはユーザーに「自分で考えろ」と言っているのと同じです。毎回、少なくとも1つは「踏み込んだ仮説」を選択肢に入れてください。外れても構いません。外れた選択肢すら、本音を探る手がかりになります。
+
+# 良い応答の例（この水準を目指す）
+ユーザー「仕事を変えたい」→ 悪い応答：「どんな仕事がしたいですか？」（考えさせている）
+良い応答：「そう感じるんですね。少し踏み込んで聞かせてください。『変えたい』の中身に一番近いのは？」choices:["仕事の内容より、正当に評価されない感覚がつらい","仕事のせいで、家族や自分の時間が削られるのが嫌だ","このまま10年後も同じ自分でいることが怖い","本当にやりたいことが、別にある気がする"]
 
 # 一度の質問で終わらせない（最重要）
 - 深掘りは「1ターン」で終わらせてはいけません。一度の質問で理想を完成させようとしないでください。
@@ -3098,7 +3203,33 @@ function parseSyncKey(key){
   return null;
 }
 
+function fbLoginClick(){
+  if(!(window.fb&&window.fb.ready)){ quietToast('Googleログインは現在準備中です'); return; }
+  quietToast('Googleの画面を開きます…');
+  window.fb.login().then(()=>{ closeModal(); }).catch(e=>{
+    quietToast('ログインできませんでした。もう一度お試しください');
+  });
+}
+function fbLogoutClick(){
+  if(window.fb&&window.fb.ready){ window.fb.logout(); }
+  closeModal(); quietToast('ログアウトしました');
+  updateSyncBadge(cloudMode()?'ok':'off');
+}
 function openSyncSheet(){
+  // Googleログイン中：アカウント表示＋ログアウト
+  if(window.fb && window.fb.ready && window.fb.user){
+    const u=window.fb.user;
+    openSheet(`<h2>記録の同期</h2>
+      <div class="sync-status on">Googleアカウントで同期中${sync.lastSync?`<br><span style="color:var(--ink-4);font-size:11px">最終同期：${fmtSyncTime(sync.lastSync)}</span>`:''}</div>
+      <p style="font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.95;margin:16px 0 6px">ログイン中：<strong style="color:var(--ink)">${esc(u.displayName||'')}</strong><br><span style="font-size:11.5px;color:var(--ink-4)">${esc(u.email||'')}</span></p>
+      <p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin:0 0 16px">他のスマホやPCでも、同じGoogleアカウントでログインするだけで、記録が自動でつながります。</p>
+      <div class="sheet-btns" style="flex-direction:column;gap:8px">
+        <button class="sbtn sbtn-p" onclick="doSyncNow()" style="width:100%">今すぐ同期する</button>
+        <button class="sbtn" onclick="fbLogoutClick()" style="width:100%;color:var(--ink-3)">ログアウト</button>
+        <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+      </div>`);
+    return;
+  }
   const on=sync.enabled&&sync.token&&sync.gistId;
   if(on){
     const key=makeSyncKey(sync.token, sync.gistId);
@@ -3118,15 +3249,21 @@ function openSyncSheet(){
       </div>`);
     return;
   }
-  // 未設定：2つの選択肢（この端末で新しく始める / 同期キーを貼り付ける）
+  // 未設定：Googleログインを主役に。旧Gist同期は上級者向けとして残す
+  const fbReady=(window.fb&&window.fb.ready);
   openSheet(`<h2>記録の同期</h2>
-    <p style="font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.95;margin:6px 0 20px">スマホとPCなど、複数の端末で同じ記録を見られるようにします。無料です。</p>
-    <div class="sheet-btns" style="flex-direction:column;gap:10px">
-      <button class="sbtn sbtn-p" onclick="startNewSync()" style="width:100%">この端末で同期を始める</button>
-      <button class="sbtn" onclick="showPasteSyncKey()" style="width:100%">同期キーを貼り付ける</button>
-      <button class="sbtn" onclick="closeModal()" style="width:100%;color:var(--ink-3)">あとで</button>
-    </div>
-    <p style="font-family:var(--serif);font-size:11.5px;color:var(--ink-4);line-height:1.85;margin:18px 0 0">はじめての端末なら「同期を始める」、すでに別の端末で使っているなら「同期キーを貼り付ける」を選んでください。</p>`);
+    <p style="font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:1.95;margin:6px 0 18px">記録をクラウドに保存して、スマホとPCどちらでも同じ記録を見られるようにします。端末をなくしても記録は消えません。無料です。</p>
+    ${fbReady?`<button class="google-login-btn" onclick="fbLoginClick()"><span class="g-mark">G</span> Googleでログイン</button>
+    <p style="font-family:var(--serif);font-size:11.5px;color:var(--ink-4);line-height:1.85;margin:10px 0 18px">いつものGoogleアカウントを選ぶだけ。<br>他の端末でも同じアカウントでログインすれば、自動でつながります。</p>`
+    :`<p style="font-family:var(--serif);font-size:12px;color:var(--ink-4);line-height:1.9;margin:0 0 16px">（Googleログインは現在準備中です）</p>`}
+    <details style="margin:0 0 14px">
+      <summary style="font-family:var(--serif);font-size:12px;color:var(--ink-4);cursor:pointer;letter-spacing:0.04em;text-decoration:underline;text-underline-offset:3px">上級者向け：同期キーで同期する</summary>
+      <div class="sheet-btns" style="flex-direction:column;gap:10px;margin-top:12px">
+        <button class="sbtn" onclick="startNewSync()" style="width:100%">この端末で同期を始める</button>
+        <button class="sbtn" onclick="showPasteSyncKey()" style="width:100%">同期キーを貼り付ける</button>
+      </div>
+    </details>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()" style="width:100%;color:var(--ink-3)">あとで</button></div>`);
 }
 
 // この端末で新しく同期を始める（＝GitHubの設定が必要）
@@ -3225,16 +3362,25 @@ function init(){
   renderFlow(); renderAssetChips();
   const jf=document.getElementById('jrnl-field');
   if(jf) jf.addEventListener('input',()=>{autosize(jf);document.getElementById('jrnl-keep').classList.toggle('on',jf.value.trim().length>0);});
-  // 同期が有効なら起動時にpull+merge
-  if(sync.enabled&&sync.token&&sync.gistId){
+  // 同期が有効なら起動時にpull+merge（Googleログインは非同期に来るので onFbAuthChanged でも拾う）
+  if(cloudMode()){
     updateSyncBadge('ok');
     syncNow().catch(()=>updateSyncBadge('error'));
   } else {
     updateSyncBadge('off');
   }
+  window.onFbAuthChanged=(u)=>{
+    if(u){
+      updateSyncBadge('ok');
+      quietToast(`${u.displayName||'Google'}でログイン中`);
+      syncNow().then(()=>{ renderFlow(); renderAssetChips(); }).catch(()=>updateSyncBadge('error'));
+    } else {
+      updateSyncBadge(cloudMode()?'ok':'off');
+    }
+  };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeSuggestIdealReview, 800); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -3242,7 +3388,7 @@ let _lastAutoSync=0;
 const AUTO_SYNC_MIN_INTERVAL=15*1000;    // 連続発火の抑制（15秒）
 const AUTO_SYNC_PERIODIC=3*60*1000;      // 開きっぱなしでも3分ごとに同期
 function autoSyncNow(reason){
-  if(!sync.enabled||!sync.token||!sync.gistId) return;
+  if(!cloudMode()) return;
   if(syncing) return;
   const now=Date.now();
   if(now-_lastAutoSync<AUTO_SYNC_MIN_INTERVAL) return;
@@ -3262,9 +3408,9 @@ function setupAutoSync(){
   setInterval(()=>{ if(document.visibilityState==='visible') autoSyncNow('interval'); }, AUTO_SYNC_PERIODIC);
   // アプリを離れる直前に、未送信の変更を送る
   document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='hidden' && sync.enabled && sync.token && sync.gistId){
+    if(document.visibilityState==='hidden' && cloudMode()){
       clearTimeout(pushTimer);
-      pushToGist().catch(()=>{});
+      cloudPush().catch(()=>{});
     }
   });
 }
@@ -3277,6 +3423,53 @@ function setupAutoSync(){
 const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
 const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
+
+// ② 節目の振り返り：7日・30日・100日…続けた人だけが見られる景色
+const MS_DAYS=[7,30,100,365];
+function activeDaysCount(){
+  const days=new Set();
+  (S.logs||[]).forEach(l=>days.add(ymdKey(new Date(l.ts))));
+  Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(arr.some(s=>s.done)) days.add(k); });
+  return days.size;
+}
+function totalDoneSteps(){
+  let n=0; Object.values(S.steps||{}).forEach(arr=>{ n+=arr.filter(s=>s.done).length; });
+  return n;
+}
+function maybeShowMilestone(){
+  if(!S.onboarded||!S.ideal) return;
+  if(document.getElementById('onb')) return;
+  if(!S.shownMilestones) S.shownMilestones=[];
+  const days=activeDaysCount();
+  const hit=MS_DAYS.filter(m=>days>=m && !S.shownMilestones.includes(m)).pop();
+  if(!hit) return;
+  S.shownMilestones.push(hit); persist();
+  const stepsN=totalDoneSteps();
+  const jN=(S.journals||[]).filter(j=>!j.kind).length;
+  const assetLines=Object.entries(S.assets||{}).slice(0,3).map(([name,a])=>
+    `<div class="ms-asset"><span>${esc(name)}</span><span class="ms-asset-v">${a.unit?fmtNum(a.total)+esc(a.unit):a.count+'回'}</span></div>`).join('');
+  const since=S.idealStartTs?Math.max(1,Math.round((Date.now()-S.idealStartTs)/86400000)):days;
+  const mount=document.getElementById('celebrate-mount');
+  mount.innerHTML=`<div class="done-veil ms-veil" id="ms-veil">
+    <div class="ms-card">
+      <div class="done-spark">✦</div>
+      <div class="ms-eyebrow">前進 ${hit}日目の景色</div>
+      <div class="ms-title">あなたは、${hit}日分<br>理想へ近づきました。</div>
+      <div class="ms-ideal">「${esc(S.ideal)}」</div>
+      <div class="ms-stats">
+        <div class="ms-stat"><div class="ms-stat-n">${days}</div><div class="ms-stat-l">前進した日</div></div>
+        <div class="ms-stat"><div class="ms-stat-n">${stepsN}</div><div class="ms-stat-l">踏んだ一歩</div></div>
+        <div class="ms-stat"><div class="ms-stat-n">${jN}</div><div class="ms-stat-l">残した言葉</div></div>
+      </div>
+      ${assetLines?`<div class="ms-assets">${assetLines}</div>`:''}
+      <div class="ms-note">${hit}日前のあなたが、今のあなたを見たら<br>きっと驚くはずです。この調子で。</div>
+      <div class="done-hint">タップして閉じる</div>
+    </div>
+  </div>`;
+  const veil=document.getElementById('ms-veil');
+  veil.addEventListener('click',()=>{ veil.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},450); });
+  requestAnimationFrame(()=>veil.classList.add('show'));
+}
 
 function maybeSuggestIdealReview(){
   if(!S.onboarded || !S.ideal) return;
@@ -3483,6 +3676,49 @@ function showUnmetDialog(unmet){
 // keepLogボタンは doKeepLog を呼ぶ
 window.keepLog=doKeepLog;
 init();
+</script>
+<script type="module">
+// Firebase 初期化（設定済みの時だけ動く）
+const cfg=window.FIREBASE_CONFIG||{};
+if(cfg.apiKey && cfg.projectId){
+  try{
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+    const { getFirestore, doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+    const app=initializeApp(cfg);
+    const auth=getAuth(app);
+    const db=getFirestore(app);
+    window.fb={
+      ready:true, user:null,
+      login: async ()=>{
+        const prov=new GoogleAuthProvider();
+        try{ await signInWithPopup(auth,prov); }
+        catch(e){
+          // ポップアップが塞がれた時はリダイレクト方式に切替
+          if(e && (e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request')){
+            await signInWithRedirect(auth,prov);
+          } else { throw e; }
+        }
+      },
+      logout: ()=>signOut(auth),
+      pull: async ()=>{
+        if(!window.fb.user) return null;
+        const s=await getDoc(doc(db,'users',window.fb.user.uid));
+        if(!s.exists()) return null;
+        const d=s.data();
+        try{ return d.payload?JSON.parse(d.payload):null; }catch(e){ return null; }
+      },
+      push: async (json)=>{
+        if(!window.fb.user) return;
+        await setDoc(doc(db,'users',window.fb.user.uid),{ payload:json, updatedAt:Date.now() });
+      }
+    };
+    onAuthStateChanged(auth,(u)=>{ window.fb.user=u; if(window.onFbAuthChanged) window.onFbAuthChanged(u); });
+    getRedirectResult(auth).catch(()=>{});
+  }catch(e){ window.fb={ready:false, error:String(e)}; }
+} else {
+  window.fb={ready:false};
+}
 </script>
 </body>
 </html>
