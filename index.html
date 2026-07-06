@@ -157,6 +157,28 @@
   .ms-asset{display:flex;justify-content:space-between;font-family:var(--serif);font-size:12.5px;color:var(--ink-2);padding:7px 14px;background:var(--ember-d);border-radius:6px;}
   .ms-asset-v{font-family:var(--mono);color:var(--ember);}
   .ms-note{margin-top:22px;font-family:var(--serif);font-size:12.5px;color:var(--ink-3);line-height:2.0;letter-spacing:0.04em;}
+  /* 人生起動録 */
+  .chronicle-entry{display:flex;align-items:center;gap:14px;padding:16px 18px;background:var(--bg-1);border:1px solid var(--ember-b);border-radius:10px;margin-bottom:26px;cursor:pointer;transition:all 0.25s;box-shadow:0 4px 24px -18px rgba(200,120,60,0.5);}
+  .chronicle-entry:hover{border-color:var(--ember);}
+  .ce-icon{font-size:22px;}
+  .ce-body{flex:1;}
+  .ce-title{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--ink);letter-spacing:0.06em;}
+  .ce-sub{font-family:var(--serif);font-size:11px;color:var(--ink-4);margin-top:3px;letter-spacing:0.04em;}
+  .ce-arrow{color:var(--ink-4);font-size:18px;}
+  .chr-list{margin:14px 0;}
+  .chr-row{padding:15px 4px;border-top:1px solid var(--rule);cursor:pointer;}
+  .chr-row:first-child{border-top:none;}
+  .chr-no{font-family:var(--mono);font-size:9.5px;letter-spacing:0.2em;color:var(--ember);text-transform:uppercase;}
+  .chr-title{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--ink);line-height:1.6;margin-top:5px;letter-spacing:0.03em;}
+  .chr-date{font-family:var(--mono);font-size:10px;color:var(--ink-4);margin-top:5px;letter-spacing:0.06em;}
+  .chr-empty{font-family:var(--serif);font-size:13px;color:var(--ink-3);line-height:2.1;padding:16px 4px;letter-spacing:0.03em;}
+  .chr-reader{max-height:62vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 2px 12px;}
+  .chr-reader-no{font-family:var(--mono);font-size:10px;letter-spacing:0.24em;color:var(--ember);text-transform:uppercase;text-align:center;}
+  .chr-reader-title{font-family:var(--serif);font-size:21px;font-weight:600;color:var(--ink);line-height:1.6;text-align:center;margin:12px 0 26px;letter-spacing:0.04em;}
+  .chr-reader-body{font-family:var(--serif);font-size:14.5px;color:var(--ink-2);line-height:2.25;letter-spacing:0.04em;white-space:pre-wrap;}
+  .chr-persona{display:flex;gap:8px;justify-content:center;margin:14px 0 4px;}
+  .chr-persona button{padding:6px 16px;border:1px solid var(--rule-2);border-radius:100px;background:none;color:var(--ink-3);font-family:var(--serif);font-size:12px;cursor:pointer;}
+  .chr-persona button.on{border-color:var(--ember);color:var(--ember);background:var(--ember-d);}
 
 
   /* ── dusk ── */
@@ -592,6 +614,14 @@ window.FIREBASE_CONFIG = {
 <div class="screen" id="scr-archive">
   <div class="inner">
     <div class="mast"><div class="mast-logo">okoso</div><div class="mast-date" style="font-family:var(--serif);font-size:11px;color:var(--ink-4);letter-spacing:0.1em">人生の保管庫</div></div>
+    <div class="chronicle-entry" id="chronicle-entry" onclick="openChronicleList()">
+      <div class="ce-icon">📖</div>
+      <div class="ce-body">
+        <div class="ce-title">人生起動録</div>
+        <div class="ce-sub" id="chronicle-entry-sub">あなたの歩みが、一冊の物語になっていく</div>
+      </div>
+      <div class="ce-arrow">›</div>
+    </div>
     <div class="cal-head">
       <button class="cal-nav" onclick="calMove(-1)">‹</button>
       <div class="cal-title" id="cal-title"></div>
@@ -627,7 +657,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v34';
+const STORE='okoso_v35';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -647,6 +677,9 @@ let S = {
   lastIdealReviewTs: 0,        // 最後に理想の見直しを提案した日時
   dismissedReviewTs: 0,        // ユーザーが「まだいい」と見送った日時
   shownMilestones: [],         // 表示済みの節目（7,30,100...）
+  chronicle: [],               // 人生起動録の章 [{id,no,title,body,ts}]
+  chroniclePersona: '彼',      // 起動録の三人称（彼/彼女）
+  lastChronicleCheckTs: 0,     // 最後にAI判定を行った日時
   updatedAt: 0                 // このデータの最終更新時刻（同期のマージ判定に使う）
 };
 function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.parse(r)};}catch(e){} }
@@ -752,6 +785,8 @@ function mergeData(local, remote){
     return [...map.values()].sort((x,y)=>(x.ts||x.doneTs||0)-(y.ts||y.doneTs||0));
   };
   out.shownMilestones=[...new Set([...(local.shownMilestones||[]),...(remote.shownMilestones||[])])];
+  out.chronicle=mergeById(local.chronicle||[],remote.chronicle||[]);
+  out.lastChronicleCheckTs=Math.max(local.lastChronicleCheckTs||0,remote.lastChronicleCheckTs||0);
   out.logs=mergeById(local.logs,remote.logs);
   out.journals=mergeById(local.journals,remote.journals);
   out.idealHistory=mergeById(local.idealHistory,remote.idealHistory,'ts');
@@ -3384,7 +3419,7 @@ function init(){
   };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 2500); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -3427,6 +3462,171 @@ function setupAutoSync(){
 const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
 const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
+
+// ═══ 人生起動録 ═══
+// AIが「人生が少し動いた」と判断した時だけ、三人称のドキュメンタリーとして章を書く
+const CHR_CHECK_INTERVAL=3*24*60*60*1000;   // AI判定は3日に1回まで
+const CHR_MIN_GAP_DAYS=7;                    // 章と章の間は最低7日
+
+function chronicleStats(sinceTs){
+  let doneSteps=0;
+  Object.entries(S.steps||{}).forEach(([k,arr])=>{
+    arr.forEach(s=>{ if(s.done){ const t=new Date(k+'T12:00:00').getTime(); if(!sinceTs||t>=sinceTs) doneSteps++; } });
+  });
+  const journals=(S.journals||[]).filter(j=>!j.kind&&(!sinceTs||j.ts>=sinceTs)).length;
+  const achieved=[...(S.achievedGoals||[]),...(S.achievedFocuses||[])].filter(a=>!sinceTs||(a.doneTs||0)>=sinceTs).length;
+  return {doneSteps,journals,achieved};
+}
+function chronicleEligible(){
+  const chs=S.chronicle||[];
+  if(!chs.length){
+    const st=chronicleStats(0);
+    return st.doneSteps>=10 && st.journals>=5 && st.achieved>=1;
+  }
+  const last=chs[chs.length-1];
+  if(Date.now()-last.ts < CHR_MIN_GAP_DAYS*86400000) return false;
+  const st=chronicleStats(last.ts);
+  return st.doneSteps>=10 && st.journals>=5;
+}
+async function maybeGenerateChronicle(){
+  if(!S.onboarded||!S.ideal) return;
+  if(Date.now()-(S.lastChronicleCheckTs||0) < CHR_CHECK_INTERVAL) return;
+  if(!chronicleEligible()) return;
+  S.lastChronicleCheckTs=Date.now(); persist();
+  try{
+    const ch=await callChronicleAPI();
+    if(ch && ch.write && ch.title && ch.body){
+      const no=(S.chronicle||[]).length+1;
+      S.chronicle.push({id:uid(), no, title:ch.title, body:ch.body, ts:Date.now()});
+      persist();
+      showChronicleNotice(no, ch.title);
+    }
+  }catch(e){ /* 静かに諦めて次回 */ }
+}
+function fmtChronicleMaterials(){
+  const chs=S.chronicle||[];
+  const persona=S.chroniclePersona||'彼';
+  // 過去章：全タイトル＋直近3章は本文も（一冊の作品として繋げるため）
+  const pastTitles=chs.map(c=>`第${c.no}章「${c.title}」（${new Date(c.ts).toLocaleDateString('ja-JP')}）`).join('\n')||'（まだ章はない。これが第一章になる）';
+  const recentBodies=chs.slice(-3).map(c=>`--- 第${c.no}章「${c.title}」 ---\n${c.body}`).join('\n\n');
+  const sinceTs=chs.length?chs[chs.length-1].ts:0;
+  // 材料：向かう先の変遷・目標・達成・ジャーナル・一歩
+  const idealHist=(S.idealHistory||[]).map(x=>`「${x.from}」→「${x.to}」(${new Date(x.ts).toLocaleDateString('ja-JP')})`).join('\n')||'（変更なし）';
+  const goals=S.goals.map(g=>g.text).join('、')||'（なし）';
+  const ach=[...(S.achievedGoals||[]),...(S.achievedFocuses||[])].map(a=>`「${a.text}」達成(${a.doneTs?new Date(a.doneTs).toLocaleDateString('ja-JP'):''})`).join('\n')||'（なし）';
+  const jr=(S.journals||[]).filter(j=>!j.kind).slice(-25).map(j=>`[${new Date(j.ts).toLocaleDateString('ja-JP')}] ${j.text.slice(0,90)}`).join('\n')||'（なし）';
+  const stepSample=[];
+  Object.entries(S.steps||{}).sort((a,b)=>a[0]<b[0]?-1:1).forEach(([k,arr])=>{
+    arr.forEach(s=>{ if(s.done) stepSample.push(`[${k}] ${s.text}`); });
+  });
+  const stepsTxt=stepSample.slice(-40).join('\n')||'（なし）';
+  const st=chronicleStats(sinceTs);
+  return {persona, materials:`【本人が掲げる向かう先】${S.ideal}
+【向かう先の変遷】\n${idealHist}
+【現在の目標】${goals}
+【達成の記録】\n${ach}
+【完了した一歩（日付つき・直近）】\n${stepsTxt}
+【ジャーナル（日付つき・直近）】\n${jr}
+【前章以降の量】一歩${st.doneSteps}件・ジャーナル${st.journals}件・達成${st.achieved}件
+
+【これまでの章（必ず読み返すこと）】\n${pastTitles}
+${recentBodies?`\n【直近の章の本文】\n${recentBodies}`:''}`};
+}
+async function callChronicleAPI(){
+  const {persona, materials}=fmtChronicleMaterials();
+  const sys=`あなたは「人生起動録」の執筆者です。一人の人間の記録を分析し、「人生の転機」と呼べるだけの変化が生まれたと判断した時のみ、Netflixのドキュメンタリーのナレーションのような一章を書きます。
+
+# まず判定する
+記録を読み、以前と比べて人生が動き始めたか（向かう先の変化・行動の継続・感情の変化・達成・思考の変化）を総合的に判断する。十分な変化がなければ書かない（"write":false）。
+
+# 執筆のルール（違反禁止）
+- 三人称固定。「${persona}」で書く。「あなた」は絶対に使わない
+- 褒めない（頑張りましたね・素晴らしい・すごい・おめでとう等は禁止）。説教しない。自己啓発的な一般論も禁止
+- フィクション禁止。実際の記録（ジャーナル・一歩・達成・向かう先）だけを材料にする。脚色しない
+- ただ出来事を並べない。その行動が人生にどんな変化を与え始めたのかを描写する
+- 停滞も価値として描く。止まった日、忘れた日、それでも戻ってきた事実を
+- 文体は映画7：自己啓発3。淡々としているのに、読むと自然と心が動く
+- 700〜1000字
+- 最後は必ず「物語はまだ続く」という余韻で終える。完結させない
+
+# 一冊の作品として（最重要）
+これまでの章を必ず読み返してから書くこと。この章は独立した文章ではなく、一冊のドキュメンタリーの続きである。過去の章で描いた${persona}の姿を踏まえ、「あの頃は〜だった${persona}が、今は〜」という時間の流れを織り込む。前の章と同じ場面を繰り返さない。
+
+# タイトル
+それだけで読みたくなる短いタイトルを付ける。例：「変わりたい、だけが残っていた。」「止まらなかったことが、前進だった。」
+
+# 出力形式（JSONのみ）
+変化が十分な時：{"write":true,"title":"章タイトル","body":"本文（改行は\\n）"}
+まだ書く時ではない時：{"write":false}`;
+  const res=await fetch('/api/translate',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ system:sys, user:materials+'\n\n上記を分析し、JSONで返してください。', max_tokens:3000 })
+  });
+  if(!res.ok) throw new Error('api');
+  const data=await res.json();
+  let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+  txt=txt.replace(/```(?:json)?/gi,'').trim();
+  const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+  const obj=JSON.parse(txt);
+  return obj;
+}
+// 📖 章の完成通知
+const CHR_NOTICES=[
+  '新しい章が完成しました。<br>あなたの人生に、新しい一ページが刻まれました。',
+  '新しい章が完成しました。<br>歩いてきた道が、言葉になりました。',
+  '新しい章が完成しました。<br>あなたの物語が、また一歩進みました。'
+];
+function showChronicleNotice(no,title){
+  const mount=document.getElementById('celebrate-mount');
+  const msg=CHR_NOTICES[Math.floor(Math.random()*CHR_NOTICES.length)];
+  mount.innerHTML=`<div class="done-veil" id="chr-veil">
+    <div class="ms-card">
+      <div class="done-spark">📖</div>
+      <div class="ms-eyebrow">人生起動録</div>
+      <div class="done-msg" style="font-size:15px">${msg}</div>
+      <div class="chr-title" style="text-align:center;margin-top:16px">第${no}章「${esc(title)}」</div>
+      <button class="sbtn sbtn-p" style="margin-top:22px;width:100%" onclick="document.getElementById('chr-veil').remove();openChronicleReaderByNo(${no})">読んでみる</button>
+      <div class="done-hint" style="margin-top:14px">タップで閉じる</div>
+    </div>
+  </div>`;
+  const veil=document.getElementById('chr-veil');
+  veil.addEventListener('click',e=>{ if(e.target===veil){ veil.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},450); } });
+  requestAnimationFrame(()=>veil.classList.add('show'));
+}
+// 章一覧
+function openChronicleList(){
+  const chs=[...(S.chronicle||[])].reverse();
+  const persona=S.chroniclePersona||'彼';
+  window.setChrPersona=(v)=>{ S.chroniclePersona=v; persist(); openChronicleList(); };
+  const rows=chs.length
+    ? chs.map(c=>`<div class="chr-row" onclick="openChronicleReaderByNo(${c.no})">
+        <div class="chr-no">第${c.no}章</div>
+        <div class="chr-title">「${esc(c.title)}」</div>
+        <div class="chr-date">${new Date(c.ts).toLocaleDateString('ja-JP')}</div>
+      </div>`).join('')
+    : `<div class="chr-empty">まだ章はありません。<br><br>これは、記録を続けた人にだけ書かれる、あなたの人生のドキュメンタリーです。一歩とジャーナルを重ねて、最初の達成が生まれた頃——AIが「人生が動き始めた」と判断した時、第一章が静かに書かれます。</div>`;
+  openSheet(`<h2>人生起動録</h2>
+    <p class="sheet-note">日々は気付かないほど小さい。<br>それでも振り返れば、物語になっている。</p>
+    <div class="chr-persona">
+      <button class="${persona==='彼'?'on':''}" onclick="setChrPersona('彼')">彼として書く</button>
+      <button class="${persona==='彼女'?'on':''}" onclick="setChrPersona('彼女')">彼女として書く</button>
+    </div>
+    <div class="chr-list">${rows}</div>
+    <div class="sheet-btns"><button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button></div>`);
+}
+function openChronicleReaderByNo(no){
+  const c=(S.chronicle||[]).find(x=>x.no===no);
+  if(!c) return;
+  openSheet(`<div class="chr-reader">
+      <div class="chr-reader-no">第${c.no}章</div>
+      <div class="chr-reader-title">「${esc(c.title)}」</div>
+      <div class="chr-reader-body">${esc(c.body)}</div>
+    </div>
+    <div class="sheet-btns" style="margin-top:14px">
+      <button class="sbtn" onclick="openChronicleList()" style="flex:1">一覧へ</button>
+      <button class="sbtn sbtn-p" onclick="closeModal()" style="flex:1">閉じる</button>
+    </div>`);
+}
 
 // ② 節目の振り返り：7日・30日・100日…続けた人だけが見られる景色
 const MS_DAYS=[7,30,100,365];
