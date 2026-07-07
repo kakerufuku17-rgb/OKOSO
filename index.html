@@ -601,18 +601,13 @@ window.FIREBASE_CONFIG = {
       </div>
     </div>
 
-    <!-- 理想 → 目標 → 今月の焦点 → 今日の一歩 の一本線 -->
-    <!-- ④⑤ 朝の挨拶：昨日との繋がりを思い出す -->
+    <!-- ⑤ 人生が一本の流れとして見える順：一歩 → ロードマップ → 観察 → 起動録 -->
+    <!-- 朝の挨拶：昨日との繋がりを思い出す -->
     <div id="morning-greeting"></div>
     <!-- 📖 人生起動録：新しい章の通知（続けたから読める報酬） -->
     <div id="chronicle-banner"></div>
 
-    <!-- ③ 向かう先・目標をコンパクトに（毎日思い出す） -->
-    <div class="today-north" id="today-north"></div>
-    <!-- ③ 前進パネル -->
-    <div id="forward-panel"></div>
-
-    <!-- ⑥ 今日の一歩（主役・これだけに集中） -->
+    <!-- ① 今日の一歩（主役・最初に目に入る） -->
     <div class="today-focus">
       <div class="today-focus-lbl">今日の一歩</div>
       <div class="flow-steps-lead" id="steps-lead">理想に繋がる一歩を、今日ひとつ。</div>
@@ -620,10 +615,14 @@ window.FIREBASE_CONFIG = {
       <button class="add-btn" onclick="openStepSheet()"><span>＋</span> 一歩を決める</button>
     </div>
 
-    <!-- ④ AIの観察ログ（伴走者としての気付き） -->
+    <!-- ② ロードマップ（現在地が静かに進む一本道） -->
+    <div class="today-north" id="today-north" style="margin-top:26px"></div>
+    <div id="forward-panel"></div>
+
+    <!-- ③ AIの観察ログ（伴走者としての気付き） -->
     <div id="ai-observe"></div>
 
-    <!-- ①③ 人生起動録カード（分析状況の可視化） -->
+    <!-- ④ 人生起動録カード（分析状況の可視化） -->
     <div id="home-chronicle"></div>
   </div>
 </div>
@@ -763,7 +762,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v39';
+const STORE='okoso_v40';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1108,10 +1107,22 @@ function renderTodayNorth(){
   if(!S.ideal){ el.innerHTML=''; return; }
   const goalText = S.goals.length ? S.goals.map(g=>esc(g.text)).join('、') : '';
   const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>esc(m.text)).join('、') : '';
-  // ② 現在地：積み重ねに応じて、道の上を静かに前へ進む（下=今日、上=向かう先）
-  const _score=totalDoneSteps() + ([...(S.achievedGoals||[]),...(S.achievedFocuses||[])].length)*8 + activeDaysCount()*1.5;
-  const _prog=1-Math.pow(0.985,_score);            // 漸近（急がない）
-  const youPos=Math.round(6 + _prog*62);            // 6%〜68%の間をゆっくり上る
+  // ④ 現在地：努力量を総合的に判断して、道の上を静かに前へ進む（下=今日、上=向かう先）
+  //   加味する要素：踏んだ一歩の総量／目標・焦点の達成数／継続日数／今日の達成率／今月の焦点に紐づく前進
+  const _ts=todaySteps();
+  const _todayRate=_ts.length? _ts.filter(s=>s.done).length/_ts.length : 0;
+  const _achieved=[...(S.achievedGoals||[]),...(S.achievedFocuses||[])].length;
+  const _focusTags=new Set(S.monthFocuses.map(m=>m.text));
+  let _monthHits=0;
+  const _ymNow=new Date().toISOString().slice(0,7);
+  Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(k.startsWith(_ymNow)) arr.forEach(s=>{ if(s.done&&s.tag&&_focusTags.has(s.tag)) _monthHits++; }); });
+  const _score = totalDoneSteps()            // 積み重ねた一歩
+               + _achieved*8                 // 目標・焦点の達成
+               + calcStreak()*1.2            // 継続日数
+               + activeDaysCount()*1.0       // 前進した日
+               + _monthHits*1.5;             // 今月の焦点への前進
+  const _prog=1-Math.pow(0.985,_score);      // 漸近（急がない・でも確実に進む）
+  const youPos=Math.round(6 + (_prog*58) + (_todayRate*4));   // 今日の達成率で、今日ぶんだけ少し前へ
   // ② 一本道のロードマップ：点と線で「向かう先→目標→今月→今日」が繋がって見える
   el.innerHTML=`<div class="road">
     <div class="road-node road-ideal" onclick="openIdealSheet()">
@@ -1491,7 +1502,7 @@ function toggleStep(i){
       S.logs.push(log);
       s.logId=log.id;   // 取り消し用に紐づけ
     }
-    persist(); renderSteps(); renderAssetChips(); renderMorningGreeting(); renderForwardPanel();
+    persist(); renderSteps(); renderAssetChips(); renderMorningGreeting(); renderTodayNorth(); renderForwardPanel();
     // ⑤ 静かで温かい達成メッセージ（毎回）。資産があれば積み上げも続けて見せる
     showStepDoneMessage(s);
   } else {
