@@ -197,10 +197,42 @@
   .chr-book-new{position:absolute;top:8px;right:8px;font-family:var(--serif);font-size:9px;color:#fff;background:var(--ember);border-radius:100px;padding:2px 8px;letter-spacing:0.08em;}
   /* 締めの一文 */
   .chr-reader-close{margin-top:34px;font-family:var(--serif);font-size:14.5px;color:var(--ember);text-align:center;line-height:2.0;letter-spacing:0.08em;}
+  /* ① 次章予告 */
+  .chr-next{margin-top:38px;padding:18px 18px;background:linear-gradient(160deg,var(--ember-d),transparent 85%);border:1px solid var(--rule-2);border-radius:8px;}
+  .chr-next-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:0.22em;color:var(--ember);text-transform:uppercase;margin-bottom:10px;}
+  .chr-next-body{font-family:var(--serif);font-size:13px;color:var(--ink-2);line-height:2.1;letter-spacing:0.03em;}
+  /* ③ ホームの起動録カード */
+  .home-chr{margin-top:22px;padding:18px 18px;background:var(--bg-1);border:1px solid var(--rule-2);border-radius:10px;cursor:pointer;transition:border-color 0.25s;}
+  .home-chr:hover{border-color:var(--ember-b);}
+  .home-chr-head{display:flex;align-items:baseline;gap:10px;}
+  .home-chr-icon{font-size:15px;}
+  .home-chr-title{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--ink);letter-spacing:0.06em;}
+  .home-chr-count{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--ink-4);}
+  .home-chr-analyze{margin-top:12px;font-family:var(--serif);font-size:11.5px;color:var(--ink-3);letter-spacing:0.04em;}
+  .chr-abar{display:flex;gap:3px;margin-top:8px;}
+  .chr-abar .cell{flex:1;height:6px;border-radius:2px;background:var(--rule-2);}
+  .chr-abar .cell.on{background:linear-gradient(90deg,var(--ember-b),var(--ember));}
+  .home-chr-status{margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--ember);letter-spacing:0.06em;}
+  .home-chr-items{margin-top:7px;font-family:var(--serif);font-size:10.5px;color:var(--ink-4);letter-spacing:0.04em;}
+  /* ④ 観察ログ */
+  .obs-card{margin-top:22px;padding:18px 20px;background:var(--bg-1);border-left:3px solid var(--ink-4);border-radius:4px 8px 8px 4px;}
+  .obs-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:0.2em;color:var(--ink-3);text-transform:uppercase;margin-bottom:10px;}
+  .obs-body{font-family:var(--serif);font-size:13.5px;color:var(--ink-2);line-height:2.15;letter-spacing:0.03em;}
+  .obs-date{margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--ink-4);letter-spacing:0.08em;}
+  /* ⑤ 整える */
+  .ttn-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px;}
+  .ttn-title{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--ink);letter-spacing:0.06em;}
+  .ttn-time-btn{background:none;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-3);font-family:var(--mono);font-size:10px;padding:7px 13px;cursor:pointer;letter-spacing:0.06em;transition:all 0.2s;}
+  .ttn-time-btn:hover{border-color:var(--ember-b);color:var(--ember);}
   /* ② 一本道ロードマップ */
   .road{position:relative;padding:4px 0 0;margin-bottom:14px;}
   .road::before{content:'';position:absolute;left:7px;top:14px;bottom:14px;width:2px;background:linear-gradient(180deg,var(--rule-2),var(--ember-b) 70%,var(--ember));}
   .road-node{position:relative;display:flex;gap:14px;padding:9px 0 9px 0;cursor:pointer;}
+  /* ② 現在地マーカー：静かに道を上っていく */
+  .road{position:relative;}
+  .road-you{position:absolute;left:1px;display:flex;align-items:center;gap:8px;z-index:2;transition:bottom 1.2s cubic-bezier(0.3,0.7,0.3,1);pointer-events:none;}
+  .road-you-dot{width:9px;height:9px;border-radius:50%;background:var(--ink);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--ink-4);}
+  .road-you-lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:0.16em;color:var(--ink-3);text-transform:uppercase;background:var(--bg);padding:1px 6px;border-radius:100px;border:1px solid var(--rule-2);}
   .road-dot{position:relative;z-index:1;flex-shrink:0;width:16px;height:16px;border-radius:50%;background:var(--bg);border:2px solid var(--rule-2);margin-top:3px;}
   .road-ideal .road-dot{border-color:var(--ember);background:var(--ember-d);}
   .road-dot-today{border-color:var(--ember);background:var(--ember);box-shadow:0 0 10px rgba(200,120,60,0.6);animation:sparkPulse 2.4s ease-in-out infinite;}
@@ -588,29 +620,60 @@ window.FIREBASE_CONFIG = {
       <button class="add-btn" onclick="openStepSheet()"><span>＋</span> 一歩を決める</button>
     </div>
 
-    <!-- 朝のジャーナル：今日を整える -->
-    <div class="dusk-block">
-      <div class="label">今日を整える</div>
-      <div class="role-card">
-        <div class="role-title">どんな一日にしたいか</div>
-        <div class="role-sub">今の気持ちと、今日の向き合い方を、言葉にする。<br>これが、一日の<span class="role-key">羅針盤</span>になる。</div>
-      </div>
-      <div class="compose">
-        <textarea id="jrnl-field" rows="1" placeholder="今日は少し眠い。でも午前のうちに簿記だけは進めたい。"></textarea>
-        <button class="keep-btn" id="jrnl-keep" onclick="keepJournal()">残す</button>
+    <!-- ④ AIの観察ログ（伴走者としての気付き） -->
+    <div id="ai-observe"></div>
+
+    <!-- ①③ 人生起動録カード（分析状況の可視化） -->
+    <div id="home-chronicle"></div>
+  </div>
+</div>
+
+<!-- 整える（自分と向き合う場所）：起床・就寝時間で内容が切り替わる -->
+<div class="screen" id="scr-totonoeru">
+  <div class="wrap">
+    <div class="ttn-head">
+      <div class="ttn-title" id="ttn-title">整える</div>
+      <button class="ttn-time-btn" onclick="openTimeSheet()" id="ttn-time-label">起床 06:00 ・ 就寝 23:00</button>
+    </div>
+
+    <!-- 朝モード：自由記述の朝ジャーナル -->
+    <div id="ttn-morning" style="display:none">
+      <div class="dusk-block" style="border-top:none;padding-top:8px">
+        <div class="label">朝のジャーナル</div>
+        <div class="role-card">
+          <div class="role-title">いま、どんな気持ちですか</div>
+          <div class="role-sub">今の気持ちや考えを、そのまま言葉に。<br>毎日でなくていい。<span class="role-key">書きたい時に、しっかり書ける場所</span>。</div>
+        </div>
+        <div class="compose">
+          <textarea id="jrnl-field" rows="1" placeholder="今日は少し眠い。でも午前のうちに簿記だけは進めたい。"></textarea>
+          <button class="keep-btn" id="jrnl-keep" onclick="keepJournal()">残す</button>
+        </div>
       </div>
     </div>
 
-    <!-- 今日の締めくくり：明日の自分へのプレゼント（今日最後の行動） -->
-    <div class="dusk-block closing-block" id="closing-block" style="margin-top:36px">
-      <div class="label">今日の締めくくり</div>
-      <div class="role-card">
-        <div class="role-title">明日の自分を、助けておく</div>
-        <div class="role-sub">今日の最後に、明日の一歩を決めておく。<br>これは予定ではなく、<span class="role-key">明日の自分へのプレゼント</span>。</div>
+    <!-- 夜モード：今日の振り返り＋明日の一歩 -->
+    <div id="ttn-evening" style="display:none">
+      <div class="dusk-block" style="border-top:none;padding-top:8px">
+        <div class="label">今日の振り返り</div>
+        <div class="role-card">
+          <div class="role-title">今日は、どんな一日でしたか</div>
+          <div class="role-sub">うまくいったことも、いかなかったことも。<br>言葉にして、今日を<span class="role-key">締めくくる</span>。</div>
+        </div>
+        <div class="compose">
+          <textarea id="jrnl-field-eve" rows="1" placeholder="今日は一歩進めた。明日は朝のうちに動きたい。"></textarea>
+          <button class="keep-btn" id="jrnl-keep-eve" onclick="keepJournalEve()">残す</button>
+        </div>
       </div>
-      <div class="tomorrow-lead" id="tomorrow-lead"></div>
-      <div id="tomorrow-list"></div>
-      <button class="add-btn" onclick="openStepSheet(true)"><span>＋</span> 明日の一歩を決める</button>
+      <div class="dusk-block closing-block" id="closing-block" style="margin-top:36px">
+        <div class="label">明日の自分を、助けておく</div>
+        <div class="role-card">
+          <div class="role-title">明日の一歩を、決めておく</div>
+          <div class="role-sub">これは予定ではなく、<span class="role-key">明日の自分へのプレゼント</span>。</div>
+        </div>
+        <div class="tomorrow-lead" id="tomorrow-lead"></div>
+        <div id="tomorrow-list"></div>
+        <button class="add-btn" onclick="openStepSheet(true)"><span>＋</span> 明日の一歩を決める</button>
+      </div>
     </div>
   </div>
 </div>
@@ -678,6 +741,10 @@ window.FIREBASE_CONFIG = {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     <span class="nav-label">今日</span>
   </button>
+  <button class="nav-btn" id="nav-totonoeru" onclick="goScreen('totonoeru')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+    <span class="nav-label">整える</span>
+  </button>
   <button class="nav-btn" id="nav-proof" onclick="goScreen('proof')">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 5-7"/></svg>
     <span class="nav-label">前進の証</span>
@@ -696,7 +763,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v38';
+const STORE='okoso_v39';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -718,6 +785,10 @@ let S = {
   shownMilestones: [],         // 表示済みの節目（7,30,100...）
   chronicle: [],               // 人生起動録の章 [{id,no,title,body,ts}]
   wall: '',                    // 最大の壁（第二段階でAIが特定）
+  wakeTime: '06:00',           // ⑤ 起床時間（整えるタブの切替に使う）
+  sleepTime: '23:00',          // ⑤ 就寝時間
+  observations: [],            // ④ AIの観察ログ [{id,text,ts}]
+  lastObservationTs: 0,        // ④ 最後に観察を生成した日時
   chroniclePersona: '彼',      // 起動録の三人称（彼/彼女）
   lastChronicleCheckTs: 0,     // 最後にAI判定を行った日時
   updatedAt: 0                 // このデータの最終更新時刻（同期のマージ判定に使う）
@@ -849,6 +920,10 @@ function mergeData(local, remote){
   const newer = (remote.updatedAt||0) > (local.updatedAt||0) ? remote : local;
   out.ideal=newer.ideal;
   out.wall=newer.wall||'';
+  out.wakeTime=newer.wakeTime||'06:00';
+  out.sleepTime=newer.sleepTime||'23:00';
+  out.observations=mergeById(local.observations||[],remote.observations||[]);
+  out.lastObservationTs=Math.max(local.lastObservationTs||0,remote.lastObservationTs||0);
   out.goals=newer.goals;
   out.monthFocuses=newer.monthFocuses;
   out.onboarded=local.onboarded||remote.onboarded;
@@ -945,8 +1020,68 @@ function goScreen(name){
   document.getElementById('nav-'+name).classList.add('on');
   document.querySelector('.screen.active').scrollTop=0;
   if(name==='today'){ renderFlow(); renderAssetChips(); }
+  if(name==='totonoeru'){ renderTotonoeru(); }
   if(name==='proof'){ renderProof(); }
   if(name==='archive'){ renderCalendar(); }
+}
+
+// ════════════════════════════════
+//  整える（自分と向き合う場所）
+// ════════════════════════════════
+function timeToMin(t){ const m=(t||'').match(/(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; }
+// 今が「夜モード」か（就寝3時間前〜起床まで）
+function isEveningMode(){
+  const now=new Date(); const cur=now.getHours()*60+now.getMinutes();
+  const wake=timeToMin(S.wakeTime)??360, sleep=timeToMin(S.sleepTime)??1380;
+  const eveStart=(sleep-180+1440)%1440;   // 就寝3時間前
+  // 区間判定（日をまたぐ場合に対応）
+  const inRange=(s,e,x)=> s<=e ? (x>=s&&x<e) : (x>=s||x<e);
+  return inRange(eveStart, wake, cur);
+}
+function renderTotonoeru(){
+  const eve=isEveningMode();
+  const m=document.getElementById('ttn-morning');
+  const e=document.getElementById('ttn-evening');
+  if(m) m.style.display=eve?'none':'block';
+  if(e) e.style.display=eve?'block':'none';
+  const title=document.getElementById('ttn-title');
+  if(title) title.textContent=eve?'今日を、締めくくる':'今日と、向き合う';
+  const lbl=document.getElementById('ttn-time-label');
+  if(lbl) lbl.textContent=`起床 ${S.wakeTime||'06:00'} ・ 就寝 ${S.sleepTime||'23:00'}`;
+  if(eve) renderTomorrow();
+  // 入力欄のautosizeとボタン状態
+  ['jrnl-field','jrnl-field-eve'].forEach(id=>{
+    const f=document.getElementById(id);
+    if(f && !f._bound){ f._bound=true; f.addEventListener('input',()=>{autosize(f);const k=document.getElementById(id==='jrnl-field'?'jrnl-keep':'jrnl-keep-eve');if(k)k.classList.toggle('on',f.value.trim().length>0);}); }
+  });
+}
+function keepJournalEve(){
+  const f=document.getElementById('jrnl-field-eve');
+  const v=(f.value||'').trim();
+  if(!v) return;
+  S.journals.push({id:uid(), text:v, ts:Date.now()});
+  persist(); f.value=''; autosize(f);
+  document.getElementById('jrnl-keep-eve').classList.remove('on');
+  quietToast('今日を締めくくりました');
+}
+// 起床・就寝時間の設定
+function openTimeSheet(){
+  openSheet(`<h2>生活リズム</h2>
+    <p class="sheet-note">「整える」の内容は、あなたの生活リズムに合わせて切り替わります。<br>起床後＝朝のジャーナル ／ 就寝3時間前から＝今日の振り返りと明日の一歩。</p>
+    <label class="field-lbl">起床時間</label>
+    <div class="field-box"><input type="time" id="wake-inp" value="${esc(S.wakeTime||'06:00')}"></div>
+    <label class="field-lbl">就寝時間</label>
+    <div class="field-box"><input type="time" id="sleep-inp" value="${esc(S.sleepTime||'23:00')}"></div>
+    <div class="sheet-btns">
+      <button class="sbtn" onclick="closeModal()">やめる</button>
+      <button class="sbtn sbtn-p" onclick="saveTimes()">保存</button>
+    </div>`);
+}
+function saveTimes(){
+  const w=document.getElementById('wake-inp').value||'06:00';
+  const s=document.getElementById('sleep-inp').value||'23:00';
+  S.wakeTime=w; S.sleepTime=s; persist(); closeModal(); renderTotonoeru();
+  quietToast('生活リズムを保存しました');
 }
 
 // ════════════════════════════════
@@ -960,6 +1095,8 @@ function renderFlow(){
   renderTodayNorth();       // ③ 向かう先・目標をコンパクト表示
   renderMorningGreeting();  // ④⑤ 朝の挨拶
   renderChronicleBanner();  // 📖 未読の章バナー
+  renderHomeChronicle();    // ①③ 起動録カード（分析可視化）
+  renderObservation();      // ④ AIの観察ログ
   renderSteps();
   renderTomorrow();
 }
@@ -971,6 +1108,10 @@ function renderTodayNorth(){
   if(!S.ideal){ el.innerHTML=''; return; }
   const goalText = S.goals.length ? S.goals.map(g=>esc(g.text)).join('、') : '';
   const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>esc(m.text)).join('、') : '';
+  // ② 現在地：積み重ねに応じて、道の上を静かに前へ進む（下=今日、上=向かう先）
+  const _score=totalDoneSteps() + ([...(S.achievedGoals||[]),...(S.achievedFocuses||[])].length)*8 + activeDaysCount()*1.5;
+  const _prog=1-Math.pow(0.985,_score);            // 漸近（急がない）
+  const youPos=Math.round(6 + _prog*62);            // 6%〜68%の間をゆっくり上る
   // ② 一本道のロードマップ：点と線で「向かう先→目標→今月→今日」が繋がって見える
   el.innerHTML=`<div class="road">
     <div class="road-node road-ideal" onclick="openIdealSheet()">
@@ -985,6 +1126,7 @@ function renderTodayNorth(){
       <div class="road-dot"></div>
       <div class="road-body"><div class="tn-lbl">今月</div><div class="tn-val">${monthText||'<span style=\'color:var(--ink-4)\'>今月の焦点を決める →</span>'}</div></div>
     </div>
+    <div class="road-you" id="road-you" style="bottom:${youPos}%"><span class="road-you-dot"></span><span class="road-you-lbl">現在地</span></div>
     <div class="road-node road-today">
       <div class="road-dot road-dot-today"></div>
       <div class="road-body"><div class="tn-lbl" style="color:var(--ember)">今日</div><div class="tn-val" style="color:var(--ink-3);font-size:12.5px">この下の一歩が、道の先頭です</div></div>
@@ -1409,7 +1551,7 @@ function showStepDoneMessage(s){
   const veil=document.getElementById('done-veil');
   veil.addEventListener('click',()=>{ veil.classList.remove('show'); setTimeout(()=>{
     mount.innerHTML='';
-    if(allDone){ const cb=document.getElementById('closing-block'); if(cb) cb.scrollIntoView({behavior:'smooth',block:'center'}); }
+    if(allDone){ goScreen('totonoeru'); setTimeout(()=>{ const cb=document.getElementById('closing-block'); if(cb) cb.scrollIntoView({behavior:'smooth',block:'center'}); },150); }
   },450); });
   requestAnimationFrame(()=>veil.classList.add('show'));
   setTimeout(()=>{ if(document.getElementById('done-veil')){ veil.classList.remove('show'); setTimeout(()=>{mount.innerHTML='';},450);} }, 3800);
@@ -3550,8 +3692,7 @@ function init(){
   document.getElementById('md1').textContent=fmtDate();
   document.getElementById('md2').textContent=fmtDate();
   renderFlow(); renderAssetChips();
-  const jf=document.getElementById('jrnl-field');
-  if(jf) jf.addEventListener('input',()=>{autosize(jf);document.getElementById('jrnl-keep').classList.toggle('on',jf.value.trim().length>0);});
+  renderTotonoeru();   // ⑤ 整えるタブ（入力バインド含む）
   // 同期が有効なら起動時にpull+merge（Googleログインは非同期に来るので onFbAuthChanged でも拾う）
   if(cloudMode()){
     updateSyncBadge('ok');
@@ -3570,7 +3711,7 @@ function init(){
   };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 2500); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 2500); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -3666,7 +3807,7 @@ async function maybeGenerateChronicle(){
     const ch=await callChronicleAPI();
     if(ch && ch.write && ch.title && ch.body){
       const no=(S.chronicle||[]).length+1;
-      S.chronicle.push({id:uid(), no, title:ch.title, body:ch.body, close:ch.close||'', ts:Date.now(), read:false});
+      S.chronicle.push({id:uid(), no, title:ch.title, body:ch.body, close:ch.close||'', next:ch.next||'', ts:Date.now(), read:false});
       persist();
       showChronicleNotice(no, ch.title);
     }
@@ -3729,11 +3870,14 @@ async function callChronicleAPI(){
 # 一冊の作品として（最重要）
 これまでの章を必ず読み返してから書くこと。この章は独立した文章ではなく、一冊のドキュメンタリーの続きである。過去の章で描いた${persona}の姿を踏まえ、「あの頃は〜だった${persona}が、今は〜」という時間の流れを織り込む。前の章と同じ場面を繰り返さない。
 
+# 次の章の予告（next）
+本文とは別に「次の章の予告」を書く。今の記録の中に見え始めている小さな変化の兆し（増えてきた挑戦・変わり始めた言葉・続き始めた習慣など）を、少しだけ示す。断定せず、「このまま積み重なれば、次の章では物語の中心になるかもしれない」のような、続きを読みたくなる余白を残す。褒めない。事実の兆しだけを述べる。
+
 # タイトル
 それだけで読みたくなる短いタイトルを付ける。例：「変わりたい、だけが残っていた。」「止まらなかったことが、前進だった。」
 
 # 出力形式（JSONのみ）
-変化が十分な時：{"write":true,"title":"章タイトル","body":"本文1500〜2500字（改行は\\n）","close":"締めの一文"}
+変化が十分な時：{"write":true,"title":"章タイトル","body":"本文1500〜2500字（改行は\\n）","close":"締めの一文","next":"次の章の予告（80〜140字）"}
 まだ書く時ではない時：{"write":false}`;
   const res=await fetch('/api/translate',{
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -3747,6 +3891,98 @@ async function callChronicleAPI(){
   const obj=JSON.parse(txt);
   return obj;
 }
+// ④ AIの観察ログ：数日に一度、AIが気付いた小さな変化を伝える（伴走者としての観察）
+const OBS_INTERVAL=3*24*60*60*1000;   // 3日に1回まで
+function renderObservation(){
+  const el=document.getElementById('ai-observe');
+  if(!el) return;
+  const obs=(S.observations||[]);
+  if(!obs.length){ el.innerHTML=''; return; }
+  const o=obs[obs.length-1];
+  // 5日以上前の観察は表示しない（静かに引っ込む）
+  if(Date.now()-o.ts > 5*86400000){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="obs-card">
+    <div class="obs-lbl">最近、気付いたこと</div>
+    <div class="obs-body">${esc(o.text).replace(/\n/g,'<br>')}</div>
+    <div class="obs-date">${new Date(o.ts).toLocaleDateString('ja-JP')} ・ OKOSOの観察</div>
+  </div>`;
+}
+async function maybeGenerateObservation(){
+  if(!S.onboarded||!S.ideal) return;
+  if(Date.now()-(S.lastObservationTs||0) < OBS_INTERVAL) return;
+  // 新しい材料が薄い時は観察しない
+  const st=chronicleStats(S.lastObservationTs||0);
+  if(st.doneSteps<3 && st.journals<2) return;
+  S.lastObservationTs=Date.now(); persist();
+  try{
+    const jr=(S.journals||[]).filter(j=>!j.kind).slice(-10).map(j=>`[${new Date(j.ts).toLocaleDateString('ja-JP')}] ${j.text.slice(0,80)}`).join('\n')||'（なし）';
+    const stepSample=[];
+    Object.entries(S.steps||{}).sort().forEach(([k,arr])=>arr.forEach(s=>{ if(s.done) stepSample.push(`[${k}] ${s.text}${s.carried?'（再挑戦）':''}`); }));
+    const sys=`あなたはOKOSOの「観察者」です。先生でもコーチでもありません。ユーザーの記録を客観的に見守り、本人が気付いていない小さな変化を、数日に一度だけ静かに伝えます。
+# ルール（厳守）
+- 命令しない。助言しない。評価しすぎない。褒めすぎない。分析だけする
+- 「〜しましょう」「〜すべき」は禁止。感嘆符も使わない
+- 記録の中の具体的な変化（言葉の変わり方・行動の増減・再挑戦・続き始めた習慣）を一つだけ取り上げる
+- 「あなた自身は気付いていないかもしれませんが」のような、客観的な視点を渡す姿勢で
+- 80〜140字。断定しすぎない
+- 十分な変化が見つからなければ {"skip":true}
+# 出力（JSONのみ）
+{"text":"観察の文章"} または {"skip":true}`;
+    const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【最近の一歩】\n${stepSample.slice(-20).join('\n')}\n【最近のジャーナル】\n${jr}\n【継続】連続${calcStreak()}日`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+    if(!res.ok) throw new Error('api');
+    const data=await res.json();
+    let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'').trim();
+    const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+    const obj=JSON.parse(txt);
+    if(obj && obj.text && !obj.skip){
+      S.observations.push({id:uid(), text:obj.text, ts:Date.now()});
+      persist(); renderObservation();
+    }
+  }catch(e){ /* 次の機会に */ }
+}
+
+// ③ AIの分析進捗（次の章までの充足率を静かに見せる）
+function chronicleAnalysisState(){
+  const r=chronicleRemaining();
+  const need={steps:CHR_REQ.steps, journals:CHR_REQ.journals};
+  const haveSteps=Math.max(0, need.steps-(r.steps||0));
+  const haveJr=Math.max(0, need.journals-(r.journals||0));
+  let f=(haveSteps/need.steps + haveJr/need.journals)/2;
+  if(r.first){
+    const haveAch=Math.max(0, CHR_REQ.achieved-(r.achieved||0));
+    f=(haveSteps/need.steps + haveJr/need.journals + haveAch/CHR_REQ.achieved)/3;
+  }
+  f=Math.max(0,Math.min(1,f));
+  return {f, ready:r.ready, nextNo:r.nextNo, r};
+}
+function analysisBarHtml(f){
+  const total=10, filled=Math.round(f*10);
+  return `<div class="chr-abar">${'<span class="cell on"></span>'.repeat(filled)}${'<span class="cell"></span>'.repeat(total-filled)}</div>`;
+}
+// ①③ ホームの人生起動録カード
+function renderHomeChronicle(){
+  const el=document.getElementById('home-chronicle');
+  if(!el) return;
+  if(!S.onboarded||!S.ideal){ el.innerHTML=''; return; }
+  const st=chronicleAnalysisState();
+  const chs=S.chronicle||[];
+  const statusLine = st.ready
+    ? 'まもなく。AIが物語を見つめています'
+    : `第${st.nextNo}章まで：一歩あと${st.r.steps}・言葉あと${st.r.journals}${st.r.first&&st.r.achieved>0?`・達成あと${st.r.achieved}`:''}`;
+  el.innerHTML=`<div class="home-chr" onclick="openChronicleList()">
+    <div class="home-chr-head">
+      <span class="home-chr-icon">📖</span>
+      <span class="home-chr-title">人生起動録</span>
+      <span class="home-chr-count">${chs.length?`全${chs.length}章`:''}</span>
+    </div>
+    <div class="home-chr-analyze">AIがあなたの変化を分析しています</div>
+    ${analysisBarHtml(st.f)}
+    <div class="home-chr-status">${statusLine}</div>
+    <div class="home-chr-items">現在分析中：挑戦の変化 ・ 思考の変化 ・ 行動量 ・ 継続の変化</div>
+  </div>`;
+}
+
 // (e) ホーム画面の通知バナー：未読の章がある間だけ表示（続けたから読める報酬）
 function renderChronicleBanner(){
   const el=document.getElementById('chronicle-banner');
@@ -3832,6 +4068,7 @@ function openChronicleReaderByNo(no){
       <div class="chr-reader-title">「${esc(c.title)}」</div>
       <div class="chr-reader-body">${esc(c.body)}</div>
       ${c.close?`<div class="chr-reader-close">${esc(c.close)}</div>`:''}
+      ${c.next?`<div class="chr-next"><div class="chr-next-lbl">次の章では…</div><div class="chr-next-body">${esc(c.next)}</div></div>`:''}
     </div>
     <div class="sheet-btns" style="margin-top:14px">
       <button class="sbtn" onclick="openChronicleList()" style="flex:1">一覧へ</button>
