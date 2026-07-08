@@ -112,7 +112,7 @@
   .dusk-block { border-top: 1px solid var(--rule); padding-top: 32px; }
 
   /* ④⑤ 朝の挨拶カード */
-  .morning-card{font-family:var(--serif);font-size:15px;line-height:2.0;color:var(--ink);letter-spacing:0.04em;background:linear-gradient(160deg,var(--ember-d),transparent 80%);border:1px solid var(--ember-b);border-radius:8px;padding:20px 22px;margin-bottom:22px;}
+  .morning-card{font-family:var(--serif);font-size:14px;line-height:1.95;color:var(--ink);letter-spacing:0.04em;background:linear-gradient(160deg,var(--ember-d),transparent 80%);border:1px solid var(--ember-b);border-radius:8px;padding:16px 20px;margin-bottom:16px;}
   .morning-card strong{color:var(--ember);font-weight:600;}
   .morning-yj{margin-top:12px;padding-top:12px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-3);line-height:1.8;}
   /* ③ 向かう先・目標 コンパクト表示 */
@@ -202,7 +202,7 @@
   .chr-next-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:0.22em;color:var(--ember);text-transform:uppercase;margin-bottom:10px;}
   .chr-next-body{font-family:var(--serif);font-size:13px;color:var(--ink-2);line-height:2.1;letter-spacing:0.03em;}
   /* ③ ホームの起動録カード */
-  .home-chr{margin-top:22px;padding:18px 18px;background:var(--bg-1);border:1px solid var(--rule-2);border-radius:10px;cursor:pointer;transition:border-color 0.25s;}
+  .home-chr{margin-top:16px;padding:16px 18px;background:var(--bg-1);border:1px solid var(--rule-2);border-radius:10px;cursor:pointer;transition:border-color 0.25s;}
   .home-chr:hover{border-color:var(--ember-b);}
   .home-chr-head{display:flex;align-items:baseline;gap:10px;}
   .home-chr-icon{font-size:15px;}
@@ -215,7 +215,8 @@
   .home-chr-status{margin-top:10px;font-family:var(--mono);font-size:10.5px;color:var(--ember);letter-spacing:0.06em;}
   .home-chr-items{margin-top:7px;font-family:var(--serif);font-size:10.5px;color:var(--ink-4);letter-spacing:0.04em;}
   /* ④ 観察ログ */
-  .obs-card{margin-top:22px;padding:18px 20px;background:var(--bg-1);border-left:3px solid var(--ink-4);border-radius:4px 8px 8px 4px;}
+  .obs-card{margin-top:16px;padding:16px 20px;background:var(--bg-1);border-left:3px solid var(--ink-4);border-radius:4px 8px 8px 4px;}
+  .obs-waiting{border-left-color:var(--rule-2);}
   .obs-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:0.2em;color:var(--ink-3);text-transform:uppercase;margin-bottom:10px;}
   .obs-body{font-family:var(--serif);font-size:13.5px;color:var(--ink-2);line-height:2.15;letter-spacing:0.03em;}
   .obs-date{margin-top:10px;font-family:var(--mono);font-size:9px;color:var(--ink-4);letter-spacing:0.08em;}
@@ -230,9 +231,9 @@
   .road-node{position:relative;display:flex;gap:14px;padding:9px 0 9px 0;cursor:pointer;}
   /* ② 現在地マーカー：静かに道を上っていく */
   .road{position:relative;}
-  .road-you{position:absolute;left:1px;display:flex;align-items:center;gap:8px;z-index:2;transition:bottom 1.2s cubic-bezier(0.3,0.7,0.3,1);pointer-events:none;}
-  .road-you-dot{width:9px;height:9px;border-radius:50%;background:var(--ink);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--ink-4);}
-  .road-you-lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:0.16em;color:var(--ink-3);text-transform:uppercase;background:var(--bg);padding:1px 6px;border-radius:100px;border:1px solid var(--rule-2);}
+  .road-you{position:absolute;left:-1px;display:flex;align-items:center;gap:8px;z-index:2;transition:bottom 1s cubic-bezier(0.34,1.35,0.45,1);pointer-events:none;}
+  .road-you-dot{width:13px;height:13px;border-radius:50%;background:var(--ember);border:2.5px solid var(--bg);box-shadow:0 0 0 1.5px var(--ember-b), 0 0 12px -2px rgba(200,120,60,0.7);}
+  .road-you-lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:0.16em;color:var(--ember);text-transform:uppercase;background:var(--bg);padding:1px 6px;border-radius:100px;border:1px solid var(--ember-b);}
   .road-dot{position:relative;z-index:1;flex-shrink:0;width:16px;height:16px;border-radius:50%;background:var(--bg);border:2px solid var(--rule-2);margin-top:3px;}
   .road-ideal .road-dot{border-color:var(--ember);background:var(--ember-d);}
   .road-dot-today{border-color:var(--ember);background:var(--ember);box-shadow:0 0 10px rgba(200,120,60,0.6);animation:sparkPulse 2.4s ease-in-out infinite;}
@@ -762,7 +763,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v40';
+const STORE='okoso_v41';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1107,22 +1108,34 @@ function renderTodayNorth(){
   if(!S.ideal){ el.innerHTML=''; return; }
   const goalText = S.goals.length ? S.goals.map(g=>esc(g.text)).join('、') : '';
   const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>esc(m.text)).join('、') : '';
-  // ④ 現在地：努力量を総合的に判断して、道の上を静かに前へ進む（下=今日、上=向かう先）
-  //   加味する要素：踏んだ一歩の総量／目標・焦点の達成数／継続日数／今日の達成率／今月の焦点に紐づく前進
-  const _ts=todaySteps();
-  const _todayRate=_ts.length? _ts.filter(s=>s.done).length/_ts.length : 0;
-  const _achieved=[...(S.achievedGoals||[]),...(S.achievedFocuses||[])].length;
-  const _focusTags=new Set(S.monthFocuses.map(m=>m.text));
-  let _monthHits=0;
+  // ② 現在地：加重で算出（今月の焦点50%・目標25%・今日の一歩15%・継続10%）
   const _ymNow=new Date().toISOString().slice(0,7);
-  Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(k.startsWith(_ymNow)) arr.forEach(s=>{ if(s.done&&s.tag&&_focusTags.has(s.tag)) _monthHits++; }); });
-  const _score = totalDoneSteps()            // 積み重ねた一歩
-               + _achieved*8                 // 目標・焦点の達成
-               + calcStreak()*1.2            // 継続日数
-               + activeDaysCount()*1.0       // 前進した日
-               + _monthHits*1.5;             // 今月の焦点への前進
-  const _prog=1-Math.pow(0.985,_score);      // 漸近（急がない・でも確実に進む）
-  const youPos=Math.round(6 + (_prog*58) + (_todayRate*4));   // 今日の達成率で、今日ぶんだけ少し前へ
+  // 今月の焦点の達成度：達成済み=1.0、進行中は紐づく完了一歩12件で1.0とみなす近似
+  const _achFocusMonth=(S.achievedFocuses||[]).filter(a=>a.doneTs&&new Date(a.doneTs).toISOString().slice(0,7)===_ymNow);
+  const _activeFocuses=S.monthFocuses||[];
+  let _monthComp=0;
+  {
+    const total=_activeFocuses.length+_achFocusMonth.length;
+    if(total>0){
+      let sum=_achFocusMonth.length;
+      _activeFocuses.forEach(f=>{
+        let hits=0;
+        Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(k.startsWith(_ymNow)) arr.forEach(s=>{ if(s.done&&s.tag===f.text) hits++; }); });
+        sum+=Math.min(1, hits/12);
+      });
+      _monthComp=Math.min(1, sum/total);
+    }
+  }
+  // 目標達成度
+  const _gAll=(S.goals||[]).length+(S.achievedGoals||[]).length;
+  const _goalComp=_gAll>0 ? (S.achievedGoals||[]).length/_gAll : 0;
+  // 今日の一歩の達成率
+  const _ts=todaySteps();
+  const _todayComp=_ts.length? _ts.filter(s=>s.done).length/_ts.length : 0;
+  // 継続（30日で満点）
+  const _streakComp=Math.min(1, calcStreak()/30);
+  const _prog=0.50*_monthComp + 0.25*_goalComp + 0.15*_todayComp + 0.10*_streakComp;
+  const youPos=Math.round(6 + _prog*62);
   // ② 一本道のロードマップ：点と線で「向かう先→目標→今月→今日」が繋がって見える
   el.innerHTML=`<div class="road">
     <div class="road-node road-ideal" onclick="openIdealSheet()">
@@ -3722,7 +3735,7 @@ function init(){
   };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 2500); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -3809,20 +3822,28 @@ function chronicleRemaining(){
                  : (st.doneSteps>=CHR_REQ.steps&&st.journals>=CHR_REQ.journals)
   };
 }
+let _chrGenerating=false;
 async function maybeGenerateChronicle(){
   if(!S.onboarded||!S.ideal) return;
-  if(Date.now()-(S.lastChronicleCheckTs||0) < CHR_CHECK_INTERVAL) return;
+  if(_chrGenerating) return;
+  // ① 完成条件を満たしたら待たずに即生成。スロットルは「AIがまだ書かないと判断した後」だけ効かせる
   if(!chronicleEligible()) return;
+  if(Date.now()-(S.lastChronicleCheckTs||0) < CHR_CHECK_INTERVAL) return;
+  _chrGenerating=true;
   S.lastChronicleCheckTs=Date.now(); persist();
   try{
     const ch=await callChronicleAPI();
     if(ch && ch.write && ch.title && ch.body){
       const no=(S.chronicle||[]).length+1;
       S.chronicle.push({id:uid(), no, title:ch.title, body:ch.body, close:ch.close||'', next:ch.next||'', ts:Date.now(), read:false});
+      // 章が書けたのでスロットルは解除（次の条件充足時も即生成できる）
+      S.lastChronicleCheckTs=0;
       persist();
+      renderChronicleBanner(); renderHomeChronicle();   // ①「まもなく」を即「完成」表示へ
       showChronicleNotice(no, ch.title);
     }
   }catch(e){ /* 静かに諦めて次回 */ }
+  _chrGenerating=false;
 }
 function fmtChronicleMaterials(){
   const chs=S.chronicle||[];
@@ -3908,10 +3929,14 @@ function renderObservation(){
   const el=document.getElementById('ai-observe');
   if(!el) return;
   const obs=(S.observations||[]);
-  if(!obs.length){ el.innerHTML=''; return; }
+  const waiting=`<div class="obs-card obs-waiting">
+    <div class="obs-lbl">OKOSOの観察</div>
+    <div class="obs-body" style="color:var(--ink-3)">AIがあなたの変化を観察しています。<br>新しい変化を見つけたら、ここに表示されます。</div>
+  </div>`;
+  if(!obs.length){ el.innerHTML=waiting; return; }
   const o=obs[obs.length-1];
-  // 5日以上前の観察は表示しない（静かに引っ込む）
-  if(Date.now()-o.ts > 5*86400000){ el.innerHTML=''; return; }
+  // 5日以上前の観察は待機表示に戻る
+  if(Date.now()-o.ts > 5*86400000){ el.innerHTML=waiting; return; }
   el.innerHTML=`<div class="obs-card">
     <div class="obs-lbl">最近、気付いたこと</div>
     <div class="obs-body">${esc(o.text).replace(/\n/g,'<br>')}</div>
