@@ -763,7 +763,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v43';
+const STORE='okoso_v44';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -3343,7 +3343,8 @@ function onbEditSummary(){
 // 理想アップデートの確定（過去を否定せず履歴に残す）
 function finishIdealUpdate(){
   const prev=S.ideal;
-  const next=onbDraft.idealSummary;
+  // 確定した理想は idealTitle（confirm経由）または idealSummary（まとめ経由）に入る
+  const next=(onbDraft.idealTitle||onbDraft.idealSummary||'').trim();
   if(next && next!==prev){
     if(!S.idealHistory) S.idealHistory=[];
     const now=Date.now();
