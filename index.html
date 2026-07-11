@@ -126,6 +126,8 @@
   .tn-val{font-family:var(--serif);font-size:14px;line-height:1.6;color:var(--ink);letter-spacing:0.03em;}
   .tn-ideal .tn-val{font-weight:600;}
   .tn-goal .tn-val{font-size:13px;color:var(--ink-2);}
+  .tn-cp-pct{font-family:var(--mono);font-size:10px;color:var(--ember);letter-spacing:0.04em;}
+  .lm-sub{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-4);margin-top:4px;letter-spacing:0.04em;}
   /* ⑥ 今日の一歩（主役） */
   .today-focus{background:var(--bg-1);border:1px solid var(--ember-b);border-radius:8px;padding:20px 20px;box-shadow:0 4px 24px -16px rgba(200,120,60,0.4);}
   .today-focus-lbl{font-family:var(--mono);font-size:10px;letter-spacing:0.26em;color:var(--ember);text-transform:uppercase;margin-bottom:12px;}
@@ -763,7 +765,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v44';
+const STORE='okoso_v46';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -793,7 +795,20 @@ let S = {
   lastChronicleCheckTs: 0,     // 最後にAI判定を行った日時
   updatedAt: 0                 // このデータの最終更新時刻（同期のマージ判定に使う）
 };
-function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.parse(r)};}catch(e){} }
+function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.parse(r)};}catch(e){}
+  // チェックポイント移行：goalId・progressが無い既存データに補完
+  (S.monthFocuses||[]).forEach(cp=>{
+    if(cp.goalId===undefined) cp.goalId=(S.goals[0]&&S.goals[0].id)||'';
+    if(cp.progress===undefined) cp.progress=0;
+  });
+  // 既存の一歩：tagからcpIdを補完
+  Object.values(S.steps||{}).forEach(arr=>arr.forEach(s=>{
+    if(s.cpId===undefined && s.tag){
+      const cp=(S.monthFocuses||[]).find(c=>c.text===s.tag);
+      if(cp) s.cpId=cp.id;
+    }
+  }));
+}
 function persist(){
   S.updatedAt = Date.now();
   try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}
@@ -1107,34 +1122,15 @@ function renderTodayNorth(){
   if(!el) return;
   if(!S.ideal){ el.innerHTML=''; return; }
   const goalText = S.goals.length ? S.goals.map(g=>esc(g.text)).join('、') : '';
-  const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>esc(m.text)).join('、') : '';
-  // ② 現在地：加重で算出（今月の焦点50%・目標25%・今日の一歩15%・継続10%）
-  const _ymNow=new Date().toISOString().slice(0,7);
-  // 今月の焦点の達成度：達成済み=1.0、進行中は紐づく完了一歩12件で1.0とみなす近似
-  const _achFocusMonth=(S.achievedFocuses||[]).filter(a=>a.doneTs&&new Date(a.doneTs).toISOString().slice(0,7)===_ymNow);
-  const _activeFocuses=S.monthFocuses||[];
-  let _monthComp=0;
+  const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>`${esc(m.text)}<span class="tn-cp-pct"> ${m.progress||0}%</span>`).join('、') : '';
+  // 現在地＝チェックポイントの進捗で決まる（CPに紐付いた一歩をAIが判定した分だけ進む）
+  const _actives=(S.monthFocuses||[]);
+  const _achievedCps=(S.achievedFocuses||[]);
+  let _prog=0;
   {
-    const total=_activeFocuses.length+_achFocusMonth.length;
-    if(total>0){
-      let sum=_achFocusMonth.length;
-      _activeFocuses.forEach(f=>{
-        let hits=0;
-        Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(k.startsWith(_ymNow)) arr.forEach(s=>{ if(s.done&&s.tag===f.text) hits++; }); });
-        sum+=Math.min(1, hits/12);
-      });
-      _monthComp=Math.min(1, sum/total);
-    }
+    const entries=[..._actives.map(c=>Math.min(100,c.progress||0)), ..._achievedCps.map(()=>100)];
+    if(entries.length) _prog=(entries.reduce((a,b)=>a+b,0)/entries.length)/100;
   }
-  // 目標達成度
-  const _gAll=(S.goals||[]).length+(S.achievedGoals||[]).length;
-  const _goalComp=_gAll>0 ? (S.achievedGoals||[]).length/_gAll : 0;
-  // 今日の一歩の達成率
-  const _ts=todaySteps();
-  const _todayComp=_ts.length? _ts.filter(s=>s.done).length/_ts.length : 0;
-  // 継続（30日で満点）
-  const _streakComp=Math.min(1, calcStreak()/30);
-  const _prog=0.50*_monthComp + 0.25*_goalComp + 0.15*_todayComp + 0.10*_streakComp;
   const youPos=Math.round(6 + _prog*62);
   // ② 一本道のロードマップ：点と線で「向かう先→目標→今月→今日」が繋がって見える
   el.innerHTML=`<div class="road">
@@ -1148,7 +1144,7 @@ function renderTodayNorth(){
     </div>
     <div class="road-node" onclick="${monthText?`openListManager('month')`:`openMultiSheet('month')`}">
       <div class="road-dot"></div>
-      <div class="road-body"><div class="tn-lbl">今月</div><div class="tn-val">${monthText||'<span style=\'color:var(--ink-4)\'>今月の焦点を決める →</span>'}</div></div>
+      <div class="road-body"><div class="tn-lbl">通過点</div><div class="tn-val">${monthText||'<span style=\'color:var(--ink-4)\'>チェックポイントを決める →</span>'}</div></div>
     </div>
     <div class="road-you" id="road-you" style="bottom:${youPos}%"><span class="road-you-dot"></span><span class="road-you-lbl">現在地</span></div>
     <div class="road-node road-today">
@@ -1187,14 +1183,14 @@ function renderForwardPanel(){
 function openListManager(kind){
   const isGoal=kind==='goal';
   const list=isGoal?S.goals:S.monthFocuses;
-  const title=isGoal?'目標':'今月の焦点';
+  const title=isGoal?'目標':'チェックポイント';
   const sub=isGoal
     ? '向かう先へ近づくためのルート。<br>いくつでも持てます。'
-    : '目標の中で、今月いちばん力を入れる道。<br>これも、いくつでも。';
+    : '目標へ向かう途中で、必ず通過する中間地点。<br>紐付いた一歩を達成するたび、前へ進みます。';
   const rows=list.length
     ? list.map(it=>`<div class="lm-row">
         <button class="lm-chk" onclick="achieveItem('${kind}','${it.id}');closeModal();" title="達成にする"><svg width="10" height="8" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span class="lm-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}</span>
+        <span class="lm-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}${!isGoal?`<span class="lm-sub">${(()=>{const g=S.goals.find(x=>x.id===it.goalId);return (g?`▸ ${esc(g.text)} ／ `:'')+`${it.progress||0}%`;})()}</span>`:''}</span>
         <button class="lm-edit" onclick="openMultiSheet('${kind}','${it.id}')" title="編集">✎ 編集</button>
       </div>`).join('')
     : `<div class="lm-empty">まだありません</div>`;
@@ -1284,7 +1280,7 @@ function renderFlowMulti(wrapId, label, items, kind){
         <button class="flow-multi-chk" onclick="event.stopPropagation();achieveItem('${kind}','${it.id}')" title="達成にする"><svg width="10" height="8" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <span class="flow-multi-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}</span>
       </div>`).join('')
-    : `<div class="flow-multi-empty" onclick="openMultiSheet('${kind}')">${kind==='goal'?'目標を決める →':'今月の焦点を決める →'}</div>`;
+    : `<div class="flow-multi-empty" onclick="openMultiSheet('${kind}')">${kind==='goal'?'目標を決める →':'チェックポイントを決める →'}</div>`;
   el.innerHTML=`
     <div class="flow-multi-head">
       <span class="flow-multi-lbl">${label}</span>
@@ -1375,8 +1371,25 @@ async function openMultiSheet(kind, editId){
   const isGoal = kind==='goal';
   const list = isGoal ? S.goals : S.monthFocuses;
   const editing = editId ? list.find(x=>x.id===editId) : null;
-  const title = isGoal ? '目標' : '今月の焦点';
+  const title = isGoal ? '目標' : 'チェックポイント';
   const ph = isGoal ? '例：副業収入10万円、簿記2級合格' : '例：ポートフォリオ完成、投稿30本';
+
+  // チェックポイントは必ず目標に紐付く。目標が無ければ先に作ってもらう
+  if(!isGoal && !S.goals.length){
+    openSheet(`<h2>チェックポイント</h2>
+      <p class="sheet-note">チェックポイントは、目標へ向かう途中で必ず通過する中間地点です。<br>先に、紐付ける目標を作りましょう。</p>
+      <div class="sheet-btns" style="flex-direction:column;gap:8px">
+        <button class="sbtn sbtn-p" onclick="openMultiSheet('goal')" style="width:100%">目標を作る</button>
+        <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+      </div>`);
+    return;
+  }
+  let chosenGoalId = !isGoal ? (editing?editing.goalId:'') || (S.goals.length===1?S.goals[0].id:'') : '';
+  window.pickCpGoal=(el,gid)=>{ document.querySelectorAll('#cpg-row .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); chosenGoalId=gid; };
+  const goalPickPart = !isGoal
+    ? `<label class="field-lbl">どの目標へ向かう中間地点？（必須）</label>
+       <div class="chip-row" id="cpg-row">${S.goals.map(g=>`<button class="chip${g.id===chosenGoalId?' on':''}" onclick="pickCpGoal(this,'${g.id}')">${esc(g.text)}</button>`).join('')}</div>`
+    : '';
 
   // ① 現在値（編集時）の表示
   const currentNote = editing
@@ -1388,8 +1401,12 @@ async function openMultiSheet(kind, editId){
   window.saveMulti=()=>{
     const v=(document.getElementById('multi-inp').value||'').trim();
     if(!v){ closeModal(); return; }
-    if(editing){ editing.text=v; }
-    else { (isGoal?S.goals:S.monthFocuses).push({id:uid(),text:v}); }
+    if(!isGoal && !chosenGoalId){ quietToast('紐付ける目標を選んでください'); return; }
+    if(editing){ editing.text=v; if(!isGoal) editing.goalId=chosenGoalId; }
+    else {
+      if(isGoal) S.goals.push({id:uid(),text:v});
+      else S.monthFocuses.push({id:uid(),text:v,goalId:chosenGoalId,progress:0});
+    }
     persist(); renderFlow(); closeModal();
   };
   window.delMulti=()=>{
@@ -1405,6 +1422,7 @@ async function openMultiSheet(kind, editId){
 
   openSheet(`<h2>${title}${editing?'を編集':''}</h2>
     ${currentNote}${idealNote}
+    ${!isGoal?goalPickPart:''}
     <div id="multi-suggest-area">
       <div class="suggest-loading" id="multi-suggest-loading">AIが候補を考えています…</div>
       <div id="multi-suggest-chips" class="suggest-chips"></div>
@@ -1436,7 +1454,7 @@ async function openMultiSheet(kind, editId){
 // AI候補を5個生成するAPI呼び出し
 async function callSuggestAPI(kind){
   const kindLabel = kind==='goal' ? '目標（最大の壁を越えて理想へ近づく方法）'
-    : kind==='month' ? '今月の焦点（目標に向けて今月集中すること）'
+    : kind==='month' ? 'チェックポイント（目標へ向かう途中で必ず通過する中間地点。1〜4週間で到達できる粒度）'
     : '今日の一歩（理想に最も近づく、今日できる小さな行動）';
   const wall=S.wall||onbDraft.wall||'';
   const ideal=S.ideal||onbDraft.idealTitle||onbDraft.idealSummary||'(未設定)';
@@ -1452,7 +1470,7 @@ async function callSuggestAPI(kind){
 - 1候補は10〜25字程度、体言止め
 - 出力形式（JSONのみ）：{"suggestions":["候補1","候補2","候補3","候補4","候補5"]}`;
 
-  const user=`向かう先（理想）：${ideal}${wall?`\n最大の壁：${wall}（この壁を越えることを軸に考える）`:''}\n目標：${goal}\n今月の焦点：${month}\n\n上記をもとに「${kindLabel}」の候補を5個、JSONで返してください。`;
+  const user=`向かう先（理想）：${ideal}${wall?`\n最大の壁：${wall}（この壁を越えることを軸に考える）`:''}\n目標：${goal}\nチェックポイント：${month}\n\n上記をもとに「${kindLabel}」の候補を5個、JSONで返してください。`;
 
   const res=await fetch('/api/translate',{
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -1516,6 +1534,7 @@ function toggleStep(i){
       s.logId=log.id;   // 取り消し用に紐づけ
     }
     persist(); renderSteps(); renderAssetChips(); renderMorningGreeting(); renderTodayNorth(); renderForwardPanel();
+    if(s.cpId) judgeStepContribution(s);   // チェックポイントへの貢献度をAIが判定→現在地が進む
     // ⑤ 静かで温かい達成メッセージ（毎回）。資産があれば積み上げも続けて見せる
     showStepDoneMessage(s);
   } else {
@@ -1628,24 +1647,33 @@ function renderTomorrow(){
 function removeTomorrow(i){ const arr=S.steps[tomorrowKey()]||[]; arr.splice(i,1); persist(); renderTomorrow(); }
 
 async function openStepSheet(forTomorrow){
-  const focuses=S.monthFocuses||[];
-  let chosenTag = focuses.length===1 ? focuses[0].text : '';
-  const assetNames=Object.keys(S.assets);
+  const cps=S.monthFocuses||[];
   const title = forTomorrow ? '明日の一歩を決める' : '今日の一歩を決める';
 
-  // ① 現在の向かう先・今月の焦点を上部に表示
-  const contextNote = (S.ideal||focuses.length)
-    ? `<div class="sheet-current">${S.ideal?`向かう先：「${esc(S.ideal)}」`:''}${S.ideal&&focuses.length?' ／ ':''} ${focuses.length===1?`今月：「${esc(focuses[0].text)}」`:focuses.length>1?`今月：${focuses.map(f=>esc(f.text)).join('、')}`:''}
-       </div>` : '';
+  // チェックポイントが無ければ、一歩は作れない（必ず道に繋げる）
+  if(!cps.length){
+    openSheet(`<h2>${title}</h2>
+      <p class="sheet-note">今日の一歩は、必ずチェックポイントに繋がる一歩として決めます。<br>先に、チェックポイント（目標へ向かう中間地点）を作りましょう。</p>
+      <div class="sheet-btns" style="flex-direction:column;gap:8px">
+        <button class="sbtn sbtn-p" onclick="openMultiSheet('month')" style="width:100%">チェックポイントを作る</button>
+        <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+      </div>`);
+    return;
+  }
+  let chosenCp = cps.length===1 ? cps[0] : null;
+  const assetNames=Object.keys(S.assets);
+  const goalName=(gid)=>{ const g=S.goals.find(x=>x.id===gid); return g?g.text:''; };
 
-  const focusPart = focuses.length>1
-    ? `<label class="field-lbl">どの焦点に繋がる？（任意）</label><div class="chip-row" id="sf-row">${focuses.map(f=>`<button class="chip" onclick="pickStepFocus(this,'${esc(f.text)}')">${esc(f.text)}</button>`).join('')}</div>`
-    : '';
+  const contextNote = S.ideal
+    ? `<div class="sheet-current">向かう先：「${esc(S.ideal)}」</div>` : '';
+
+  const focusPart = `<label class="field-lbl">どのチェックポイントに繋がる一歩？（必須）</label>
+    <div class="chip-row" id="sf-row">${cps.map(f=>`<button class="chip${chosenCp&&chosenCp.id===f.id?' on':''}" onclick="pickStepCp(this,'${f.id}')">${esc(f.text)}${f.progress?` ${f.progress}%`:''}</button>`).join('')}</div>`;
   const itemChips = assetNames.length
     ? `<div class="chip-row" id="item-chips" style="margin-bottom:4px">${assetNames.map(n=>`<button class="chip" onclick="pickStepItem(this,'${esc(n)}','${esc(S.assets[n].unit||'')}')">${esc(n)}</button>`).join('')}</div>`
     : '';
 
-  window.pickStepFocus=(el,t)=>{ document.querySelectorAll('#sf-row .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); chosenTag=t; };
+  window.pickStepCp=(el,cpId)=>{ document.querySelectorAll('#sf-row .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); chosenCp=cps.find(c=>c.id===cpId)||null; };
   window.pickStepItem=(el,name,unit)=>{
     document.querySelectorAll('#item-chips .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on');
     document.getElementById('step-item').value=name;
@@ -1659,12 +1687,13 @@ async function openStepSheet(forTomorrow){
   window.doAddStep=()=>{
     const text=(document.getElementById('step-inp').value||'').trim();
     if(!text){ quietToast('一歩を入力してください'); return; }
+    if(!chosenCp){ quietToast('どのチェックポイントに繋がる一歩か、選んでください'); return; }
     const item=(document.getElementById('step-item').value||'').trim();
     const rawAmt=(document.getElementById('step-amt').value||'').trim();
     let amount=rawAmt?parseFloat(rawAmt):null; if(amount==null||isNaN(amount))amount=null;
     const unit=(document.getElementById('step-unit').value||'').trim();
     const target = forTomorrow ? tomorrowSteps() : todaySteps();
-    target.push({id:uid(), text, tag:chosenTag||'', done:false, item:item||'', amount, unit, gift:!!forTomorrow});
+    target.push({id:uid(), text, tag:chosenCp.text, cpId:chosenCp.id, done:false, item:item||'', amount, unit, gift:!!forTomorrow});
     persist();
     if(forTomorrow) renderTomorrow(); else renderSteps();
     renderAssetChips();
@@ -2777,9 +2806,9 @@ function onbRender(stage, opts){
     return;
   }
   if(stage==='month2'){
-    onbAIInputStep({eyebrow:'第三段階 ・ 今月の焦点', kind:'month',
-      q:'その目標のために、<br>今月は何に集中しますか？',
-      ph:'例：週2回ジムに行く、候補を3つ調べる',saveKey:'month',next:'step2'});
+    onbAIInputStep({eyebrow:'第三段階 ・ チェックポイント', kind:'month',
+      q:'その目標へ向かう、<br>最初のチェックポイントは？',
+      ph:'例：ポートフォリオ完成、候補を3つ決める',saveKey:'month',next:'step2'});
     return;
   }
   if(stage==='step2'){
@@ -2799,7 +2828,7 @@ function onbRender(stage, opts){
         <div class="onb-done-line">向かう先　<span class="v">${esc(idealShown||'—')}</span></div>
         <div class="onb-done-line">最初の壁　<span class="v">${esc(onbDraft.wall||'—')}</span></div>
         <div class="onb-done-line">目標　<span class="v">${esc(goalsLine)}</span></div>
-        <div class="onb-done-line">今月　<span class="v">${esc(onbDraft.month||'—')}</span></div>
+        <div class="onb-done-line">通過点　<span class="v">${esc(onbDraft.month||'—')}</span></div>
         <div class="onb-done-line">今日　<span class="v">${esc(onbDraft.step||'—')}</span></div>
       </div>
       <div class="onb-sub" style="margin-bottom:30px">理想から今日まで、一本の道が繋がりました。<br>あとは、進むだけ。</div>
@@ -3531,9 +3560,10 @@ function onbFinish(){
   } else {
     S.goals = onbDraft.goal ? [{id:uid(),text:onbDraft.goal}] : [];
   }
-  S.monthFocuses = onbDraft.month ? [{id:uid(),text:onbDraft.month}] : [];
+  S.monthFocuses = onbDraft.month ? [{id:uid(),text:onbDraft.month,goalId:(S.goals[0]&&S.goals[0].id)||'',progress:0}] : [];
   const focusTag = onbDraft.month||'';
-  if(onbDraft.step){ todaySteps().push({id:uid(),text:onbDraft.step,tag:focusTag,done:false}); }
+  const cpId=(S.monthFocuses[0]&&S.monthFocuses[0].id)||'';
+  if(onbDraft.step){ todaySteps().push({id:uid(),text:onbDraft.step,tag:focusTag,cpId,done:false}); }
   S.onboarded=true;
   S.idealStartTs=Date.now();
   persist();
@@ -3782,6 +3812,35 @@ function setupAutoSync(){
 const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
 const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
+
+// ── チェックポイント貢献度のAI判定（小2〜5% / 通常5〜10% / 大15〜30%）──
+async function judgeStepContribution(step){
+  const cp=(S.monthFocuses||[]).find(c=>c.id===step.cpId);
+  if(!cp) return;
+  let gain=6;   // AIが使えない時の既定値（通常の前進）
+  try{
+    const g=S.goals.find(x=>x.id===cp.goalId);
+    const sys=`あなたはOKOSOの伴走者です。ユーザーが完了した「今日の一歩」が、チェックポイント全体の達成に対してどれだけ貢献したかを判定してください。
+- 小さな前進（準備・調べ物・軽い作業）：2〜5
+- 通常の前進（着実な実作業）：5〜10
+- 大きな前進（核心的な成果・完成・突破）：15〜30
+数値はチェックポイント全体を100とした時の貢献率。出力（JSONのみ）：{"gain":数値}`;
+    const user=`【チェックポイント】${cp.text}（現在${cp.progress||0}%）\n【紐付く目標】${g?g.text:'（不明）'}\n【完了した一歩】${step.text}${step.amount?`（${step.amount}${step.unit||''}）`:''}`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+    if(res.ok){
+      const data=await res.json();
+      let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+      const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+      const obj=JSON.parse(txt);
+      if(obj && typeof obj.gain==='number') gain=Math.max(2,Math.min(30,Math.round(obj.gain)));
+    }
+  }catch(e){ /* 既定値で進む */ }
+  cp.progress=Math.min(100,(cp.progress||0)+gain);
+  persist();
+  renderTodayNorth();   // 現在地マーカーがアニメーションで前へ
+  quietToast(`「${cp.text}」が ${gain}% 前進`);
+  if(cp.progress>=100){ setTimeout(()=>quietToast(`チェックポイント「${cp.text}」到達間近。達成にできます`),1800); }
+}
 
 // ═══ 人生起動録 ═══
 // AIが「人生が少し動いた」と判断した時だけ、三人称のドキュメンタリーとして章を書く
@@ -4319,7 +4378,8 @@ function showUnmetDialog(unmet){
       <div class="unmet-task-card">${esc(t.text)}</div>
       <div class="onb-sub" style="margin:18px 0 22px">できなかった日も、人生の一部です。<br>どうするか、あなたが決めてください。</div>
       <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="onb-btn" onclick="decideUnmet(${idx},'carry')">明日に引き継ぐ</button>
+        <button class="onb-btn" onclick="decideUnmet(${idx},'donelate')">実は完了していた（チェック忘れ）</button>
+        <button class="onb-btn ghost" onclick="decideUnmet(${idx},'carry')">明日に引き継ぐ</button>
         <button class="onb-btn ghost" onclick="decideUnmet(${idx},'reflect')">振り返りを残す</button>
         <button class="onb-btn ghost" onclick="decideUnmet(${idx},'end')">今はやらないと決める</button>
       </div>
@@ -4331,7 +4391,28 @@ function showUnmetDialog(unmet){
     // 元タスクに印をつける
     const arr=S.steps[t.fromDate]||[];
     const orig=arr.find(s=>s.id===t.id);
-    if(decision==='carry'){
+    if(decision==='donelate'){
+      // 実は完了していた：元の日付のまま達成扱いにする（現実の行動を正しく評価する）
+      if(orig){
+        orig.done=true;
+        // その日の終わり（23:00）のタイムスタンプで記録＝継続日数・起動録・分析すべてに「その日の成果」として乗る
+        const ts=new Date(t.fromDate+'T23:00:00').getTime();
+        if(orig.item){
+          const name=orig.item;
+          if(!S.assets[name]) S.assets[name]={unit:orig.unit||'', total:0, count:0, firstTs:ts};
+          S.assets[name].count+=1;
+          if(orig.amount!=null) S.assets[name].total+=orig.amount;
+          const log={id:uid(), item:name, amount:(orig.amount!=null?orig.amount:null), unit:orig.unit||'', ts, fromStep:orig.id};
+          S.logs.push(log);
+          orig.logId=log.id;
+        }
+        // チェックポイントの現在地も、その日の前進として進める（AI貢献度判定）
+        if(orig.cpId) judgeStepContribution(orig);
+      }
+      S.stepDecisions.push({id:uid(), text:t.text, date:t.fromDate, decision:'donelate', ts:Date.now()});
+      quietToast('その日の達成として記録しました');
+      idx++; renderOne();
+    } else if(decision==='carry'){
       if(orig) orig.carried=true;
       // 今日に引き継ぐ
       const ts=todaySteps();
