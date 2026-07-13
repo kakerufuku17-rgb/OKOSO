@@ -209,6 +209,12 @@
   .chr-next-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:0.22em;color:var(--ember);text-transform:uppercase;margin-bottom:10px;}
   .chr-next-body{font-family:var(--serif);font-size:13px;color:var(--ink-2);line-height:2.1;letter-spacing:0.03em;}
   /* ③ ホームの起動録カード */
+  .ai-step-card{margin:2px 0 16px;padding:20px 20px 18px;background:linear-gradient(155deg,var(--ember-d),var(--bg-1) 80%);border:1px solid var(--ember);border-radius:12px;box-shadow:0 6px 30px -16px rgba(200,120,60,0.55);}
+  .asc-eyebrow{font-family:var(--mono);font-size:9.5px;letter-spacing:0.22em;color:var(--ember);text-transform:uppercase;}
+  .asc-text{margin-top:12px;font-family:var(--serif);font-size:19px;font-weight:600;color:var(--ink);line-height:1.7;letter-spacing:0.03em;}
+  .asc-meaning{margin-top:12px;font-family:var(--serif);font-size:12.5px;color:var(--ink-3);line-height:1.95;letter-spacing:0.03em;}
+  .asc-cp{color:var(--ember);}
+  .asc-btns{display:flex;gap:10px;margin-top:16px;}
   .home-chr{margin-top:16px;padding:16px 18px;background:var(--bg-1);border:1px solid var(--rule-2);border-radius:10px;cursor:pointer;transition:border-color 0.25s;}
   .home-chr:hover{border-color:var(--ember-b);}
   .home-chr-head{display:flex;align-items:baseline;gap:10px;}
@@ -618,9 +624,10 @@ window.FIREBASE_CONFIG = {
     <!-- ① 今日の一歩（主役・最初に目に入る） -->
     <div class="today-focus">
       <div class="today-focus-lbl">今日の一歩</div>
-      <div class="flow-steps-lead" id="steps-lead">理想に繋がる一歩を、今日ひとつ。</div>
+      <div class="flow-steps-lead" id="steps-lead">人生を前に進めるための、今日いちばん価値のある一歩。</div>
+      <div id="ai-step-proposal"></div>
       <div id="steps-list"></div>
-      <button class="add-btn" onclick="openStepSheet()"><span>＋</span> 一歩を決める</button>
+      <button class="add-btn" onclick="openStepSheet()"><span>＋</span> 自分で一歩を追加する</button>
     </div>
 
     <!-- ② ロードマップ（現在地が静かに進む一本道） -->
@@ -770,7 +777,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v47';
+const STORE='okoso_v48';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -794,6 +801,7 @@ let S = {
   wall: '',                    // 最大の壁（第二段階でAIが特定）
   wakeTime: '06:00',           // ⑤ 起床時間（整えるタブの切替に使う）
   sleepTime: '23:00',          // ⑤ 就寝時間
+  aiStep: null,                // AIが毎朝選ぶ「今日いちばん価値のある一歩」{date,text,cpId,cpText,reason,ts,accepted,stepId}
   observations: [],            // ④ AIの観察ログ [{id,text,ts}]
   lastObservationTs: 0,        // ④ 最後に観察を生成した日時
   chroniclePersona: '彼',      // 起動録の三人称（彼/彼女）
@@ -942,6 +950,7 @@ function mergeData(local, remote){
   out.wall=newer.wall||'';
   out.wakeTime=newer.wakeTime||'06:00';
   out.sleepTime=newer.sleepTime||'23:00';
+  out.aiStep=((local.aiStep&&local.aiStep.ts)||0)>=((remote.aiStep&&remote.aiStep.ts)||0)?local.aiStep:remote.aiStep;
   out.observations=mergeById(local.observations||[],remote.observations||[]);
   out.lastObservationTs=Math.max(local.lastObservationTs||0,remote.lastObservationTs||0);
   out.goals=newer.goals;
@@ -1116,6 +1125,7 @@ function renderFlow(){
   renderMorningGreeting();  // ④⑤ 朝の挨拶
   renderChronicleBanner();  // 📖 未読の章バナー
   renderHomeChronicle();    // ①③ 起動録カード（分析可視化）
+  renderAiProposal();       // OKOSOが選んだ今日の一歩
   renderObservation();      // ④ AIの観察ログ
   renderSteps();
   renderTomorrow();
@@ -1500,8 +1510,11 @@ function renderSteps(){
   const focuses=S.monthFocuses||[];
   // ② 今日の行動の意味：「なぜ今日これをやるのか」を伝える
   const firstUndone=steps.find(s=>!s.done);
+  const todayKey=ymdKey(new Date());
+  const aiAccepted=S.aiStep&&S.aiStep.date===todayKey&&S.aiStep.accepted&&steps.some(s=>s.id===S.aiStep.stepId&&!s.done);
   const anchor=(firstUndone&&firstUndone.tag)||(focuses.length===1?focuses[0].text:'')||(S.goals.length===1?S.goals[0].text:'');
-  const focusLead = steps.length&&anchor ? `この一歩は、「${anchor}」へ近づく一歩です。`
+  const focusLead = aiAccepted&&S.aiStep.reason ? `${S.aiStep.reason}——通過点「${S.aiStep.cpText}」へ。`
+    : steps.length&&anchor ? `この一歩は、「${anchor}」へ近づく一歩です。`
     : focuses.length===1 ? `「${focuses[0].text}」に向けた、今日の一歩を。`
     : focuses.length>1 ? '今月の焦点に向けた、今日の一歩を。'
     : '理想に繋がる一歩を、今日ひとつ。';
@@ -1538,7 +1551,7 @@ function toggleStep(i){
       S.logs.push(log);
       s.logId=log.id;   // 取り消し用に紐づけ
     }
-    persist(); renderSteps(); renderAssetChips(); renderMorningGreeting(); renderTodayNorth(); renderForwardPanel();
+    persist(); renderSteps(); renderAssetChips(); renderMorningGreeting(); renderTodayNorth(); renderForwardPanel(); renderHomeChronicle();
     if(s.cpId) judgeStepContribution(s);   // チェックポイントへの貢献度をAIが判定→現在地が進む
     // ⑤ 静かで温かい達成メッセージ（毎回）。資産があれば積み上げも続けて見せる
     showStepDoneMessage(s);
@@ -3774,7 +3787,7 @@ function init(){
   };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeProposeTodayStep(); }, 1200); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -3792,7 +3805,7 @@ function autoSyncNow(reason){
 function setupAutoSync(){
   // スマホでアプリに戻ってきた時（iOSはページ再読込せずに復帰するため、ここが最重要）
   document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible') autoSyncNow('visible');
+    if(document.visibilityState==='visible'){ autoSyncNow('visible'); maybeProposeTodayStep(); }
   });
   // PCでタブ・ウィンドウにフォーカスが戻った時
   window.addEventListener('focus',()=>autoSyncNow('focus'));
@@ -3817,6 +3830,76 @@ function setupAutoSync(){
 const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
 const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
+
+// ═══ AIが毎朝選ぶ「今日いちばん価値のある一歩」═══
+let _aiStepBusy=false;
+async function maybeProposeTodayStep(){
+  if(!S.onboarded||!S.ideal) return;
+  const cps=S.monthFocuses||[];
+  if(!cps.length) return;                       // 通過点が無ければ提案しない（道に繋がらない提案はしない）
+  const today=ymdKey(new Date());
+  if(S.aiStep && S.aiStep.date===today) return; // 今日ぶんは計算済み
+  if(_aiStepBusy) return;
+  _aiStepBusy=true;
+  try{
+    const goalName=(gid)=>{ const g=S.goals.find(x=>x.id===gid); return g?g.text:''; };
+    const cpLines=cps.map(c=>`- id:${c.id}「${c.text}」進捗${c.progress||0}%（目標：${goalName(c.goalId)||'—'}）`).join('\n');
+    const recent=[];
+    Object.entries(S.steps||{}).sort().slice(-7).forEach(([k,arr])=>arr.forEach(s=>{ if(s.done) recent.push(`[${k}] ${s.text}`); }));
+    const jr=(S.journals||[]).filter(j=>!j.kind).slice(-5).map(j=>`[${new Date(j.ts).toLocaleDateString('ja-JP')}] ${j.text.slice(0,70)}`).join('\n')||'（なし）';
+    const obs=(S.observations||[]).slice(-1).map(o=>o.text).join('')||'（なし）';
+    const prev=(S.aiStep&&S.aiStep.text)?`昨日の提案：「${S.aiStep.text}」`:'（昨日の提案なし）';
+    const sys=`あなたはOKOSOの伴走者です。ユーザーのロードマップ（向かう先→目標→通過点）から逆算し、「今日、人生を前に進めるために最も価値の高い一歩」を、必ず一つだけ選んでください。
+# ルール（厳守）
+- 提案は一つだけ。Todoの羅列は絶対にしない
+- 必ず、進行中の通過点のどれかから逆算する。通過点に関係ない提案は禁止
+- 一歩は今日中に完了できる具体的な行動（15分〜2時間程度）
+- 「なぜ今日これなのか」を一言（40字以内）で添える。意味が分かれば人は動ける
+- 昨日と同じ提案を理由なく繰り返さない。同じにするなら、今日もそれが最重要である理由をreasonに書く
+# 出力（JSONのみ）
+{"text":"一歩の内容（30字以内）","cpId":"最も関係する通過点のid","reason":"なぜ今日これなのか（40字以内）"}`;
+    const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【通過点】\n${cpLines}\n【直近の完了】\n${recent.slice(-15).join('\n')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【AIの観察】${obs}\n${prev}`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+    if(!res.ok) throw new Error('api');
+    const data=await res.json();
+    let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+    const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+    const obj=JSON.parse(txt);
+    const cp=cps.find(c=>c.id===obj.cpId)||cps[0];
+    if(obj && obj.text){
+      S.aiStep={date:today, text:obj.text, cpId:cp.id, cpText:cp.text, reason:obj.reason||'', ts:Date.now(), accepted:false, stepId:''};
+      persist(); renderAiProposal(); renderSteps();
+    }
+  }catch(e){ /* 次の機会に */ }
+  _aiStepBusy=false;
+}
+// 提案カードの描画（未採用・未完了の今日ぶんだけ表示）
+function renderAiProposal(){
+  const el=document.getElementById('ai-step-proposal');
+  if(!el) return;
+  const today=ymdKey(new Date());
+  const a=S.aiStep;
+  if(!a || a.date!==today || a.accepted){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="ai-step-card">
+    <div class="asc-eyebrow">OKOSOが選んだ、今日の一歩</div>
+    <div class="asc-text">${esc(a.text)}</div>
+    <div class="asc-meaning">${a.reason?esc(a.reason)+'<br>':''}この一歩は、通過点「<span class="asc-cp">${esc(a.cpText)}</span>」につながっています。</div>
+    <div class="asc-btns">
+      <button class="sbtn sbtn-p" onclick="acceptAiStep()" style="flex:1">この一歩で進む</button>
+      <button class="sbtn" onclick="openStepSheet()" style="flex:1">自分で決める</button>
+    </div>
+  </div>`;
+}
+// 「この一歩で進む」→ 正式な今日の一歩として道に繋ぐ
+function acceptAiStep(){
+  const a=S.aiStep;
+  if(!a) return;
+  const st={id:uid(), text:a.text, tag:a.cpText, cpId:a.cpId, done:false, item:'', amount:null, unit:'', ai:true};
+  todaySteps().push(st);
+  a.accepted=true; a.stepId=st.id;
+  persist(); renderAiProposal(); renderSteps(); renderTodayNorth(); renderForwardPanel();
+  quietToast('今日の一歩が決まりました');
+}
 
 // ── チェックポイント貢献度のAI判定（小2〜5% / 通常5〜10% / 大15〜30%）──
 async function judgeStepContribution(step){
@@ -3843,6 +3926,7 @@ async function judgeStepContribution(step){
   cp.progress=Math.min(100,(cp.progress||0)+gain);
   persist();
   renderTodayNorth();   // 現在地マーカーがアニメーションで前へ
+  renderHomeChronicle();   // 分析バーも即反映
   quietToast(`「${cp.text}」が ${gain}% 前進`);
   if(cp.progress>=100){ setTimeout(()=>quietToast(`チェックポイント「${cp.text}」到達間近。達成にできます`),1800); }
 }
