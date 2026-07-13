@@ -126,7 +126,12 @@
   .tn-val{font-family:var(--serif);font-size:14px;line-height:1.6;color:var(--ink);letter-spacing:0.03em;}
   .tn-ideal .tn-val{font-weight:600;}
   .tn-goal .tn-val{font-size:13px;color:var(--ink-2);}
-  .tn-cp-pct{font-family:var(--mono);font-size:10px;color:var(--ember);letter-spacing:0.04em;}
+  .tn-cp-pct{font-family:var(--mono);font-size:1em;color:var(--ember);letter-spacing:0.04em;}
+  .tn-line{display:block;line-height:1.75;}
+  .pn-row{display:flex;gap:12px;align-items:baseline;margin-top:7px;}
+  .pn-row .tlbl{flex-shrink:0;}
+  .pn-line{display:block;line-height:1.8;}
+  .tn-line+.tn-line{margin-top:4px;}
   .lm-sub{display:block;font-family:var(--mono);font-size:10px;color:var(--ink-4);margin-top:4px;letter-spacing:0.04em;}
   /* ⑥ 今日の一歩（主役） */
   .today-focus{background:var(--bg-1);border:1px solid var(--ember-b);border-radius:8px;padding:20px 20px;box-shadow:0 4px 24px -16px rgba(200,120,60,0.4);}
@@ -765,7 +770,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v46';
+const STORE='okoso_v47';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1121,8 +1126,8 @@ function renderTodayNorth(){
   const el=document.getElementById('today-north');
   if(!el) return;
   if(!S.ideal){ el.innerHTML=''; return; }
-  const goalText = S.goals.length ? S.goals.map(g=>esc(g.text)).join('、') : '';
-  const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>`${esc(m.text)}<span class="tn-cp-pct"> ${m.progress||0}%</span>`).join('、') : '';
+  const goalText = S.goals.length ? S.goals.map(g=>`<span class="tn-line">${esc(g.text)}</span>`).join('') : '';
+  const monthText = S.monthFocuses.length ? S.monthFocuses.map(m=>`<span class="tn-line">${esc(m.text)}<span class="tn-cp-pct"> ${m.progress||0}%</span></span>`).join('') : '';
   // 現在地＝チェックポイントの進捗で決まる（CPに紐付いた一歩をAIが判定した分だけ進む）
   const _actives=(S.monthFocuses||[]);
   const _achievedCps=(S.achievedFocuses||[]);
@@ -2122,13 +2127,13 @@ function renderProof(){
 
   // ── 北極星：理想を資産の上に置く ──
   const north=document.getElementById('proof-north');
-  const goalsTxt = (S.goals||[]).map(g=>g.text).join('・');
-  const monthTxt = (S.monthFocuses||[]).map(f=>f.text).join('・');
+  const goalsHtml = (S.goals||[]).map(g=>`<span class="pn-line">${esc(g.text)}</span>`).join('');
+  const monthHtml = (S.monthFocuses||[]).map(f=>`<span class="pn-line">${esc(f.text)} <span style="font-family:var(--mono)">${f.progress||0}%</span></span>`).join('');
   if(S.ideal || goalsTxt || monthTxt){
     north.innerHTML = `
       <div class="proof-north-label">理想の姿</div>
       ${S.ideal ? `<div class="proof-north-ideal">${esc(S.ideal)}</div>` : '<div class="proof-north-ideal" style="color:var(--ink-3);font-size:16px">理想は、まだ描かれていません</div>'}
-      ${goalsTxt||monthTxt ? `<div class="proof-north-theme">${goalsTxt?`<span class="tlbl">目標</span><span class="ttxt">${esc(goalsTxt)}</span>`:''}${goalsTxt&&monthTxt?'<span style="color:var(--ink-4);margin:0 4px">·</span>':''}${monthTxt?`<span class="tlbl">今月</span><span class="ttxt">${esc(monthTxt)}</span>`:''}</div>` : ''}`;
+      ${goalsHtml||monthHtml ? `<div class="proof-north-theme">${goalsHtml?`<div class="pn-row"><span class="tlbl">目標</span><span class="ttxt">${goalsHtml}</span></div>`:''}${monthHtml?`<div class="pn-row"><span class="tlbl">通過点</span><span class="ttxt">${monthHtml}</span></div>`:''}</div>` : ''}`;
   } else {
     north.innerHTML = `<div class="proof-north-empty">理想を描くと、<br>積み上げが「証拠」に変わります。</div>`;
   }
@@ -2155,7 +2160,7 @@ function renderProof(){
   const afEl=document.getElementById('achieved-focuses-section');
   const af=(S.achievedFocuses||[]).slice().sort((a,b)=>b.doneTs-a.doneTs);
   if(af.length){
-    afEl.innerHTML=`<div class="label">達成した今月の焦点</div>
+    afEl.innerHTML=`<div class="label">達成した通過点</div>
       <p class="proof-asset-note">今年、ここまで前に進んだ。</p>
       <div class="achieve-list">${af.map(f=>`
         <div class="achieve-card achieve-tappable" onclick="openAchievedMenu('focus','${f.id}')">
