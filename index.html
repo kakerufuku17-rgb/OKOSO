@@ -427,9 +427,12 @@
   .lm-empty{font-family:var(--serif);font-size:13px;color:var(--ink-4);padding:14px 0;text-align:center;}
   .lm-edit{flex-shrink:0;background:none;border:1px solid var(--rule-2);border-radius:100px;color:var(--ink-3);font-family:var(--serif);font-size:11.5px;padding:5px 12px;cursor:pointer;letter-spacing:0.04em;transition:all 0.2s;white-space:nowrap;}
   .lm-edit:hover{border-color:var(--ember-b);color:var(--ember);}
-  .lm-move{display:flex;gap:4px;flex-shrink:0;}
-  .lm-mv{width:26px;height:26px;border:1px solid var(--rule-2);border-radius:6px;background:none;color:var(--ink-3);font-size:12px;cursor:pointer;transition:all 0.2s;line-height:1;}
-  .lm-mv:hover{border-color:var(--ember-b);color:var(--ember);}
+  .lm-handle{flex-shrink:0;cursor:grab;color:var(--ink-4);font-size:15px;letter-spacing:-1px;padding:0 2px;user-select:none;touch-action:none;}
+  .lm-handle:active{cursor:grabbing;}
+  .lm-drag{transition:background 0.15s,opacity 0.15s;}
+  .lm-drag.dragging{opacity:0.5;background:var(--bg-1);border-radius:8px;}
+  .lm-row.drop-above{box-shadow:inset 0 2px 0 var(--ember);}
+  .lm-row.drop-below{box-shadow:inset 0 -2px 0 var(--ember);}
   .step-gift{font-family:var(--serif);font-size:10.5px;color:var(--ember);letter-spacing:0.05em;margin-bottom:4px;}
   .tn-empty .tn-val{font-style:normal;}
   .suggest-chip:hover{background:var(--ember);color:#fff;}
@@ -780,7 +783,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v49';
+const STORE='okoso_v51';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -816,6 +819,15 @@ function load(){ try{const r=localStorage.getItem(STORE); if(r) S={...S,...JSON.
   (S.monthFocuses||[]).forEach(cp=>{
     if(cp.goalId===undefined) cp.goalId=(S.goals[0]&&S.goals[0].id)||'';
     if(cp.progress===undefined) cp.progress=0;
+  });
+  // 通過点の型を補完（数値型/AI評価型）：既存データを実績ベース設計へ移行
+  (S.monthFocuses||[]).forEach(cp=>{
+    if(!cp.type){
+      const nm=classifyCpLocal(cp.text);
+      if(nm){ cp.type='numeric'; cp.target=nm.target; cp.unit=nm.unit; cp.progressAmount=Math.round((cp.progress||0)/100*nm.target*100)/100; }
+      else { cp.type='ai'; }
+    }
+    if(cp.type==='numeric' && cp.progressAmount===undefined) cp.progressAmount=0;
   });
   // 通過点は常に目標の優先順に
   try{ sortCheckpointsByGoalOrder(); }catch(e){}
@@ -1200,6 +1212,19 @@ function renderForwardPanel(){
 }
 
 // 目標・今月の焦点の一覧管理（複数対応：追加・編集・削除・達成）// 目標・今月の焦点の一覧管理（複数対応：追加・編集・削除・達成）
+// 通過点の型判定（ローカル）：「読書10冊」等から数値と単位を抽出。取れなければnull
+const CP_UNITS='冊|本|回|km|kg|ページ|頁|個|分|時間|日|件|人|万円|円|話|章|品|着|杯|歩';
+function classifyCpLocal(text){
+  const m=(text||'').match(new RegExp('(\\d+(?:\\.\\d+)?)\\s*('+CP_UNITS+')'));
+  if(!m) return null;
+  return { target: parseFloat(m[1]), unit: m[2] };
+}
+// 数値型の達成率を実績から再計算（数式のみ・推測禁止）
+function recalcNumericCp(cp){
+  if(cp.type!=='numeric'||!cp.target) return;
+  cp.progressAmount=Math.max(0,Math.min(cp.target, Math.round((cp.progressAmount||0)*100)/100));
+  cp.progress=Math.round((cp.progressAmount/cp.target)*100);
+}
 // 目標の優先順に、通過点も並び替える（同じ目標内は元の順を保つ）
 function sortCheckpointsByGoalOrder(){
   const order={}; (S.goals||[]).forEach((g,i)=>order[g.id]=i);
@@ -1209,27 +1234,18 @@ function sortCheckpointsByGoalOrder(){
     return ia-ib;
   });
 }
-// 目標を優先順位で上下に動かす
-function moveGoal(id,dir){
-  const i=S.goals.findIndex(g=>g.id===id);
-  const j=i+dir;
-  if(i<0||j<0||j>=S.goals.length) return;
-  [S.goals[i],S.goals[j]]=[S.goals[j],S.goals[i]];
-  sortCheckpointsByGoalOrder();
-  persist(); renderFlow(); openListManager('goal');
-}
 function openListManager(kind){
   const isGoal=kind==='goal';
   const list=isGoal?S.goals:S.monthFocuses;
   const title=isGoal?'目標':'チェックポイント';
   const sub=isGoal
-    ? '向かう先へ近づくためのルート。<br>↑↓で優先順に並び替えられます（通過点も追従します）。'
+    ? '向かう先へ近づくためのルート。<br>⠿をドラッグで優先順に並び替えられます（通過点も追従します）。'
     : '目標へ向かう途中で、必ず通過する中間地点。<br>紐付いた一歩を達成するたび、前へ進みます。';
   const rows=list.length
-    ? list.map(it=>`<div class="lm-row">
+    ? list.map(it=>`<div class="lm-row${isGoal?' lm-drag':''}"${isGoal?` draggable="true" data-id="${it.id}"`:''}>
+        ${isGoal?`<span class="lm-handle" title="ドラッグで並び替え">⠿</span>`:''}
         <button class="lm-chk" onclick="achieveItem('${kind}','${it.id}');closeModal();" title="達成にする"><svg width="10" height="8" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span class="lm-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}${!isGoal?`<span class="lm-sub">${(()=>{const g=S.goals.find(x=>x.id===it.goalId);return (g?`▸ ${esc(g.text)} ／ `:'')+`${it.progress||0}%`;})()}</span>`:''}</span>
-        ${isGoal?`<span class="lm-move"><button class="lm-mv" onclick="moveGoal('${it.id}',-1)" title="上へ">↑</button><button class="lm-mv" onclick="moveGoal('${it.id}',1)" title="下へ">↓</button></span>`:''}
+        <span class="lm-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}${!isGoal?`<span class="lm-sub">${(()=>{const g=S.goals.find(x=>x.id===it.goalId);const gp=g?`▸ ${esc(g.text)} ／ `:'';const basis=it.type==='numeric'?`実績 ${it.progressAmount||0}${esc(it.unit||'')} / ${it.target||0}${esc(it.unit||'')}`:'AI分析による推定';return gp+`${it.progress||0}%（${basis}）`;})()}</span>`:''}</span>
         <button class="lm-edit" onclick="openMultiSheet('${kind}','${it.id}')" title="編集">✎ 編集</button>
       </div>`).join('')
     : `<div class="lm-empty">まだありません</div>`;
@@ -1241,6 +1257,90 @@ function openListManager(kind){
       <button class="sbtn sbtn-p" onclick="openMultiSheet('${kind}')" style="width:100%">＋ ${title}を追加</button>
       <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
     </div>`);
+  if(isGoal) setupGoalDnD();
+}
+
+// 通過点の型をAIが判定（ローカルで数値が取れなかった時だけ）
+async function classifyCpByAI(cp){
+  try{
+    const sys=`通過点が「数値で進捗管理できるか」を判定してください。数値と単位が明確に定まるもの（例：読書10冊、ランニング100km、動画30本）だけがnumericです。完成・構築・土台づくりなど数値化できないものはaiです。出力（JSONのみ）：{"type":"numeric","target":数値,"unit":"単位"} または {"type":"ai"}`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user:`通過点：「${cp.text}」`})});
+    if(!res.ok) return;
+    const data=await res.json();
+    let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+    const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+    const obj=JSON.parse(txt);
+    const live=(S.monthFocuses||[]).find(c=>c.id===cp.id);
+    if(live && obj.type==='numeric' && obj.target>0 && obj.unit){
+      live.type='numeric'; live.target=obj.target; live.unit=obj.unit;
+      if(live.progressAmount===undefined) live.progressAmount=0;
+      recalcNumericCp(live); persist(); renderTodayNorth();
+    }
+  }catch(e){}
+}
+
+// ── 目標のドラッグ&ドロップ並び替え（通過点も追従）──
+function setupGoalDnD(){
+  const rows=[...document.querySelectorAll('.lm-drag')];
+  let dragId=null;
+  // タッチ操作（スマホ）：ハンドルを掴んで動かす
+  const list=document.querySelector('.lm-list');
+  rows.forEach(row=>{
+    const handle=row.querySelector('.lm-handle');
+    if(handle){
+      handle.addEventListener('pointerdown',e=>{
+        if(e.pointerType==='mouse') return;   // マウスはHTML5 D&Dに任せる
+        e.preventDefault();
+        const id=row.dataset.id;
+        row.classList.add('dragging');
+        const move=(ev)=>{
+          const y=ev.clientY;
+          rows.forEach(x=>x.classList.remove('drop-above','drop-below'));
+          let over=null, above=true;
+          rows.forEach(x=>{ if(x===row) return; const r=x.getBoundingClientRect(); if(y>=r.top&&y<=r.bottom){ over=x; above=(y-r.top)<r.height/2; } });
+          if(over) over.classList.add(above?'drop-above':'drop-below');
+          row._over=over; row._above=above;
+        };
+        const up=()=>{
+          document.removeEventListener('pointermove',move);
+          document.removeEventListener('pointerup',up);
+          row.classList.remove('dragging');
+          const over=row._over;
+          rows.forEach(x=>x.classList.remove('drop-above','drop-below'));
+          if(over && over.dataset.id!==id){ reorderGoals(id, over.dataset.id, row._above); }
+        };
+        document.addEventListener('pointermove',move);
+        document.addEventListener('pointerup',up);
+      });
+    }
+    row.addEventListener('dragstart',e=>{ dragId=row.dataset.id; row.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    row.addEventListener('dragend',()=>{ row.classList.remove('dragging'); document.querySelectorAll('.lm-row').forEach(r=>r.classList.remove('drop-above','drop-below')); });
+    row.addEventListener('dragover',e=>{
+      e.preventDefault();
+      const r=row.getBoundingClientRect();
+      const above=(e.clientY-r.top)<r.height/2;
+      rows.forEach(x=>x.classList.remove('drop-above','drop-below'));
+      row.classList.add(above?'drop-above':'drop-below');
+    });
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      const targetId=row.dataset.id;
+      if(!dragId||dragId===targetId) return;
+      const r=row.getBoundingClientRect();
+      const above=(e.clientY-r.top)<r.height/2;
+      reorderGoals(dragId,targetId,above);
+    });
+  });
+}
+function reorderGoals(dragId,targetId,above){
+  const arr=S.goals;
+  const from=arr.findIndex(g=>g.id===dragId);
+  const moved=arr.splice(from,1)[0];
+  let to=arr.findIndex(g=>g.id===targetId);
+  if(!above) to+=1;
+  arr.splice(to,0,moved);
+  sortCheckpointsByGoalOrder();
+  persist(); renderFlow(); openListManager('goal');
 }
 
 // ④⑤ 朝の挨拶：昨日の前進・連続日数で「今日もやろう」を作る
@@ -1441,10 +1541,24 @@ async function openMultiSheet(kind, editId){
     const v=(document.getElementById('multi-inp').value||'').trim();
     if(!v){ closeModal(); return; }
     if(!isGoal && !chosenGoalId){ quietToast('紐付ける目標を選んでください'); return; }
-    if(editing){ editing.text=v; if(!isGoal){ editing.goalId=chosenGoalId; sortCheckpointsByGoalOrder(); } }
+    if(editing){
+      editing.text=v;
+      if(!isGoal){
+        editing.goalId=chosenGoalId;
+        const nm=classifyCpLocal(v);
+        if(nm){ editing.type='numeric'; editing.target=nm.target; editing.unit=nm.unit; if(editing.progressAmount===undefined) editing.progressAmount=0; recalcNumericCp(editing); }
+        sortCheckpointsByGoalOrder();
+      }
+    }
     else {
       if(isGoal) S.goals.push({id:uid(),text:v});
-      else { S.monthFocuses.push({id:uid(),text:v,goalId:chosenGoalId,progress:0}); sortCheckpointsByGoalOrder(); }
+      else {
+        const cp={id:uid(),text:v,goalId:chosenGoalId,progress:0};
+        const nm=classifyCpLocal(v);
+        if(nm){ cp.type='numeric'; cp.target=nm.target; cp.unit=nm.unit; cp.progressAmount=0; }
+        else { cp.type='ai'; classifyCpByAI(cp); }
+        S.monthFocuses.push(cp); sortCheckpointsByGoalOrder();
+      }
     }
     persist(); renderFlow(); closeModal();
   };
@@ -1576,12 +1690,23 @@ function toggleStep(i){
       s.logId=log.id;   // 取り消し用に紐づけ
     }
     persist(); renderSteps(); renderAssetChips(); renderMorningGreeting(); renderTodayNorth(); renderForwardPanel(); renderHomeChronicle();
-    if(s.cpId) judgeStepContribution(s);   // チェックポイントへの貢献度をAIが判定→現在地が進む
+    if(s.cpId){
+      const _cp=(S.monthFocuses||[]).find(c=>c.id===s.cpId);
+      if(_cp && _cp.type==='numeric') applyNumericProgress(s,_cp);   // 数値型：実績の数式のみ
+      else judgeStepContribution(s);                                  // AI評価型：AIが分析
+    }
     // ⑤ 静かで温かい達成メッセージ（毎回）。資産があれば積み上げも続けて見せる
     showStepDoneMessage(s);
   } else {
-    // 完了を外す → 自動反映を取り消す
+    // 完了を外す → 自動反映を取り消す（通過点の進捗も巻き戻す）
     s.done=false;
+    if(s.cpId){
+      const _cp=(S.monthFocuses||[]).find(c=>c.id===s.cpId);
+      if(_cp){
+        if(_cp.type==='numeric' && s._cpApplied){ _cp.progressAmount=Math.max(0,(_cp.progressAmount||0)-s._cpApplied); recalcNumericCp(_cp); s._cpApplied=0; }
+        else if(s._cpGain){ _cp.progress=Math.max(0,(_cp.progress||0)-s._cpGain); s._cpGain=0; }
+      }
+    }
     if(s.logId){
       const li=S.logs.findIndex(l=>l.id===s.logId);
       if(li>=0){
@@ -1715,7 +1840,23 @@ async function openStepSheet(forTomorrow){
     ? `<div class="chip-row" id="item-chips" style="margin-bottom:4px">${assetNames.map(n=>`<button class="chip" onclick="pickStepItem(this,'${esc(n)}','${esc(S.assets[n].unit||'')}')">${esc(n)}</button>`).join('')}</div>`
     : '';
 
-  window.pickStepCp=(el,cpId)=>{ document.querySelectorAll('#sf-row .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); chosenCp=cps.find(c=>c.id===cpId)||null; };
+  window.pickStepCp=(el,cpId)=>{
+    document.querySelectorAll('#sf-row .chip').forEach(c=>c.classList.remove('on'));
+    el.classList.add('on');
+    chosenCp=cps.find(c=>c.id===cpId)||null;
+    updateMeasureRequirement();
+  };
+  // 数値型CPなら実績の入力を必須として案内し、単位をプリフィル
+  window.updateMeasureRequirement=()=>{
+    const note=document.getElementById('measure-req-note');
+    const unitInp=document.getElementById('step-unit');
+    if(!note) return;
+    if(chosenCp && chosenCp.type==='numeric'){
+      note.style.display='block';
+      note.innerHTML=`この通過点は<strong>実績で進む数値型</strong>です（${esc(String(chosenCp.target))}${esc(chosenCp.unit)}）。今日の一歩の数量と単位を必ず入れてください。`;
+      if(unitInp && !unitInp.value) unitInp.value=chosenCp.unit;
+    } else { note.style.display='none'; }
+  };
   window.pickStepItem=(el,name,unit)=>{
     document.querySelectorAll('#item-chips .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on');
     document.getElementById('step-item').value=name;
@@ -1730,6 +1871,13 @@ async function openStepSheet(forTomorrow){
     const text=(document.getElementById('step-inp').value||'').trim();
     if(!text){ quietToast('一歩を入力してください'); return; }
     if(!chosenCp){ quietToast('どのチェックポイントに繋がる一歩か、選んでください'); return; }
+    // 数値型の通過点：実績（数量＋単位）が必須。達成率は実績だけで動く
+    if(chosenCp.type==='numeric'){
+      const _a=(document.getElementById('step-amt').value||'').trim();
+      const _u=(document.getElementById('step-unit').value||'').trim();
+      if(!_a||isNaN(parseFloat(_a))||parseFloat(_a)<=0){ quietToast(`数量を入れてください（例：30${chosenCp.unit==='ページ'?'ページ':chosenCp.unit}）`); const d=document.querySelector('.step-asset-details'); if(d)d.open=true; return; }
+      if(!_u){ quietToast('単位を入れてください（例：'+chosenCp.unit+'）'); const d=document.querySelector('.step-asset-details'); if(d)d.open=true; return; }
+    }
     const item=(document.getElementById('step-item').value||'').trim();
     const rawAmt=(document.getElementById('step-amt').value||'').trim();
     let amount=rawAmt?parseFloat(rawAmt):null; if(amount==null||isNaN(amount))amount=null;
@@ -1752,6 +1900,7 @@ async function openStepSheet(forTomorrow){
     <div class="suggest-divider">または、自分で入力</div>
     <div class="field-box"><input type="text" id="step-inp" placeholder="例：読書20ページ、LPを1画面作る"></div>
     ${focusPart}
+    <div id="measure-req-note" style="display:none;font-family:var(--serif);font-size:12px;color:var(--ember);line-height:1.9;margin:8px 0 6px"></div>
     <details class="step-asset-details">
       <summary>前進資産に積み上げる設定（任意）</summary>
       <div style="margin-top:12px">
@@ -3925,6 +4074,43 @@ function acceptAiStep(){
   quietToast('今日の一歩が決まりました');
 }
 
+// ── 数値型通過点：実績ベースの進捗（数式のみ・AIの推測禁止）──
+const UNIT_CONV_FALLBACK={ 'ページ→冊':1/300, '頁→冊':1/300, '分→時間':1/60, 'km→歩':1350, '歩→km':1/1350 };
+async function applyNumericProgress(step, cp){
+  const amt=(step.amount!=null && !isNaN(step.amount)) ? step.amount : null;
+  if(amt==null || !step.unit){ return; }   // 実績なしなら進まない（0%のまま）
+  let add=null, note='';
+  if(step.unit===cp.unit){
+    add=amt;
+  } else {
+    // ⑤ 単位が異なる場合のみAIが換算（実際の情報があればそれで、無ければ平均値で）
+    try{
+      const sys=`単位換算だけを行ってください。ユーザーの実績を、通過点の単位に換算します。推測で達成率を決めるのではなく、換算のみ。一般的な平均値（本1冊≒300ページ等）を使う場合はnoteに明記。出力（JSONのみ）：{"converted":数値,"note":"換算根拠（20字以内）"}`;
+      const user=`通過点の単位：${cp.unit}\n実績：${amt}${step.unit}（一歩：${step.text}）`;
+      const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+      if(res.ok){
+        const data=await res.json();
+        let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+        const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+        const obj=JSON.parse(txt);
+        if(obj && typeof obj.converted==='number' && obj.converted>=0){ add=Math.round(obj.converted*1000)/1000; note=obj.note||''; }
+      }
+    }catch(e){}
+    if(add==null){
+      const key=step.unit+'→'+cp.unit;
+      if(UNIT_CONV_FALLBACK[key]!=null){ add=Math.round(amt*UNIT_CONV_FALLBACK[key]*1000)/1000; note='平均値で換算'; }
+    }
+    if(add==null){ quietToast(`単位を換算できませんでした（${step.unit}→${cp.unit}）`); return; }
+  }
+  cp.progressAmount=(cp.progressAmount||0)+add;
+  recalcNumericCp(cp);
+  step._cpApplied=add;   // 取り消し用
+  persist();
+  renderTodayNorth(); renderHomeChronicle();
+  quietToast(`実績 +${add}${cp.unit}${note?`（${note}）`:''} ／ ${cp.progressAmount}${cp.unit} / ${cp.target}${cp.unit}`);
+  if(cp.progress>=100){ setTimeout(()=>quietToast(`通過点「${cp.text}」到達。達成にできます`),1800); }
+}
+
 // ── チェックポイント貢献度のAI判定（小2〜5% / 通常5〜10% / 大15〜30%）──
 async function judgeStepContribution(step){
   const cp=(S.monthFocuses||[]).find(c=>c.id===step.cpId);
@@ -3948,6 +4134,7 @@ async function judgeStepContribution(step){
     }
   }catch(e){ /* 既定値で進む */ }
   cp.progress=Math.min(100,(cp.progress||0)+gain);
+  step._cpGain=gain;   // 取り消し用に記録
   persist();
   renderTodayNorth();   // 現在地マーカーがアニメーションで前へ
   renderHomeChronicle();   // 分析バーも即反映
