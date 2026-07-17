@@ -783,7 +783,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v51';
+const STORE='okoso_v52';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1245,7 +1245,7 @@ function openListManager(kind){
     ? list.map(it=>`<div class="lm-row${isGoal?' lm-drag':''}"${isGoal?` draggable="true" data-id="${it.id}"`:''}>
         ${isGoal?`<span class="lm-handle" title="ドラッグで並び替え">⠿</span>`:''}
         <button class="lm-chk" onclick="achieveItem('${kind}','${it.id}');closeModal();" title="達成にする"><svg width="10" height="8" viewBox="0 0 11 9"><polyline points="1 4.5 4 7.5 10 1" fill="none" stroke="var(--ember)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-        <span class="lm-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}${!isGoal?`<span class="lm-sub">${(()=>{const g=S.goals.find(x=>x.id===it.goalId);const gp=g?`▸ ${esc(g.text)} ／ `:'';const basis=it.type==='numeric'?`実績 ${it.progressAmount||0}${esc(it.unit||'')} / ${it.target||0}${esc(it.unit||'')}`:'AI分析による推定';return gp+`${it.progress||0}%（${basis}）`;})()}</span>`:''}</span>
+        <span class="lm-text" onclick="openMultiSheet('${kind}','${it.id}')">${esc(it.text)}${!isGoal?`<span class="lm-sub">${(()=>{const g=S.goals.find(x=>x.id===it.goalId);const gp=g?`▸ ${esc(g.text)} ／ `:'';const basis=it.type==='numeric'?`成果型：実績 ${it.progressAmount||0}${esc(it.unit||'')} / ${it.target||0}${esc(it.unit||'')}`:'行動型：積み重ねをAIが評価';return gp+`${it.progress||0}%（${basis}）`;})()}</span>`:''}</span>
         <button class="lm-edit" onclick="openMultiSheet('${kind}','${it.id}')" title="編集">✎ 編集</button>
       </div>`).join('')
     : `<div class="lm-empty">まだありません</div>`;
@@ -1263,7 +1263,10 @@ function openListManager(kind){
 // 通過点の型をAIが判定（ローカルで数値が取れなかった時だけ）
 async function classifyCpByAI(cp){
   try{
-    const sys=`通過点が「数値で進捗管理できるか」を判定してください。数値と単位が明確に定まるもの（例：読書10冊、ランニング100km、動画30本）だけがnumericです。完成・構築・土台づくりなど数値化できないものはaiです。出力（JSONのみ）：{"type":"numeric","target":数値,"unit":"単位"} または {"type":"ai"}`;
+    const sys=`通過点を「成果型」か「行動型」に分類してください。
+- 成果型（numeric）：数値と単位で成果を測れるもの（例：読書10冊、ランニング100km、動画30本、体重75kg）。実績のみで進捗を計算する
+- 行動型（ai）：数値だけでは測れず、努力の積み重ねで近づくもの（例：試作完成、事業基盤づくり、発信の土台、ブランドづくり）
+出力（JSONのみ）：{"type":"numeric","target":数値,"unit":"単位"} または {"type":"ai"}`;
     const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user:`通過点：「${cp.text}」`})});
     if(!res.ok) return;
     const data=await res.json();
@@ -1853,7 +1856,7 @@ async function openStepSheet(forTomorrow){
     if(!note) return;
     if(chosenCp && chosenCp.type==='numeric'){
       note.style.display='block';
-      note.innerHTML=`この通過点は<strong>実績で進む数値型</strong>です（${esc(String(chosenCp.target))}${esc(chosenCp.unit)}）。今日の一歩の数量と単位を必ず入れてください。`;
+      note.innerHTML=`この通過点は<strong>成果型</strong>です（${esc(String(chosenCp.target))}${esc(chosenCp.unit)}）。実績のみで進捗が動くため、今日の一歩の数量と単位を必ず入れてください。`;
       if(unitInp && !unitInp.value) unitInp.value=chosenCp.unit;
     } else { note.style.display='none'; }
   };
@@ -4118,12 +4121,18 @@ async function judgeStepContribution(step){
   let gain=6;   // AIが使えない時の既定値（通常の前進）
   try{
     const g=S.goals.find(x=>x.id===cp.goalId);
-    const sys=`あなたはOKOSOの伴走者です。ユーザーが完了した「今日の一歩」が、チェックポイント全体の達成に対してどれだけ貢献したかを判定してください。
+    const sys=`あなたはOKOSOの伴走者です。この通過点は「行動型」——努力の積み重ねで近づくもの。ユーザーが完了した「今日の一歩」と継続状況を評価し、通過点全体（100）に対する今回の前進量を判定してください。
 - 小さな前進（準備・調べ物・軽い作業）：2〜5
 - 通常の前進（着実な実作業）：5〜10
 - 大きな前進（核心的な成果・完成・突破）：15〜30
-数値はチェックポイント全体を100とした時の貢献率。出力（JSONのみ）：{"gain":数値}`;
-    const user=`【チェックポイント】${cp.text}（現在${cp.progress||0}%）\n【紐付く目標】${g?g.text:'（不明）'}\n【完了した一歩】${step.text}${step.amount?`（${step.amount}${step.unit||''}）`:''}`;
+- 【積み重ねの評価】この通過点への一歩が連日・繰り返し続いている場合は、その継続自体を価値として、範囲内で少し上乗せしてよい
+出力（JSONのみ）：{"gain":数値}`;
+    let _cpDone=0, _cpRecent=0;
+    const _7d=Date.now()-7*86400000;
+    Object.entries(S.steps||{}).forEach(([k,arr])=>arr.forEach(x=>{
+      if(x.done&&x.cpId===cp.id){ _cpDone++; const t=new Date(k+'T12:00:00').getTime(); if(t>=_7d) _cpRecent++; }
+    }));
+    const user=`【通過点（行動型）】${cp.text}（現在${cp.progress||0}%）\n【紐付く目標】${g?g.text:'（不明）'}\n【完了した一歩】${step.text}${step.amount?`（${step.amount}${step.unit||''}）`:''}\n【継続状況】この通過点への完了一歩：累計${_cpDone}件・直近7日${_cpRecent}件／全体の連続前進${calcStreak()}日`;
     const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
     if(res.ok){
       const data=await res.json();
