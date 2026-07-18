@@ -215,6 +215,22 @@
   .asc-meaning{margin-top:12px;font-family:var(--serif);font-size:12.5px;color:var(--ink-3);line-height:1.95;letter-spacing:0.03em;}
   .asc-cp{color:var(--ember);}
   .asc-btns{display:flex;gap:10px;margin-top:16px;}
+  .cal-plan-mark{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);font-size:7px;color:var(--ember);}
+  .plan-cell span:first-child{color:var(--ember);}
+  .future-lead{font-family:var(--serif);font-size:12px;color:var(--ink-3);line-height:1.9;margin:8px 0 12px;letter-spacing:0.03em;}
+  .future-row{display:flex;align-items:center;gap:10px;padding:11px 4px;border-top:1px solid var(--rule);}
+  .future-row-text{flex:1;font-family:var(--serif);font-size:14px;color:var(--ink);line-height:1.7;}
+  .future-row-tag{display:block;font-family:var(--serif);font-size:10.5px;color:var(--ink-4);margin-top:3px;}
+  .future-del{flex-shrink:0;background:none;border:none;color:var(--ink-4);font-size:15px;cursor:pointer;padding:4px 8px;}
+  .future-next{margin:2px 0 16px;padding:14px 18px;background:var(--bg-1);border:1px dashed var(--rule-2);border-radius:10px;cursor:pointer;transition:border-color 0.2s;}
+  .future-next:hover{border-color:var(--ember-b);}
+  .fn-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--ink-4);text-transform:uppercase;}
+  .fn-date{margin-top:8px;font-family:var(--serif);font-size:13px;color:var(--ember);font-weight:600;letter-spacing:0.04em;}
+  .fn-diff{font-family:var(--mono);font-size:10px;color:var(--ink-4);margin-left:6px;}
+  .fn-text{margin-top:5px;font-family:var(--serif);font-size:14px;color:var(--ink);line-height:1.7;}
+  .fn-more{font-size:11px;color:var(--ink-4);}
+  .planned-card{margin:2px 0 16px;padding:18px 20px;background:var(--bg-1);border:1px solid var(--ember-b);border-radius:12px;}
+  .pc-step{margin-top:10px;font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink);line-height:1.7;}
   .home-chr{margin-top:16px;padding:16px 18px;background:var(--bg-1);border:1px solid var(--rule-2);border-radius:10px;cursor:pointer;transition:border-color 0.25s;}
   .home-chr:hover{border-color:var(--ember-b);}
   .home-chr-head{display:flex;align-items:baseline;gap:10px;}
@@ -631,10 +647,14 @@ window.FIREBASE_CONFIG = {
     <div class="today-focus">
       <div class="today-focus-lbl">今日の一歩</div>
       <div class="flow-steps-lead" id="steps-lead">人生を前に進めるための、今日いちばん価値のある一歩。</div>
-      <div id="ai-step-proposal"></div>
+      <div id="planned-review"></div>
+    <div id="ai-step-proposal"></div>
       <div id="steps-list"></div>
       <button class="add-btn" onclick="openStepSheet()"><span>＋</span> 自分で一歩を追加する</button>
     </div>
+
+    <!-- 次に予定している一歩（一番近い未来だけ） -->
+    <div id="future-next"></div>
 
     <!-- ② ロードマップ（現在地が静かに進む一本道） -->
     <div class="today-north" id="today-north" style="margin-top:26px"></div>
@@ -783,7 +803,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v52';
+const STORE='okoso_v53';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1143,6 +1163,8 @@ function renderFlow(){
   renderChronicleBanner();  // 📖 未読の章バナー
   renderHomeChronicle();    // ①③ 起動録カード（分析可視化）
   renderAiProposal();       // OKOSOが選んだ今日の一歩
+  renderFutureNext();       // 次に予定している一歩
+  renderPlannedReview();    // 予定していた一歩のAI確認（当日）
   renderObservation();      // ④ AIの観察ログ
   renderSteps();
   renderTomorrow();
@@ -2592,13 +2614,17 @@ function renderCalendar(){
   for(let day=1;day<=days;day++){
     const key=`${y}-${('0'+(m+1)).slice(-2)}-${('0'+day).slice(-2)}`;
     const has=marks[day];
-    html+=`<button class="cal-cell${has?' has':''}${key===todayKey?' today-cell':''}" onclick="showDay('${key}')"><span>${day}</span>${has?'<span class="cal-mark"></span>':''}</button>`;
+    const isFuture=key>todayKey;
+    const hasPlan=isFuture && (S.steps[key]||[]).length>0;
+    html+=`<button class="cal-cell${has?' has':''}${key===todayKey?' today-cell':''}${hasPlan?' plan-cell':''}" onclick="showDay('${key}')"><span>${day}</span>${has?'<span class="cal-mark"></span>':''}${hasPlan?'<span class="cal-plan-mark">◇</span>':''}</button>`;
   }
   document.getElementById('cal-grid').innerHTML=html;
   document.getElementById('cal-detail').innerHTML='';
 }
 function showDay(key){
   const [y,m,d]=key.split('-').map(Number);
+  // 未来の日付：一歩の予約ビュー
+  if(key>dk()){ renderFutureDay(key); return; }
   const logs=S.logs.filter(l=>dk(new Date(l.ts))===key);
   const allJrnls=S.journals.filter(j=>dk(new Date(j.ts))===key);
   const shifts=allJrnls.filter(j=>j.kind==='shift');
@@ -3963,7 +3989,7 @@ function init(){
   };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeProposeTodayStep(); }, 1200); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeProposeTodayStep(); }, 1200); setTimeout(()=>{ maybeReviewPlannedSteps(); }, 1600); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -4006,6 +4032,73 @@ function setupAutoSync(){
 const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
 const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
+
+// ═══ 未来の一歩：当日のAIレビュー（そのまま採用・修正・延期を提案）═══
+let _plannedReviewBusy=false;
+async function maybeReviewPlannedSteps(){
+  if(!S.onboarded) return;
+  const target=todaySteps().find(s=>s.planned && !s.done && !s.review);
+  if(!target||_plannedReviewBusy) return;
+  _plannedReviewBusy=true;
+  try{
+    const cp=(S.monthFocuses||[]).find(c=>c.id===target.cpId);
+    const recent=[];
+    Object.entries(S.steps||{}).sort().slice(-5).forEach(([k,arr])=>arr.forEach(x=>{ if(x.done) recent.push(`[${k}] ${x.text}`); }));
+    const sys=`あなたはOKOSOの伴走者です。ユーザーが以前「この日にやる」と予約した一歩の当日になりました。現在の状況を見て、この一歩をどう扱うのが最善かを判定してください。
+- keep：今日そのまま取り組むのが最善
+- revise：内容を今日の状況に合わせて修正した方がよい（textに修正案）
+- postpone：今日は延期した方がよい
+出力（JSONのみ）：{"action":"keep|revise|postpone","text":"reviseの時だけ修正後の一歩（30字以内）","reason":"提案の理由（40字以内）"}`;
+    const user=`【予約していた一歩】${target.text}\n【繋がる通過点】${cp?`${cp.text}（${cp.progress||0}%）`:'—'}\n【直近の完了】\n${recent.slice(-8).join('\n')||'（なし）'}\n【今日の他の一歩】${todaySteps().filter(s=>s.id!==target.id).map(s=>s.text).join('、')||'（なし）'}`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+    if(!res.ok) throw new Error('api');
+    const data=await res.json();
+    let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+    const mm=txt.match(/\{[\s\S]*\}/); if(mm) txt=mm[0];
+    const obj=JSON.parse(txt);
+    if(obj&&obj.action){
+      target.review={action:obj.action, text:obj.text||'', reason:obj.reason||'', ts:Date.now()};
+      persist(); renderPlannedReview();
+    }
+  }catch(e){}
+  _plannedReviewBusy=false;
+}
+function renderPlannedReview(){
+  const el=document.getElementById('planned-review');
+  if(!el) return;
+  const t=todaySteps().find(s=>s.planned && !s.done && s.review && !s.reviewHandled);
+  if(!t){ el.innerHTML=''; return; }
+  const r=t.review;
+  const label=r.action==='keep'?'今日そのまま取り組むのがおすすめです':r.action==='revise'?'内容の修正を提案します':'延期の提案です';
+  el.innerHTML=`<div class="planned-card">
+    <div class="asc-eyebrow">予定していた一歩の日です</div>
+    <div class="pc-step">${esc(t.text)}</div>
+    <div class="asc-meaning">${esc(label)}${r.reason?`——${esc(r.reason)}`:''}${r.action==='revise'&&r.text?`<br>修正案：「${esc(r.text)}」`:''}</div>
+    <div class="asc-btns">
+      <button class="sbtn sbtn-p" onclick="applyPlannedReview('${t.id}','keep')" style="flex:1">そのまま進む</button>
+      ${r.action==='revise'&&r.text?`<button class="sbtn" onclick="applyPlannedReview('${t.id}','revise')" style="flex:1">修正案で進む</button>`:''}
+      <button class="sbtn" onclick="applyPlannedReview('${t.id}','postpone')" style="flex:1">明日へ延期</button>
+    </div>
+  </div>`;
+}
+function applyPlannedReview(id,action){
+  const t=todaySteps().find(s=>s.id===id);
+  if(!t) return;
+  if(action==='revise'&&t.review&&t.review.text){ t.text=t.review.text; }
+  if(action==='postpone'){
+    const idx=todaySteps().findIndex(s=>s.id===id);
+    const moved=todaySteps().splice(idx,1)[0];
+    delete moved.review; moved.reviewHandled=false;
+    const tm=new Date(); tm.setDate(tm.getDate()+1);
+    const tk=dk(tm);
+    if(!S.steps[tk]) S.steps[tk]=[];
+    S.steps[tk].push(moved);
+    quietToast('明日へ延期しました');
+  } else {
+    t.reviewHandled=true;
+  }
+  persist(); renderFlow();
+}
 
 // ═══ AIが毎朝選ぶ「今日いちばん価値のある一歩」═══
 let _aiStepBusy=false;
@@ -4434,6 +4527,83 @@ function showChronicleNotice(no,title){
   requestAnimationFrame(()=>veil.classList.add('show'));
 }
 // 章一覧
+// ── 未来の一歩：予約ビュー ──
+function renderFutureDay(key){
+  const [y,m,d]=key.split('-').map(Number);
+  const steps=(S.steps[key]||[]);
+  const el=document.getElementById('cal-detail');
+  const diff=Math.round((new Date(key+'T00:00:00')-new Date(dk()+'T00:00:00'))/86400000);
+  const rows=steps.length
+    ? steps.map(s=>`<div class="future-row">
+        <span class="future-row-text">${esc(s.text)}${s.tag?`<span class="future-row-tag">▸ ${esc(s.tag)}</span>`:''}</span>
+        <button class="future-del" onclick="deleteFutureStep('${key}','${s.id}')">×</button>
+      </div>`).join('')
+    : `<div class="empty-msg" style="padding:8px 0 4px">まだ予約はありません。</div>`;
+  el.innerHTML=`<div class="cal-detail-date">${y}年${m}月${d}日（${diff===1?'明日':`あと${diff}日`}）</div>
+    <div class="future-lead">この日に取り組む「未来の一歩」を予約できます。<br>当日になると、今日の一歩の候補として届きます。</div>
+    ${rows}
+    <button class="add-btn" onclick="openFutureStepSheet('${key}')" style="margin-top:10px"><span>＋</span> この日の一歩を予約する</button>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function deleteFutureStep(key,id){
+  S.steps[key]=(S.steps[key]||[]).filter(s=>s.id!==id);
+  if(!S.steps[key].length) delete S.steps[key];
+  persist(); renderCalendar(); renderFutureDay(key); renderFutureNext();
+}
+// 未来の一歩の予約シート（チェックポイント必須＝一本道を維持）
+function openFutureStepSheet(key){
+  const cps=S.monthFocuses||[];
+  const [y,m,d]=key.split('-').map(Number);
+  if(!cps.length){
+    openSheet(`<h2>未来の一歩を予約</h2>
+      <p class="sheet-note">未来の一歩も、必ずチェックポイントに繋がる一歩として予約します。<br>先に、チェックポイントを作りましょう。</p>
+      <div class="sheet-btns" style="flex-direction:column;gap:8px">
+        <button class="sbtn sbtn-p" onclick="openMultiSheet('month')" style="width:100%">チェックポイントを作る</button>
+        <button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button>
+      </div>`);
+    return;
+  }
+  let chosenCp=cps.length===1?cps[0]:null;
+  window.pickFutureCp=(el,cpId)=>{ document.querySelectorAll('#fsf-row .chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); chosenCp=cps.find(c=>c.id===cpId)||null; };
+  window.doAddFutureStep=()=>{
+    const text=(document.getElementById('fstep-inp').value||'').trim();
+    if(!text){ quietToast('一歩を入力してください'); return; }
+    if(!chosenCp){ quietToast('どのチェックポイントに繋がる一歩か、選んでください'); return; }
+    if(!S.steps[key]) S.steps[key]=[];
+    S.steps[key].push({id:uid(), text, tag:chosenCp.text, cpId:chosenCp.id, done:false, item:'', amount:null, unit:'', planned:true});
+    persist(); closeModal(); renderCalendar(); renderFutureDay(key); renderFutureNext();
+    quietToast(`${m}月${d}日の一歩を予約しました`);
+  };
+  openSheet(`<h2>${m}月${d}日の一歩を予約</h2>
+    <label class="field-lbl">どのチェックポイントに繋がる一歩？（必須）</label>
+    <div class="chip-row" id="fsf-row">${cps.map(f=>`<button class="chip${chosenCp&&chosenCp.id===f.id?' on':''}" onclick="pickFutureCp(this,'${f.id}')">${esc(f.text)}</button>`).join('')}</div>
+    <label class="field-lbl">一歩の内容</label>
+    <div class="field-box"><input type="text" id="fstep-inp" placeholder="例：ホーム画面の改善に着手する"></div>
+    <div class="sheet-btns">
+      <button class="sbtn" onclick="closeModal()">やめる</button>
+      <button class="sbtn sbtn-p" onclick="doAddFutureStep()">予約する</button>
+    </div>`);
+  setTimeout(()=>{const i=document.getElementById('fstep-inp'); if(i)i.focus();},350);
+}
+// ── ホーム：次に予定している一歩（一番近い未来だけ）──
+function renderFutureNext(){
+  const el=document.getElementById('future-next');
+  if(!el) return;
+  const today=dk();
+  const futureKeys=Object.keys(S.steps||{}).filter(k=>k>today&&(S.steps[k]||[]).length).sort();
+  if(!futureKeys.length){ el.innerHTML=''; return; }
+  const key=futureKeys[0];
+  const s=(S.steps[key]||[])[0];
+  const more=(S.steps[key]||[]).length-1;
+  const [y,m,d]=key.split('-').map(Number);
+  const diff=Math.round((new Date(key+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);
+  el.innerHTML=`<div class="future-next" onclick="goScreen('archive');setTimeout(()=>showDay('${key}'),200)">
+    <div class="fn-lbl">次に予定している一歩</div>
+    <div class="fn-date">${m}月${d}日 <span class="fn-diff">${diff===1?'明日':`あと${diff}日`}</span></div>
+    <div class="fn-text">${esc(s.text)}${more>0?`<span class="fn-more"> ほか${more}件</span>`:''}</div>
+  </div>`;
+}
+
 function renderChronicleEntrySub(){
   const el=document.getElementById('chronicle-entry-sub');
   if(!el) return;
