@@ -231,6 +231,18 @@
   .fn-more{font-size:11px;color:var(--ink-4);}
   .planned-card{margin:2px 0 16px;padding:18px 20px;background:var(--bg-1);border:1px solid var(--ember-b);border-radius:12px;}
   .pc-step{margin-top:10px;font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink);line-height:1.7;}
+  .btl-card{margin-top:12px;padding:13px 16px;background:none;border-left:3px solid var(--ember-b);border-radius:2px 6px 6px 2px;}
+  .btl-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--ember);text-transform:uppercase;}
+  .btl-body{margin-top:7px;font-family:var(--serif);font-size:12.5px;color:var(--ink-2);line-height:1.95;letter-spacing:0.03em;}
+  .lost-btn{display:block;width:100%;margin-top:10px;background:none;border:none;color:var(--ink-4);font-family:var(--serif);font-size:12px;letter-spacing:0.05em;cursor:pointer;padding:8px 0 2px;text-decoration:underline;text-underline-offset:4px;text-decoration-color:var(--rule-2);transition:color 0.2s;}
+  .lost-btn:hover{color:var(--ember);}
+  .lost-cause-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--ink-4);text-transform:uppercase;margin-bottom:6px;}
+  .lost-cause{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--ink);letter-spacing:0.04em;padding-bottom:12px;border-bottom:1px solid var(--rule);margin-bottom:12px;}
+  .lost-organize{font-family:var(--serif);font-size:13.5px;color:var(--ink-2);line-height:2.1;letter-spacing:0.03em;padding:4px 0 14px;border-bottom:1px solid var(--rule);}
+  .lost-concl-lbl{margin-top:16px;font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--ember);text-transform:uppercase;}
+  .lost-concl{margin-top:8px;font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ember);line-height:1.8;letter-spacing:0.04em;}
+  .lost-step-lbl{margin-top:16px;font-family:var(--serif);font-size:11.5px;color:var(--ink-3);letter-spacing:0.04em;}
+  .lost-step{margin-top:8px;font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink);line-height:1.7;letter-spacing:0.03em;}
   .home-chr{margin-top:16px;padding:16px 18px;background:var(--bg-1);border:1px solid var(--rule-2);border-radius:10px;cursor:pointer;transition:border-color 0.25s;}
   .home-chr:hover{border-color:var(--ember-b);}
   .home-chr-head{display:flex;align-items:baseline;gap:10px;}
@@ -651,6 +663,8 @@ window.FIREBASE_CONFIG = {
     <div id="ai-step-proposal"></div>
       <div id="steps-list"></div>
       <button class="add-btn" onclick="openStepSheet()"><span>＋</span> 自分で一歩を追加する</button>
+      <!-- ② 迷った時だけ使う入口（押した時だけAIが動く） -->
+      <button class="lost-btn" onclick="openLostSheet()">今、何をすればいいか分からない</button>
     </div>
 
     <!-- 次に予定している一歩（一番近い未来だけ） -->
@@ -659,6 +673,8 @@ window.FIREBASE_CONFIG = {
     <!-- ② ロードマップ（現在地が静かに進む一本道） -->
     <div class="today-north" id="today-north" style="margin-top:26px"></div>
     <div id="forward-panel"></div>
+    <!-- ① 今のあなたを止めているもの（必要な時だけ・一つだけ） -->
+    <div id="bottleneck-card"></div>
 
     <!-- ③ AIの観察ログ（伴走者としての気付き） -->
     <div id="ai-observe"></div>
@@ -803,7 +819,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v54';
+const STORE='okoso_v56';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -829,6 +845,9 @@ let S = {
   sleepTime: '23:00',          // ⑤ 就寝時間
   aiStep: null,                // AIが毎朝選ぶ「今日いちばん価値のある一歩」{date,text,cpId,cpText,reason,ts,accepted,stepId}
   observations: [],            // ④ AIの観察ログ [{id,text,ts}]
+  bottleneck: null,            // 今のあなたを止めているもの {text,ts}
+  lostHistory: [],             // 迷った時の相談履歴 [{id,ts,cause,organize,conclusion,step}]
+  lastBottleneckTs: 0,
   lastObservationTs: 0,        // ④ 最後に観察を生成した日時
   chroniclePersona: '彼',      // 起動録の三人称（彼/彼女）
   lastChronicleCheckTs: 0,     // 最後にAI判定を行った日時
@@ -989,6 +1008,9 @@ function mergeData(local, remote){
   out.sleepTime=newer.sleepTime||'23:00';
   out.aiStep=((local.aiStep&&local.aiStep.ts)||0)>=((remote.aiStep&&remote.aiStep.ts)||0)?local.aiStep:remote.aiStep;
   out.observations=mergeById(local.observations||[],remote.observations||[]);
+  out.bottleneck=((local.bottleneck&&local.bottleneck.ts)||0)>=((remote.bottleneck&&remote.bottleneck.ts)||0)?local.bottleneck:remote.bottleneck;
+  out.lostHistory=mergeById(local.lostHistory||[],remote.lostHistory||[]);
+  out.lastBottleneckTs=Math.max(local.lastBottleneckTs||0,remote.lastBottleneckTs||0);
   out.lastObservationTs=Math.max(local.lastObservationTs||0,remote.lastObservationTs||0);
   out.goals=newer.goals;
   out.monthFocuses=newer.monthFocuses;
@@ -1165,6 +1187,7 @@ function renderFlow(){
   renderAiProposal();       // OKOSOが選んだ今日の一歩
   renderFutureNext();       // 次に予定している一歩
   renderPlannedReview();    // 予定していた一歩のAI確認（当日）
+  renderBottleneck();       // ① 今のあなたを止めているもの
   renderObservation();      // ④ AIの観察ログ
   renderSteps();
   renderTomorrow();
@@ -3989,7 +4012,7 @@ function init(){
   };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeProposeTodayStep(); }, 1200); setTimeout(()=>{ maybeReviewPlannedSteps(); }, 1600); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeProposeTodayStep(); }, 1200); setTimeout(()=>{ maybeReviewPlannedSteps(); }, 1600); setTimeout(()=>{ maybeGenerateBottleneck(); }, 5000); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -4032,6 +4055,119 @@ function setupAutoSync(){
 const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
 const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
+
+// ═══ ① ボトルネック分析：今のあなたを止めているもの（数日に一度・必要な時だけ）═══
+const BTL_INTERVAL=4*24*60*60*1000;
+function renderBottleneck(){
+  const el=document.getElementById('bottleneck-card');
+  if(!el) return;
+  const b=S.bottleneck;
+  if(!b || Date.now()-b.ts > 6*86400000){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="btl-card">
+    <div class="btl-lbl">今のあなたを止めているもの</div>
+    <div class="btl-body">${esc(b.text).replace(/\n/g,'<br>')}</div>
+  </div>`;
+}
+async function maybeGenerateBottleneck(){
+  if(!S.onboarded||!S.ideal) return;
+  if(Date.now()-(S.lastBottleneckTs||0) < BTL_INTERVAL) return;
+  const st=chronicleStats(S.lastBottleneckTs||0);
+  if(st.doneSteps<3 && st.journals<2) return;   // 新しい材料が薄い時は更新しない
+  S.lastBottleneckTs=Date.now(); persist();
+  try{
+    const cps=(S.monthFocuses||[]).map(c=>`「${c.text}」${c.progress||0}%`).join('、')||'（なし）';
+    const recent=[]; Object.entries(S.steps||{}).sort().slice(-7).forEach(([k,arr])=>arr.forEach(x=>{ if(x.done) recent.push(x.text); }));
+    const jr=(S.journals||[]).filter(j=>!j.kind).slice(-8).map(j=>j.text.slice(0,60)).join('\n')||'（なし）';
+    const sys=`あなたはOKOSOの伴走者です。記録を客観的に整理し、「今この人の前進を止めているもの」を一つだけ見立ててください。
+- 命令しない。断定しない。責めない。「〜が増えています。今は〜が前進につながりそうです。」のような伴走者の伝え方で
+- 現象の指摘＋前進の方向、あわせて2文・90字以内
+- 明確な滞りが見えなければ {"skip":true}
+出力（JSONのみ）：{"text":"..."} または {"skip":true}`;
+    const user=`【向かう先】${S.ideal}${S.wall?`（最大の壁：${S.wall}）`:''}\n【通過点】${cps}\n【直近の完了一歩】${recent.slice(-12).join('、')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【継続】${calcStreak()}日`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+    if(!res.ok) return;
+    const data=await res.json();
+    let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+    const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+    const obj=JSON.parse(txt);
+    if(obj && obj.text && !obj.skip){ S.bottleneck={text:obj.text, ts:Date.now()}; persist(); renderBottleneck(); }
+  }catch(e){}
+}
+
+// ═══ ② 迷った時の伴走：押した時だけAIが思考を整理し、優先すべき一歩を一つ提案 ═══
+async function openLostSheet(){
+  openSheet(`<h2>一緒に、整理しましょう</h2>
+    <div class="reveal-intro" style="position:static;min-height:22vh">
+      <div class="reveal-spark">✦</div>
+      <div class="reveal-intro-text">記録を読み返しています…</div>
+    </div>`);
+  let r=null;
+  try{ r=await callLostAPI(); }catch(e){ r=null; }
+  if(!r){
+    openSheet(`<h2>一緒に、整理しましょう</h2>
+      <p class="sheet-note">いま整理がうまくできませんでした。少し時間を置いて、もう一度試してください。</p>
+      <div class="sheet-btns"><button class="sbtn" onclick="closeModal()" style="width:100%">閉じる</button></div>`);
+    return;
+  }
+  const cp=(S.monthFocuses||[]).find(c=>c.id===r.cpId)||(S.monthFocuses||[])[0]||null;
+  // ⑥ 相談を履歴に残す（次回、AIが過去の自分と比較できるように）
+  if(!S.lostHistory) S.lostHistory=[];
+  S.lostHistory.push({id:uid(), ts:Date.now(), cause:r.cause||'', organize:r.organize||'', conclusion:r.conclusion||'', step:r.step||''});
+  if(S.lostHistory.length>20) S.lostHistory=S.lostHistory.slice(-20);
+  persist();
+  window.acceptLostStep=()=>{
+    if(!cp){ closeModal(); return; }
+    todaySteps().push({id:uid(), text:r.step, tag:cp.text, cpId:cp.id, done:false, item:'', amount:null, unit:'', ai:true});
+    persist(); closeModal(); renderFlow();
+    quietToast('今日の一歩に加えました');
+  };
+  openSheet(`<h2>いまの整理</h2>
+    ${r.cause?`<div class="lost-cause-lbl">今、止まっている最大の原因</div><div class="lost-cause">${esc(r.cause)}</div>`:''}
+    <div class="lost-organize">${esc(r.organize).replace(/\n/g,'<br>')}</div>
+    <div class="lost-concl-lbl">今日の結論</div>
+    <div class="lost-concl">${esc(r.conclusion||r.step)}</div>
+    <div class="lost-step-lbl">そのための一歩</div>
+    <div class="lost-step">${esc(r.step)}</div>
+    ${r.reason?`<div class="asc-meaning">${esc(r.reason)}${cp?`<br>この一歩は、通過点「<span class="asc-cp">${esc(cp.text)}</span>」につながっています。`:''}</div>`:''}
+    <div class="sheet-btns" style="margin-top:16px">
+      <button class="sbtn" onclick="closeModal()" style="flex:1">自分で考える</button>
+      <button class="sbtn sbtn-p" onclick="acceptLostStep()" style="flex:1">この一歩で進む</button>
+    </div>`);
+}
+async function callLostAPI(){
+  const goalName=(gid)=>{ const g=S.goals.find(x=>x.id===gid); return g?g.text:''; };
+  const cpLines=(S.monthFocuses||[]).map(c=>`- id:${c.id}「${c.text}」進捗${c.progress||0}%（目標：${goalName(c.goalId)||'—'}）`).join('\n')||'（なし）';
+  const recent=[]; Object.entries(S.steps||{}).sort().slice(-10).forEach(([k,arr])=>arr.forEach(x=>{ if(x.done) recent.push(`[${k}] ${x.text}`); }));
+  const jr=(S.journals||[]).filter(j=>!j.kind).slice(-6).map(j=>`[${new Date(j.ts).toLocaleDateString('ja-JP')}] ${j.text.slice(0,70)}`).join('\n')||'（なし）';
+  const todayList=todaySteps().map(s=>`${s.text}${s.done?'（完了）':''}`).join('、')||'（なし）';
+  // ① 全記録：前進資産・達成履歴・観察ログ・人生起動録まで読み込む
+  const assets=Object.entries(S.assets||{}).slice(0,8).map(([n,a])=>`${n}：${a.total?`${Math.round(a.total*10)/10}${a.unit||''}・`:''}${a.count}回`).join('、')||'（なし）';
+  const achieved=[...(S.achievedGoals||[]).map(a=>`目標「${a.text}」`),...(S.achievedFocuses||[]).map(a=>`通過点「${a.text}」`)].slice(-6).join('、')||'（なし）';
+  const obs=(S.observations||[]).slice(-2).map(o=>o.text).join('\n')||'（なし）';
+  const chr=(S.chronicle||[]).length?`全${S.chronicle.length}章：${S.chronicle.map(c=>`「${c.title}」`).join('、')}\n最新章の冒頭：${(S.chronicle[S.chronicle.length-1].body||'').slice(0,200)}`:'（まだなし）';
+  // ③⑥ 過去の相談履歴（前回との比較のために必ず渡す）
+  const hist=(S.lostHistory||[]).slice(-3).map(hh=>`[${new Date(hh.ts).toLocaleDateString('ja-JP')}] 原因：${hh.cause||'—'}／結論：${hh.conclusion||hh.step||'—'}`).join('\n')||'（初回の相談）';
+  const sys=`あなたはOKOSOの伴走者です。ユーザーは今「自分が何をすべきか分からない」と迷っています。あなたは質問に答えるAIではなく、「過去の自分まで覚えている伴走者」です。過去から現在までの全記録を分析し、思考を整理し、次の一歩を一緒に見つけてください。
+# やること（この順で）
+1. 【原因】全記録から「今、前進を止めている最大の原因」を必ず一つだけ特定する（例：考えすぎている／優先順位が曖昧／行動量はあるが方向が散っている／休息不足／目標が大きすぎる）。複数挙げない。一番影響が大きいものだけ（15字以内）
+2. 【整理】状況の整理を2〜4文（160字以内）。過去の相談履歴がある場合は必ず前回と比較する——「前回も◯◯が原因でした。今回は△△は進みました。一方で□□はまだです。つまり今回の原因は〜」のように、変化を追う。初回なら現在の分析のみでよい
+3. 【今日の結論】必ず一つだけ。「今日は◯◯より、△△。」の形で言い切る（例：今日はOKOSOを改善するより、一人に触ってもらうこと。／今日は考えるより、休むこと。）30字以内
+4. 【一歩】結論に沿った、今日中にできる具体的な一歩を一つだけ（30字以内）。必ず進行中の通過点から逆算する
+# 伝え方（厳守）
+- 命令しない。説教しない。褒めすぎない。評価しない。客観的に観察した上で静かに提案する
+- 「今の記録を見る限りでは、この方向が一番前進につながりそうです」の距離感を守る
+# 出力（JSONのみ）
+{"cause":"最大の原因","organize":"整理（前回比較を含む）","conclusion":"今日は〜より、〜。","step":"一歩","cpId":"最も関係する通過点のid","reason":"なぜ前進につながりそうか（40字以内）"}`;
+  const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【通過点】\n${cpLines}\n【今日の一歩】${todayList}\n【直近の完了】\n${recent.slice(-15).join('\n')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【前進資産】${assets}\n【達成履歴】${achieved}\n【AI観察ログ】\n${obs}\n【人生起動録】\n${chr}\n【過去の相談履歴】\n${hist}\n【継続】${calcStreak()}日`;
+  const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user,max_tokens:1500})});
+  if(!res.ok) throw new Error('api');
+  const data=await res.json();
+  let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+  const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+  const obj=JSON.parse(txt);
+  if(!obj.organize||!obj.step) throw new Error('bad');
+  return obj;
+}
 
 // ═══ 未来の一歩：当日のAIレビュー（そのまま採用・修正・延期を提案）═══
 let _plannedReviewBusy=false;
