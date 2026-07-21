@@ -821,7 +821,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v57';
+const STORE='okoso_v58';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1436,7 +1436,7 @@ function yesterdayJournal(){
 function calcStreak(){
   const days=new Set();
   (S.logs||[]).forEach(l=>days.add(ymdKey(new Date(l.ts))));
-  Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(arr.some(s=>s.done)) days.add(k); });
+  Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(arr.some(s=>s.done && !isOtherStep(s))) days.add(k); });
   let streak=0;
   let d=new Date();
   // 今日まだなら昨日から数える
@@ -1691,7 +1691,7 @@ function renderSteps(){
   const doneN=steps.filter(s=>s.done).length;
   const focuses=S.monthFocuses||[];
   // ② 今日の行動の意味：「なぜ今日これをやるのか」を伝える
-  const firstUndone=steps.find(s=>!s.done);
+  const firstUndone=steps.find(s=>!s.done && !isOtherStep(s)) || steps.find(s=>!s.done);
   const todayKey=ymdKey(new Date());
   const aiAccepted=S.aiStep&&S.aiStep.date===todayKey&&S.aiStep.accepted&&steps.some(s=>s.id===S.aiStep.stepId&&!s.done);
   const anchor=(firstUndone&&firstUndone.tag)||(focuses.length===1?focuses[0].text:'')||(S.goals.length===1?S.goals[0].text:'');
@@ -1734,7 +1734,7 @@ function toggleStep(i){
       s.logId=log.id;   // 取り消し用に紐づけ
     }
     persist(); renderSteps(); renderAssetChips(); renderMorningGreeting(); renderTodayNorth(); renderForwardPanel(); renderHomeChronicle();
-    if(s.cpId) judgeStepContribution(s);   // すべてAIが貢献度を判定（入力負荷ゼロ）
+    if(s.cpId && !isOtherStep(s)) judgeStepContribution(s);   // その他枠は進捗に含めない
     // ⑤ 静かで温かい達成メッセージ（毎回）。資産があれば積み上げも続けて見せる
     showStepDoneMessage(s);
   } else {
@@ -1851,11 +1851,11 @@ function renderTomorrow(){
 function removeTomorrow(i){ const arr=S.steps[tomorrowKey()]||[]; arr.splice(i,1); persist(); renderTomorrow(); }
 
 async function openStepSheet(forTomorrow){
-  const cps=S.monthFocuses||[];
+  const cps=[...(S.monthFocuses||[]), {id:OTHER_CP_ID, text:'その他（目標に紐付かない用事）', other:true}];
   const title = forTomorrow ? '明日の一歩を決める' : '今日の一歩を決める';
 
-  // チェックポイントが無ければ、一歩は作れない（必ず道に繋げる）
-  if(!cps.length){
+  // 実チェックポイントが無ければ、道に繋げる一歩は作れない（その他は常に選べる）
+  if(!(S.monthFocuses||[]).length){
     openSheet(`<h2>${title}</h2>
       <p class="sheet-note">今日の一歩は、必ずチェックポイントに繋がる一歩として決めます。<br>先に、チェックポイント（目標へ向かう中間地点）を作りましょう。</p>
       <div class="sheet-btns" style="flex-direction:column;gap:8px">
@@ -1872,7 +1872,7 @@ async function openStepSheet(forTomorrow){
     ? `<div class="sheet-current">向かう先：「${esc(S.ideal)}」</div>` : '';
 
   const focusPart = `<label class="field-lbl">どのチェックポイントに繋がる一歩？（必須）</label>
-    <div class="chip-row" id="sf-row">${cps.map(f=>`<button class="chip${chosenCp&&chosenCp.id===f.id?' on':''}" onclick="pickStepCp(this,'${f.id}')">${esc(f.text)}${f.progress?` ${f.progress}%`:''}</button>`).join('')}</div>`;
+    <div class="chip-row" id="sf-row">${cps.map(f=>`<button class="chip${f.other?' chip-other':''}${chosenCp&&chosenCp.id===f.id?' on':''}" onclick="pickStepCp(this,'${f.id}')">${esc(f.text)}${(!f.other&&f.progress)?` ${f.progress}%`:''}</button>`).join('')}</div>`;
   const itemChips = assetNames.length
     ? `<div class="chip-row" id="item-chips" style="margin-bottom:4px">${assetNames.map(n=>`<button class="chip" onclick="pickStepItem(this,'${esc(n)}','${esc(S.assets[n].unit||'')}')">${esc(n)}</button>`).join('')}</div>`
     : '';
@@ -1887,7 +1887,10 @@ async function openStepSheet(forTomorrow){
   window.updateMeasureRequirement=()=>{
     const note=document.getElementById('measure-req-note');
     if(!note) return;
-    if(chosenCp){
+    if(chosenCp && chosenCp.other){
+      note.style.display='block';
+      note.innerHTML=`これは<strong>その他の用事</strong>です。こなしても大丈夫。ただし人生を進める一歩ではないので、到達率や継続日数には含まれません。`;
+    } else if(chosenCp){
       note.style.display='block';
       note.innerHTML=`完了すると、この一歩が「${esc(chosenCp.text)}」にどれだけ貢献したかを<strong>AIが自動で判定</strong>します。数値の入力は要りません。`;
     } else { note.style.display='none'; }
@@ -1911,7 +1914,7 @@ async function openStepSheet(forTomorrow){
     let amount=rawAmt?parseFloat(rawAmt):null; if(amount==null||isNaN(amount))amount=null;
     const unit=(document.getElementById('step-unit').value||'').trim();
     const target = forTomorrow ? tomorrowSteps() : todaySteps();
-    target.push({id:uid(), text, tag:chosenCp.text, cpId:chosenCp.id, done:false, item:item||'', amount, unit, gift:!!forTomorrow});
+    target.push({id:uid(), text, tag:chosenCp.other?'その他':chosenCp.text, cpId:chosenCp.id, done:false, item:item||'', amount, unit, gift:!!forTomorrow});
     persist();
     if(forTomorrow) renderTomorrow(); else renderSteps();
     renderAssetChips();
@@ -4037,6 +4040,8 @@ const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの�
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
 
 // ═══ ① ボトルネック分析：今のあなたを止めているもの（数日に一度・必要な時だけ）═══
+const OTHER_CP_ID='__other__';   // 目標に紐付かない「その他」枠
+function isOtherStep(s){ return s && s.cpId===OTHER_CP_ID; }
 const BTL_INTERVAL=4*24*60*60*1000;
 function renderBottleneck(){
   const el=document.getElementById('bottleneck-card');
@@ -4811,7 +4816,7 @@ const MS_DAYS=[7,30,100,365];
 function activeDaysCount(){
   const days=new Set();
   (S.logs||[]).forEach(l=>days.add(ymdKey(new Date(l.ts))));
-  Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(arr.some(s=>s.done)) days.add(k); });
+  Object.entries(S.steps||{}).forEach(([k,arr])=>{ if(arr.some(s=>s.done && !isOtherStep(s))) days.add(k); });
   return days.size;
 }
 function totalDoneSteps(){
