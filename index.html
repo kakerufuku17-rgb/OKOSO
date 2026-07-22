@@ -233,6 +233,22 @@
   .fn-more{font-size:11px;color:var(--ink-4);}
   .planned-card{margin:2px 0 16px;padding:18px 20px;background:var(--bg-1);border:1px solid var(--ember-b);border-radius:12px;}
   .pc-step{margin-top:10px;font-family:var(--serif);font-size:17px;font-weight:600;color:var(--ink);line-height:1.7;}
+  .adv-card{margin:14px 0 4px;padding:14px 16px;background:var(--bg-1);border-left:2px solid var(--ember-b);border-radius:2px 8px 8px 2px;}
+  .adv-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;color:var(--ink-3);text-transform:uppercase;}
+  .adv-gain{color:var(--ember);}
+  .adv-list{margin:9px 0 0;padding-left:16px;}
+  .adv-list li{font-family:var(--serif);font-size:12.5px;color:var(--ink-2);line-height:1.95;letter-spacing:0.03em;}
+  .fold-stack{margin-top:30px;border-top:1px solid var(--rule);}
+  .home-fold{border-bottom:1px solid var(--rule);}
+  .home-fold summary{display:flex;align-items:center;gap:10px;padding:16px 2px;cursor:pointer;list-style:none;font-family:var(--serif);font-size:13.5px;color:var(--ink-2);letter-spacing:0.06em;transition:color 0.2s;}
+  .home-fold summary::-webkit-details-marker{display:none;}
+  .home-fold summary:hover{color:var(--ink);}
+  .fold-caret{font-size:9px;color:var(--ink-4);transition:transform 0.25s;display:inline-block;}
+  .home-fold[open] .fold-caret{transform:rotate(90deg);color:var(--ember);}
+  .fold-title{flex:1;}
+  .fold-hint{font-family:var(--mono);font-size:9.5px;color:var(--ember);letter-spacing:0.06em;}
+  .fold-body{padding:2px 0 22px;animation:foldIn 0.35s ease;}
+  @keyframes foldIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
   .btl-card{margin-top:12px;padding:13px 16px;background:none;border-left:3px solid var(--ember-b);border-radius:2px 6px 6px 2px;}
   .btl-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--ember);text-transform:uppercase;}
   .btl-body{margin-top:7px;font-family:var(--serif);font-size:12.5px;color:var(--ink-2);line-height:1.95;letter-spacing:0.03em;}
@@ -274,8 +290,12 @@
   .road-node{position:relative;display:flex;gap:14px;padding:9px 0 9px 0;cursor:pointer;}
   /* ② 現在地マーカー：静かに道を上っていく */
   .road{position:relative;}
-  .road-you{position:absolute;left:-1px;display:flex;align-items:center;gap:8px;z-index:2;transition:bottom 1s cubic-bezier(0.34,1.35,0.45,1);pointer-events:none;}
-  .road-you-dot{width:13px;height:13px;border-radius:50%;background:var(--ember);border:2.5px solid var(--bg);box-shadow:0 0 0 1.5px var(--ember-b), 0 0 12px -2px rgba(200,120,60,0.7);}
+  .road-you{position:absolute;left:-1px;display:flex;align-items:center;gap:8px;z-index:2;transition:bottom 2.2s cubic-bezier(0.33,0.02,0.2,1);pointer-events:none;}
+  .road-you-dot{position:relative;width:9px;height:9px;border-radius:50%;background:var(--ember);border:2px solid var(--bg);box-shadow:0 0 10px 1px rgba(200,120,60,0.55), 0 0 22px 3px rgba(200,120,60,0.22);animation:youBreathe 4.5s ease-in-out infinite;}
+  @keyframes youBreathe{0%,100%{box-shadow:0 0 9px 1px rgba(200,120,60,0.45),0 0 20px 3px rgba(200,120,60,0.18)}50%{box-shadow:0 0 13px 2px rgba(200,120,60,0.62),0 0 28px 5px rgba(200,120,60,0.26)}}
+  /* 到達した瞬間だけ、一瞬だけ広がる光 */
+  .road-you-dot.arrive::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--ember);animation:arriveRing 1.5s cubic-bezier(0.2,0.6,0.3,1) forwards;}
+  @keyframes arriveRing{0%{transform:scale(0.6);opacity:0.85}100%{transform:scale(3.4);opacity:0}}
   .road-you-lbl{font-family:var(--mono);font-size:8.5px;letter-spacing:0.16em;color:var(--ember);text-transform:uppercase;background:var(--bg);padding:1px 6px;border-radius:100px;border:1px solid var(--ember-b);}
   .road-dot{position:relative;z-index:1;flex-shrink:0;width:16px;height:16px;border-radius:50%;background:var(--bg);border:2px solid var(--rule-2);margin-top:3px;}
   .road-ideal .road-dot{border-color:var(--ember);background:var(--ember-d);}
@@ -672,17 +692,26 @@ window.FIREBASE_CONFIG = {
     <!-- 次に予定している一歩（一番近い未来だけ） -->
     <div id="future-next"></div>
 
-    <!-- ② ロードマップ（現在地が静かに進む一本道） -->
-    <div class="today-north" id="today-north" style="margin-top:26px"></div>
-    <div id="forward-panel"></div>
-    <!-- ① 今のあなたを止めているもの（必要な時だけ・一つだけ） -->
-    <div id="bottleneck-card"></div>
-
-    <!-- ③ AIの観察ログ（伴走者としての気付き） -->
-    <div id="ai-observe"></div>
-
-    <!-- ④ 人生起動録カード（分析状況の可視化） -->
-    <div id="home-chronicle"></div>
+    <!-- ① 折りたたみ：必要な人だけ開ける（初期状態は閉じている） -->
+    <div class="fold-stack">
+      <details class="home-fold" id="fold-road">
+        <summary><span class="fold-caret">▶</span><span class="fold-title">ロードマップ</span><span class="fold-hint" id="fold-road-hint"></span></summary>
+        <div class="fold-body">
+          <div class="today-north" id="today-north"></div>
+          <div id="advance-reason"></div>
+          <div id="forward-panel"></div>
+          <div id="bottleneck-card"></div>
+        </div>
+      </details>
+      <details class="home-fold" id="fold-obs">
+        <summary><span class="fold-caret">▶</span><span class="fold-title">AI観察ログ</span><span class="fold-hint" id="fold-obs-hint"></span></summary>
+        <div class="fold-body"><div id="ai-observe"></div></div>
+      </details>
+      <details class="home-fold" id="fold-chr">
+        <summary><span class="fold-caret">▶</span><span class="fold-title">人生起動録</span><span class="fold-hint" id="fold-chr-hint"></span></summary>
+        <div class="fold-body"><div id="home-chronicle"></div></div>
+      </details>
+    </div>
   </div>
 </div>
 
@@ -821,7 +850,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v58';
+const STORE='okoso_v59';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -849,6 +878,7 @@ let S = {
   observations: [],            // ④ AIの観察ログ [{id,text,ts}]
   bottleneck: null,            // 今のあなたを止めているもの {text,ts}
   lostHistory: [],             // 迷った時の相談履歴 [{id,ts,cause,organize,conclusion,step}]
+  lastAdvance: null,           // ④ 直近の前進理由 {ts,gain,cpText,progress,reasons[]}
   lastBottleneckTs: 0,
   lastObservationTs: 0,        // ④ 最後に観察を生成した日時
   chroniclePersona: '彼',      // 起動録の三人称（彼/彼女）
@@ -1187,6 +1217,8 @@ function renderFlow(){
   renderFutureNext();       // 次に予定している一歩
   renderPlannedReview();    // 予定していた一歩のAI確認（当日）
   renderBottleneck();       // ① 今のあなたを止めているもの
+  renderAdvanceReason();    // ④ 今日の前進理由
+  renderFoldHints();        // 折りたたみの一行ヒント
   renderObservation();      // ④ AIの観察ログ
   renderSteps();
   renderTomorrow();
@@ -4039,6 +4071,37 @@ const IDEAL_REVIEW_DAYS=30;          // 最低この日数が経ってから
 const IDEAL_REVIEW_MIN_RECORDS=12;   // ジャーナル＋前進記録がこの数たまってから
 const IDEAL_REVIEW_COOLDOWN_DAYS=21; // 見送られたら、しばらく間を空ける
 
+// ① 折りたたみの一行ヒント（開かなくても、中に何があるか分かる）
+// ④ 今日の前進理由
+function renderAdvanceReason(){
+  const el=document.getElementById('advance-reason');
+  if(!el) return;
+  const a=S.lastAdvance;
+  if(!a || ymdKey(new Date(a.ts))!==dk()){ el.innerHTML=''; return; }
+  el.innerHTML=`<div class="adv-card">
+    <div class="adv-lbl">今日の前進理由　<span class="adv-gain">+${a.gain}%</span></div>
+    <ul class="adv-list">${a.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
+  </div>`;
+}
+function renderFoldHints(){
+  const rh=document.getElementById('fold-road-hint');
+  if(rh){
+    const cps=(S.monthFocuses||[]);
+    const cur=cps.length?`${cps[0].progress||0}%`:'—';
+    rh.textContent=cps.length?`到達率 ${cur}`:'';
+  }
+  const oh=document.getElementById('fold-obs-hint');
+  if(oh){
+    const o=(S.observations||[]).slice(-1)[0];
+    oh.textContent=(o && Date.now()-o.ts<=5*86400000)?'新しい気付き':'';
+  }
+  const ch=document.getElementById('fold-chr-hint');
+  if(ch){
+    const unread=(S.chronicle||[]).filter(c=>!c.read).length;
+    ch.textContent=unread?`未読 ${unread}章`:'';
+  }
+}
+
 // ═══ ① ボトルネック分析：今のあなたを止めているもの（数日に一度・必要な時だけ）═══
 const OTHER_CP_ID='__other__';   // 目標に紐付かない「その他」枠
 function isOtherStep(s){ return s && s.cpId===OTHER_CP_ID; }
@@ -4063,7 +4126,8 @@ async function maybeGenerateBottleneck(){
     const cps=(S.monthFocuses||[]).map(c=>`「${c.text}」${c.progress||0}%`).join('、')||'（なし）';
     const recent=[]; Object.entries(S.steps||{}).sort().slice(-7).forEach(([k,arr])=>arr.forEach(x=>{ if(x.done) recent.push(x.text); }));
     const jr=(S.journals||[]).filter(j=>!j.kind).slice(-8).map(j=>j.text.slice(0,60)).join('\n')||'（なし）';
-    const sys=`あなたはOKOSOの伴走者です。記録を客観的に整理し、「今この人の前進を止めているもの」を一つだけ見立ててください。
+    const sys=`あなたはOKOSOのAIです。OKOSOのAIは「教えるAI」ではなく、「その人の人生を一番長く見続けてきた存在」です。全記録を理解しているからこそ、必要な時だけ、本人が一歩踏み出せる視点を渡します。命令しない・説教しない・評価しない。ただし黙って見ているだけでもなく、「私はこう感じました」「今の記録を見る限りではこう考えます」と、観察にもとづく提案はします。伴走者とメンターの中間の距離感を守ってください。
+記録を客観的に整理し、「今この人の前進を止めているもの」を一つだけ見立ててください。
 - 命令しない。断定しない。責めない。「〜が増えています。今は〜が前進につながりそうです。」のような伴走者の伝え方で
 - 現象の指摘＋前進の方向、あわせて2文・90字以内
 - 明確な滞りが見えなければ {"skip":true}
@@ -4132,7 +4196,8 @@ async function callLostAPI(){
   const chr=(S.chronicle||[]).length?`全${S.chronicle.length}章：${S.chronicle.map(c=>`「${c.title}」`).join('、')}\n最新章の冒頭：${(S.chronicle[S.chronicle.length-1].body||'').slice(0,200)}`:'（まだなし）';
   // ③⑥ 過去の相談履歴（前回との比較のために必ず渡す）
   const hist=(S.lostHistory||[]).slice(-3).map(hh=>`[${new Date(hh.ts).toLocaleDateString('ja-JP')}] 原因：${hh.cause||'—'}／結論：${hh.conclusion||hh.step||'—'}`).join('\n')||'（初回の相談）';
-  const sys=`あなたはOKOSOの伴走者です。ユーザーは今「自分が何をすべきか分からない」と迷っています。あなたは質問に答えるAIではなく、「過去の自分まで覚えている伴走者」です。過去から現在までの全記録を分析し、思考を整理し、次の一歩を一緒に見つけてください。
+  const sys=`あなたはOKOSOのAIです。OKOSOのAIは「教えるAI」ではなく、「その人の人生を一番長く見続けてきた存在」です。全記録を理解しているからこそ、必要な時だけ、本人が一歩踏み出せる視点を渡します。命令しない・説教しない・評価しない。ただし黙って見ているだけでもなく、「私はこう感じました」「今の記録を見る限りではこう考えます」と、観察にもとづく提案はします。伴走者とメンターの中間の距離感を守ってください。
+ユーザーは今「自分が何をすべきか分からない」と迷っています。あなたは質問に答えるAIではなく、「過去の自分まで覚えている伴走者」です。過去から現在までの全記録を分析し、思考を整理し、次の一歩を一緒に見つけてください。
 # やること（この順で）
 1. 【原因】全記録から「今、前進を止めている最大の原因」を必ず一つだけ特定する（例：考えすぎている／優先順位が曖昧／行動量はあるが方向が散っている／休息不足／目標が大きすぎる）。複数挙げない。一番影響が大きいものだけ（15字以内）
 2. 【整理】状況の整理を2〜4文（160字以内）。過去の相談履歴がある場合は必ず前回と比較する——「前回も◯◯が原因でした。今回は△△は進みました。一方で□□はまだです。つまり今回の原因は〜」のように、変化を追う。初回なら現在の分析のみでよい
@@ -4165,7 +4230,8 @@ async function maybeReviewPlannedSteps(){
     const cp=(S.monthFocuses||[]).find(c=>c.id===target.cpId);
     const recent=[];
     Object.entries(S.steps||{}).sort().slice(-5).forEach(([k,arr])=>arr.forEach(x=>{ if(x.done) recent.push(`[${k}] ${x.text}`); }));
-    const sys=`あなたはOKOSOの伴走者です。ユーザーが以前「この日にやる」と予約した一歩の当日になりました。現在の状況を見て、この一歩をどう扱うのが最善かを判定してください。
+    const sys=`あなたはOKOSOのAIです。OKOSOのAIは「教えるAI」ではなく、「その人の人生を一番長く見続けてきた存在」です。全記録を理解しているからこそ、必要な時だけ、本人が一歩踏み出せる視点を渡します。命令しない・説教しない・評価しない。ただし黙って見ているだけでもなく、「私はこう感じました」「今の記録を見る限りではこう考えます」と、観察にもとづく提案はします。伴走者とメンターの中間の距離感を守ってください。
+ユーザーが以前「この日にやる」と予約した一歩の当日になりました。現在の状況を見て、この一歩をどう扱うのが最善かを判定してください。
 - keep：今日そのまま取り組むのが最善
 - revise：内容を今日の状況に合わせて修正した方がよい（textに修正案）
 - postpone：今日は延期した方がよい
@@ -4239,7 +4305,8 @@ async function maybeProposeTodayStep(){
     const jr=(S.journals||[]).filter(j=>!j.kind).slice(-5).map(j=>`[${new Date(j.ts).toLocaleDateString('ja-JP')}] ${j.text.slice(0,70)}`).join('\n')||'（なし）';
     const obs=(S.observations||[]).slice(-1).map(o=>o.text).join('')||'（なし）';
     const prev=(S.aiStep&&S.aiStep.text)?`昨日の提案：「${S.aiStep.text}」`:'（昨日の提案なし）';
-    const sys=`あなたはOKOSOの伴走者です。ユーザーのロードマップ（向かう先→目標→通過点）から逆算し、「今日、人生を前に進めるために最も価値の高い一歩」を、必ず一つだけ選んでください。
+    const sys=`あなたはOKOSOのAIです。OKOSOのAIは「教えるAI」ではなく、「その人の人生を一番長く見続けてきた存在」です。全記録を理解しているからこそ、必要な時だけ、本人が一歩踏み出せる視点を渡します。命令しない・説教しない・評価しない。ただし黙って見ているだけでもなく、「私はこう感じました」「今の記録を見る限りではこう考えます」と、観察にもとづく提案はします。伴走者とメンターの中間の距離感を守ってください。
+ユーザーのロードマップ（向かう先→目標→通過点）から逆算し、「今日、人生を前に進めるために最も価値の高い一歩」を、必ず一つだけ選んでください。
 # ルール（厳守）
 - 提案は一つだけ。Todoの羅列は絶対にしない
 - 必ず、進行中の通過点のどれかから逆算する。通過点に関係ない提案は禁止
@@ -4338,7 +4405,8 @@ async function judgeStepContribution(step){
     let _cpDone=0,_cpRecent=0; const _7d=Date.now()-7*86400000;
     Object.entries(S.steps||{}).forEach(([k,arr])=>arr.forEach(x=>{ if(x.done&&x.cpId===cp.id){ _cpDone++; const t=new Date(k+'T12:00:00').getTime(); if(t>=_7d) _cpRecent++; } }));
     const recent=[]; Object.entries(S.steps||{}).sort().slice(-10).forEach(([k,arr])=>arr.forEach(x=>{ if(x.done&&x.cpId===cp.id) recent.push(x.text); }));
-    const sys=`あなたはOKOSOの伴走者です。ユーザーが完了した「今日の一歩」が、成果を表すチェックポイントの達成にどれだけ貢献したかを判定します。ユーザーは数値を入力しません。あなたが記録から総合的に判断してください。
+    const sys=`あなたはOKOSOのAIです。OKOSOのAIは「教えるAI」ではなく、「その人の人生を一番長く見続けてきた存在」です。全記録を理解しているからこそ、必要な時だけ、本人が一歩踏み出せる視点を渡します。命令しない・説教しない・評価しない。ただし黙って見ているだけでもなく、「私はこう感じました」「今の記録を見る限りではこう考えます」と、観察にもとづく提案はします。伴走者とメンターの中間の距離感を守ってください。
+ユーザーが完了した「今日の一歩」が、成果を表すチェックポイントの達成にどれだけ貢献したかを判定します。ユーザーは数値を入力しません。あなたが記録から総合的に判断してください。
 # 判断材料
 一歩の内容・過去の記録・これまでの行動・チェックポイントとの関連性・難易度・継続状況
 # 貢献度の目安（チェックポイント全体を100とした時の今回の貢献）
@@ -4365,9 +4433,16 @@ async function judgeStepContribution(step){
   cp.aiCap=newCap;
   if(!cp.confirmed) cp.progress=newCap;
   step._cpGain=applied;
+  // ④ 前進理由（なぜ進んだのかを言葉で残す）
+  const reasons=[];
+  reasons.push(`「${cp.text}」に繋がる行動ができた`);
+  reasons.push('今日の一歩を達成した');
+  const _st=calcStreak();
+  if(_st>=2) reasons.push(`継続記録が${_st}日に伸びた`);
+  if(cp.progress>=95 && !cp.confirmed) reasons.push('チェックポイントの目前まで来た');
+  S.lastAdvance={ts:Date.now(), gain:applied, cpText:cp.text, progress:cp.progress||0, reasons};
   persist();
-  renderTodayNorth(); renderHomeChronicle();
-  // ② 今日の貢献と全体の到達率を分けて伝える
+  renderTodayNorth(); renderHomeChronicle(); renderAdvanceReason();
   quietToast(`「${cp.text}」到達率 ${cp.progress||0}%（今日の貢献 +${applied}%）`);
   if(!cp.confirmed && cp.progress>=95){ setTimeout(()=>askCpComplete(cp.id), 1600); }
 }
@@ -4387,6 +4462,7 @@ function confirmCpComplete(cpId){
   if(!cp) return;
   cp.confirmed=true; cp.progress=100; cp.aiCap=95;
   persist(); closeModal(); renderTodayNorth();
+  setTimeout(()=>{ const d=document.querySelector('.road-you-dot'); if(d){ d.classList.add('arrive'); setTimeout(()=>d.classList.remove('arrive'),1600); } }, 300);
   quietToast(`「${cp.text}」完成しました`);
 }
 
@@ -4491,7 +4567,7 @@ ${recentBodies?`\n【直近の章の本文】\n${recentBodies}`:''}`};
 }
 async function callChronicleAPI(){
   const {persona, materials}=fmtChronicleMaterials();
-  const sys=`あなたは「人生起動録」の執筆者です。一人の人間の記録を分析し、「人生が一段階進んだ」と判断した時のみ、Netflixのドキュメンタリーのナレーションのような一章を書きます。これは記録の要約ではなく、ユーザー自身も気付いていなかった「変化」を、一本のドキュメンタリー作品として描く仕事です。
+  const sys=`あなたは「人生起動録」の執筆者です。一人の人間の記録を読み、「人生が一段階進んだ」と判断した時のみ、一章を書きます。目指すのはドキュメンタリーではなく、**一本の映画**です。ユーザーが自分の人生を映画のように読む体験を作ってください。記録の要約ではなく、本人も気付いていなかった変化を、物語として描く仕事です。
 
 # まず判定する
 記録を総合的に読む（一歩・達成・通過点・ジャーナル・向かう先の変遷・継続日数・再挑戦・習慣の変化）。以前と比べて人生が一段階進んだと言えるだけの変化がなければ書かない（"write":false）。
@@ -4502,13 +4578,17 @@ async function callChronicleAPI(){
 - 【AIだけが気付ける変化】この作品最大の価値。言葉の変化・価値観の変化・行動パターン・判断基準・思考の癖・継続の変化などを分析し、「本人が読んで初めて気付く変化」を必ず一つ以上書く
 - 【心に残る一文】章を象徴し、読者が思わず立ち止まる一文を必ず入れる。例：「${persona}はまだ、自分が人生を変え始めたことに気付いていなかった。」「覚悟は決意した日に生まれるのではない。積み重ねた日々のあとから名前が付く。」
 
-# 文体（説明ではなく、映像が浮かぶナレーション）
-- 説明を減らし、情景を書く。悪い例：「${persona}は喉が痛かった。」良い例：「七月。喉を痛めた朝。それでも、記録だけは残っていた。」
+# 文体（説明ではなく、映像が浮かぶ映画のシーン）
+- 【情景描写を最優先】説明より、その瞬間を映像として描く。朝の空気、静かな部屋、歩いている景色、体調、表情、その時の感情——読んだ瞬間、頭の中に景色が浮かぶ文章を目指す
+- 悪い例：「${persona}は喉が痛かった。」良い例：「七月。喉を痛めた朝。それでも、記録だけは残っていた。」
+- 【分析は物語を止めない程度に】説明するのではなく、物語の中で読者が自然に気付ける形にする。分析の言葉を並べない
+- 【伏線を積極的に使う】「あの時はまだ気付いていなかった。」「その選択が後の変化へ繋がるとは、この時まだ誰も知らない。」のように、続きを読みたくなる余白を残す
+- 【映画のような余白】説明しきらない。行間で語る
 - 三人称固定。「${persona}」で書く。「あなた」への語り掛けは絶対禁止
 - 応援しない。褒めるだけの文章も禁止（頑張りましたね・素晴らしい・おめでとう等）。説教・自己啓発的な一般論も禁止
 - 無理にいい話へまとめない。迷いも、停滞も、散漫さも、その時点のリアルとして観察者の目で描く
 - 全てを説明しない。読者自身が意味を考えられる余白を残す
-- 【構成比率】AIの分析（変化の言語化）が70%、出来事の描写は30%。出来事は、変化を証明する材料としてのみ使う
+- 【構成】物語（情景・シーン）で読ませ、変化の言語化は物語の中に溶かし込む。分析だけの段落を作らない。出来事の羅列も禁止
 - 【禁止】週報・日記・時系列レポート・「7月○日には〜」中心の構成／ジャーナルの要約／行動履歴の羅列／ポエム／フィクション・脚色
 - 本文は1500〜2500字。3〜5分で読める一本の作品にする
 
@@ -4527,7 +4607,7 @@ async function callChronicleAPI(){
 
 # 完成前の品質基準（すべて満たすまで完成としない）
 出力する前に、必ず自分で確認する：
-①記録の要約になっていないか ②出来事ではなく変化を書けているか ③AIしか気付けない発見が一つ以上あるか ④映像が浮かぶ文章になっているか ⑤一つのテーマで章が統一されているか ⑥冒頭と最後がつながっているか ⑦心に残る一文があるか ⑧次の章を読みたくなる終わり方になっているか
+①記録の要約になっていないか ②説明ではなく映像が浮かぶ文章か ③物語として読めるか ④AIしか気付けない発見が一つ以上あるか ⑤一つのテーマで章が統一されているか ⑥伏線が張られ、冒頭と最後がつながっているか ⑦心に残る一文があるか ⑧続きを読みたくなる余白と終わり方か
 一つでも満たさない場合は、書き直してから出力する。
 
 # 出力形式（JSONのみ）
@@ -4551,9 +4631,15 @@ function renderObservation(){
   const el=document.getElementById('ai-observe');
   if(!el) return;
   const obs=(S.observations||[]);
+  // 生成されていない時も、理由を一文だけ伝える
+  const st=chronicleStats(S.lastObservationTs||0);
+  const thin=(st.doneSteps<3 && st.journals<2);
+  const waitMsg = thin
+    ? 'もう少し記録が集まると、変化を観察できそうです。'
+    : '現在、変化を分析しています。';
   const waiting=`<div class="obs-card obs-waiting">
     <div class="obs-lbl">OKOSOの観察</div>
-    <div class="obs-body" style="color:var(--ink-3)">AIがあなたの変化を観察しています。<br>新しい変化を見つけたら、ここに表示されます。</div>
+    <div class="obs-body" style="color:var(--ink-3)">${waitMsg}</div>
   </div>`;
   if(!obs.length){ el.innerHTML=waiting; return; }
   const o=obs[obs.length-1];
@@ -4576,13 +4662,16 @@ async function maybeGenerateObservation(){
     const jr=(S.journals||[]).filter(j=>!j.kind).slice(-10).map(j=>`[${new Date(j.ts).toLocaleDateString('ja-JP')}] ${j.text.slice(0,80)}`).join('\n')||'（なし）';
     const stepSample=[];
     Object.entries(S.steps||{}).sort().forEach(([k,arr])=>arr.forEach(s=>{ if(s.done) stepSample.push(`[${k}] ${s.text}${s.carried?'（再挑戦）':''}`); }));
-    const sys=`あなたはOKOSOの「観察者」です。先生でもコーチでもありません。ユーザーの記録を客観的に見守り、本人が気付いていない小さな変化を、数日に一度だけ静かに伝えます。
-# ルール（厳守）
-- 命令しない。助言しない。評価しすぎない。褒めすぎない。分析だけする
-- 「〜しましょう」「〜すべき」は禁止。感嘆符も使わない
-- 記録の中の具体的な変化（言葉の変わり方・行動の増減・再挑戦・続き始めた習慣）を一つだけ取り上げる
-- 「あなた自身は気付いていないかもしれませんが」のような、客観的な視点を渡す姿勢で
-- 80〜140字。断定しすぎない
+    const sys=`あなたはOKOSOのAIです。OKOSOのAIは「教えるAI」ではなく、「その人の人生を一番長く見続けてきた存在」です。全記録を理解しているからこそ、必要な時だけ、本人が一歩踏み出せる視点を渡します。命令しない・説教しない・評価しない。ただし黙って見ているだけでもなく、「私はこう感じました」「今の記録を見る限りではこう考えます」と、観察にもとづく提案はします。伴走者とメンターの中間の距離感を守ってください。
+あなたは今、「AI観察ログ」を書きます。これはユーザーを評価する機能でも、褒める機能でもありません。全記録を見続けてきたからこそ気付いた変化を、本人に伝える場所です。
+# 距離感（最重要）
+- 少しだけ親しい友人のような口調。ただし軽すぎず、馴れ馴れしくしない
+- 書き出しの例：「最近思ったんだけど。」「記録を見ていて一つ気付いたことがあります。」「少し気になったことがあります。」——このくらいの距離感
+- 否定・命令は禁止。×「もっと〜した方がいいです」 ○「最近の記録を見る限りでは、少し優先順位が散らばり始めているようにも感じました」
+# 伝える内容
+- 本人が気付きにくい「変化・思考の癖・成長・停滞・視点」を一つだけ
+- 良い変化だけでなく、改善できそうなことも客観的に伝えてよい（責めない・押し付けない）
+- 80〜160字。断定しすぎない
 - 十分な変化が見つからなければ {"skip":true}
 # 出力（JSONのみ）
 {"text":"観察の文章"} または {"skip":true}`;
