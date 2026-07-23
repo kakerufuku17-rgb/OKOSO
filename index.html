@@ -238,6 +238,11 @@
   .adv-gain{color:var(--ember);}
   .adv-list{margin:9px 0 0;padding-left:16px;}
   .adv-list li{font-family:var(--serif);font-size:12.5px;color:var(--ink-2);line-height:1.95;letter-spacing:0.03em;}
+  .split-list{margin-top:4px;border-top:1px solid var(--rule);}
+  .split-row{display:flex;align-items:baseline;gap:12px;padding:12px 2px;border-bottom:1px solid var(--rule);}
+  .split-no{font-family:var(--mono);font-size:10px;color:var(--ember);flex-shrink:0;}
+  .split-text{font-family:var(--serif);font-size:14px;color:var(--ink);line-height:1.7;}
+  .split-last .split-text{color:var(--ink-3);}
   /* iPhoneウィジェット風カード */
   .widget-stack{margin-top:30px;display:flex;flex-direction:column;gap:12px;}
   .widget{position:relative;padding:18px 20px;background:var(--bg-1);border:1px solid var(--rule);border-radius:16px;cursor:pointer;transition:transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;}
@@ -884,7 +889,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v61';
+const STORE='okoso_v62';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -1383,6 +1388,60 @@ function openListManager(kind){
   if(isGoal) setupGoalDnD();
 }
 
+// ② 通過点の粒度判定：3週間で到達できない大きさなら、割り方を提案する（押し付けない）
+async function checkCpGranularity(cpId){
+  const cp=(S.monthFocuses||[]).find(c=>c.id===cpId);
+  if(!cp || cp.granularityChecked) return;
+  cp.granularityChecked=true; persist();
+  try{
+    const g=S.goals.find(x=>x.id===cp.goalId);
+    const sys=`${''}あなたはOKOSOの伴走者です。ユーザーが作った「通過点（成果）」の大きさを見て、3週間ほどで到達できる粒度かどうかだけを判定してください。
+# なぜ判定するか
+通過点が大きすぎると、行動しても数週間まったく到達感が得られず、途中で「これを続けても意味があるのか」と感じてしまいます。到達の手応えが定期的に訪れる大きさに保つのが目的です。
+# 判定
+- 3週間ほどで到達できそう → {"ok":true}
+- 大きすぎる（数ヶ月かかる、複数の成果を含む）→ 最初に取り組む2〜3個の小さな通過点に割った案を出す
+# 提案のしかた（厳守）
+- 命令しない。「こう割りませんか」と提案するだけ。ユーザーがそのまま進む選択も尊重する
+- 割った通過点は、それぞれが単体で「到達した」と言える成果にする（作業名ではなく成果名）
+- 各20字以内
+# 出力（JSONのみ）
+{"ok":true} または {"ok":false,"reason":"大きすぎる理由（40字以内）","split":["通過点1","通過点2","通過点3"]}`;
+    const user=`【通過点】${cp.text}\n【紐付く目標】${g?g.text:'（不明）'}\n【向かう先】${S.ideal||'—'}${karteContext()}`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+    if(!res.ok) return;
+    const data=await res.json();
+    let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+    const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+    const obj=JSON.parse(txt);
+    if(obj && obj.ok===false && Array.isArray(obj.split) && obj.split.length>=2){
+      showCpSplitProposal(cp.id, obj.reason||'', obj.split.slice(0,3));
+    }
+  }catch(e){}
+}
+function showCpSplitProposal(cpId, reason, split){
+  const cp=(S.monthFocuses||[]).find(c=>c.id===cpId);
+  if(!cp) return;
+  window.applyCpSplit=()=>{
+    const idx=S.monthFocuses.findIndex(c=>c.id===cpId);
+    const goalId=cp.goalId;
+    const made=split.map(t=>({id:uid(),text:t,goalId,progress:0,type:'ai',aiCap:0,confirmed:false,granularityChecked:true}));
+    // 元の通過点は「その先の大きな成果」として最後に残す
+    S.monthFocuses.splice(idx,1,...made,{...cp,granularityChecked:true});
+    sortCheckpointsByGoalOrder(); persist(); closeModal(); renderFlow();
+    quietToast('通過点を分けました');
+  };
+  openSheet(`<h2>この通過点、少し大きいかもしれません</h2>
+    <p class="sheet-note">${esc(reason)}<br><br>到達の手応えが定期的に訪れる大きさに保つと、続けやすくなります。こう割るのはどうでしょう。</p>
+    <div class="split-list">${split.map((t,i)=>`<div class="split-row"><span class="split-no">${i+1}</span><span class="split-text">${esc(t)}</span></div>`).join('')}
+      <div class="split-row split-last"><span class="split-no">→</span><span class="split-text">${esc(cp.text)}</span></div>
+    </div>
+    <div class="sheet-btns" style="margin-top:18px">
+      <button class="sbtn" onclick="closeModal()" style="flex:1">このまま進む</button>
+      <button class="sbtn sbtn-p" onclick="applyCpSplit()" style="flex:1">分けて進む</button>
+    </div>`);
+}
+
 // 通過点の型をAIが判定（ローカルで数値が取れなかった時だけ）
 async function classifyCpByAI(cp){
   try{
@@ -1674,7 +1733,9 @@ async function openMultiSheet(kind, editId){
     else {
       if(isGoal) S.goals.push({id:uid(),text:v});
       else {
-        S.monthFocuses.push({id:uid(),text:v,goalId:chosenGoalId,progress:0,type:'ai',aiCap:0,confirmed:false}); sortCheckpointsByGoalOrder();
+        const _newCp={id:uid(),text:v,goalId:chosenGoalId,progress:0,type:'ai',aiCap:0,confirmed:false};
+        S.monthFocuses.push(_newCp); sortCheckpointsByGoalOrder();
+        setTimeout(()=>checkCpGranularity(_newCp.id), 350);   // 粒度判定（谷を作らない大きさに）
       }
     }
     persist(); renderFlow(); closeModal();
