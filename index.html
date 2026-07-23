@@ -238,17 +238,32 @@
   .adv-gain{color:var(--ember);}
   .adv-list{margin:9px 0 0;padding-left:16px;}
   .adv-list li{font-family:var(--serif);font-size:12.5px;color:var(--ink-2);line-height:1.95;letter-spacing:0.03em;}
-  .fold-stack{margin-top:30px;border-top:1px solid var(--rule);}
-  .home-fold{border-bottom:1px solid var(--rule);}
-  .home-fold summary{display:flex;align-items:center;gap:10px;padding:16px 2px;cursor:pointer;list-style:none;font-family:var(--serif);font-size:13.5px;color:var(--ink-2);letter-spacing:0.06em;transition:color 0.2s;}
-  .home-fold summary::-webkit-details-marker{display:none;}
-  .home-fold summary:hover{color:var(--ink);}
-  .fold-caret{font-size:9px;color:var(--ink-4);transition:transform 0.25s;display:inline-block;}
-  .home-fold[open] .fold-caret{transform:rotate(90deg);color:var(--ember);}
-  .fold-title{flex:1;}
-  .fold-hint{font-family:var(--mono);font-size:9.5px;color:var(--ember);letter-spacing:0.06em;}
-  .fold-body{padding:2px 0 22px;animation:foldIn 0.35s ease;}
-  @keyframes foldIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  /* iPhoneウィジェット風カード */
+  .widget-stack{margin-top:30px;display:flex;flex-direction:column;gap:12px;}
+  .widget{position:relative;padding:18px 20px;background:var(--bg-1);border:1px solid var(--rule);border-radius:16px;cursor:pointer;transition:transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;}
+  .widget:active{transform:scale(0.985);}
+  .widget:hover{border-color:var(--rule-2);}
+  .w-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+  .w-name{font-family:var(--mono);font-size:10px;letter-spacing:0.2em;color:var(--ink-3);text-transform:uppercase;}
+  .w-dot{width:6px;height:6px;border-radius:50%;background:var(--ink-3);margin-left:auto;}
+  .w-dot.gold{background:#d8b36a;box-shadow:0 0 8px 1px rgba(216,179,106,0.5);}
+  .w-dot.blue{background:#7aa2c4;box-shadow:0 0 8px 1px rgba(122,162,196,0.5);}
+  .w-big{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--ink);letter-spacing:0.02em;line-height:1.4;}
+  .w-mid{font-family:var(--serif);font-size:15px;color:var(--ink);letter-spacing:0.03em;line-height:1.6;margin-top:3px;}
+  .w-quote{font-family:var(--serif);font-size:12px;color:var(--ink-3);letter-spacing:0.03em;margin-top:12px;line-height:1.7;}
+  .w-bar{display:flex;gap:3px;margin-top:10px;}
+  .w-bar span{flex:1;height:5px;border-radius:2px;background:var(--rule-2);}
+  .w-bar span.on{background:var(--ink-3);}
+  /* 変化があった時だけ、淡い色（通知として） */
+  .widget.w-gold{background:linear-gradient(160deg,rgba(216,179,106,0.09),var(--bg-1) 78%);border-color:rgba(216,179,106,0.32);}
+  .widget.w-gold .w-bar span.on{background:#d8b36a;}
+  .widget.w-blue{background:linear-gradient(160deg,rgba(122,162,196,0.09),var(--bg-1) 78%);border-color:rgba(122,162,196,0.3);}
+  .widget.w-green{background:linear-gradient(160deg,rgba(122,180,130,0.08),var(--bg-1) 80%);border-color:rgba(122,180,130,0.26);}
+  /* 詳細画面のヘッダ */
+  .detail-head{display:flex;align-items:center;gap:14px;margin-bottom:26px;padding-top:4px;}
+  .detail-back{background:none;border:none;color:var(--ink-3);font-family:var(--serif);font-size:14px;cursor:pointer;padding:4px 2px;letter-spacing:0.04em;transition:color 0.2s;}
+  .detail-back:hover{color:var(--ember);}
+  .detail-title{font-family:var(--serif);font-size:18px;font-weight:600;color:var(--ink);letter-spacing:0.06em;}
   .btl-card{margin-top:12px;padding:13px 16px;background:none;border-left:3px solid var(--ember-b);border-radius:2px 6px 6px 2px;}
   .btl-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;color:var(--ember);text-transform:uppercase;}
   .btl-body{margin-top:7px;font-family:var(--serif);font-size:12.5px;color:var(--ink-2);line-height:1.95;letter-spacing:0.03em;}
@@ -692,26 +707,45 @@ window.FIREBASE_CONFIG = {
     <!-- 次に予定している一歩（一番近い未来だけ） -->
     <div id="future-next"></div>
 
-    <!-- ① 折りたたみ：必要な人だけ開ける（初期状態は閉じている） -->
-    <div class="fold-stack">
-      <details class="home-fold" id="fold-road">
-        <summary><span class="fold-caret">▶</span><span class="fold-title">ロードマップ</span><span class="fold-hint" id="fold-road-hint"></span></summary>
-        <div class="fold-body">
-          <div class="today-north" id="today-north"></div>
-          <div id="advance-reason"></div>
-          <div id="forward-panel"></div>
-          <div id="bottleneck-card"></div>
-        </div>
-      </details>
-      <details class="home-fold" id="fold-obs">
-        <summary><span class="fold-caret">▶</span><span class="fold-title">AI観察ログ</span><span class="fold-hint" id="fold-obs-hint"></span></summary>
-        <div class="fold-body"><div id="ai-observe"></div></div>
-      </details>
-      <details class="home-fold" id="fold-chr">
-        <summary><span class="fold-caret">▶</span><span class="fold-title">人生起動録</span><span class="fold-hint" id="fold-chr-hint"></span></summary>
-        <div class="fold-body"><div id="home-chronicle"></div></div>
-      </details>
+    <!-- iPhoneウィジェット風カード：概要だけ見せ、タップで詳細へ -->
+    <div class="widget-stack" id="widget-stack"></div>
+  </div>
+</div>
+
+<!-- ロードマップ詳細画面 -->
+<div class="screen" id="scr-roadmap">
+  <div class="inner">
+    <div class="detail-head">
+      <button class="detail-back" onclick="goScreen('today')">‹ 今日</button>
+      <div class="detail-title">ロードマップ</div>
     </div>
+    <div class="today-north" id="today-north"></div>
+    <div id="advance-reason"></div>
+    <div id="forward-panel"></div>
+    <div id="bottleneck-card"></div>
+  </div>
+</div>
+
+<!-- AI観察ログ詳細画面 -->
+<div class="screen" id="scr-observe">
+  <div class="inner">
+    <div class="detail-head">
+      <button class="detail-back" onclick="goScreen('today')">‹ 今日</button>
+      <div class="detail-title">AI観察ログ</div>
+    </div>
+    <div id="ai-observe"></div>
+  </div>
+</div>
+
+<!-- 人生起動録詳細画面（カードは概要、本棚はここ） -->
+<div class="screen" id="scr-chronicle">
+  <div class="inner">
+    <div class="detail-head">
+      <button class="detail-back" onclick="goScreen('today')">‹ 今日</button>
+      <div class="detail-title">人生起動録</div>
+    </div>
+    <div id="home-chronicle"></div>
+    <button class="add-btn" onclick="openChronicleList()" style="margin-top:18px">本棚をひらく</button>
   </div>
 </div>
 
@@ -850,7 +884,7 @@ window.FIREBASE_CONFIG = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-const STORE='okoso_v59';
+const STORE='okoso_v61';
 let S = {
   ideal: '',                   // Layer0 理想（北極星・単一テキスト）
   idealHistory: [],            // 理想の変遷
@@ -879,6 +913,8 @@ let S = {
   bottleneck: null,            // 今のあなたを止めているもの {text,ts}
   lostHistory: [],             // 迷った時の相談履歴 [{id,ts,cause,organize,conclusion,step}]
   lastAdvance: null,           // ④ 直近の前進理由 {ts,gain,cpText,progress,reasons[]}
+  karte: null,                 // 人生設計カルテ（AIの土台）：理由/価値観/原体験/向かう先/恐れ/捨てた理想/テーマ/感情
+  karteOrigin: null,           // カルテの初回内容（絶対に上書きしない・将来の比較用）
   lastBottleneckTs: 0,
   lastObservationTs: 0,        // ④ 最後に観察を生成した日時
   chroniclePersona: '彼',      // 起動録の三人称（彼/彼女）
@@ -1037,6 +1073,8 @@ function mergeData(local, remote){
   out.sleepTime=newer.sleepTime||'23:00';
   out.aiStep=((local.aiStep&&local.aiStep.ts)||0)>=((remote.aiStep&&remote.aiStep.ts)||0)?local.aiStep:remote.aiStep;
   out.observations=mergeById(local.observations||[],remote.observations||[]);
+  out.karte=((local.karte&&local.karte.ts)||0)>=((remote.karte&&remote.karte.ts)||0)?local.karte:remote.karte;
+  out.karteOrigin=local.karteOrigin||remote.karteOrigin||null;
   out.bottleneck=((local.bottleneck&&local.bottleneck.ts)||0)>=((remote.bottleneck&&remote.bottleneck.ts)||0)?local.bottleneck:remote.bottleneck;
   out.lostHistory=mergeById(local.lostHistory||[],remote.lostHistory||[]);
   out.lastBottleneckTs=Math.max(local.lastBottleneckTs||0,remote.lastBottleneckTs||0);
@@ -1138,6 +1176,9 @@ function goScreen(name){
   document.querySelector('.screen.active').scrollTop=0;
   if(name==='today'){ renderFlow(); renderAssetChips(); }
   if(name==='totonoeru'){ renderTotonoeru(); }
+  if(name==='roadmap'){ renderTodayNorth(); renderAdvanceReason(); renderForwardPanel(); renderBottleneck(); }
+  if(name==='observe'){ renderObservation(); }
+  if(name==='chronicle'){ renderHomeChronicle(); }
   if(name==='proof'){ renderProof(); }
   if(name==='archive'){ renderCalendar(); }
 }
@@ -1218,7 +1259,7 @@ function renderFlow(){
   renderPlannedReview();    // 予定していた一歩のAI確認（当日）
   renderBottleneck();       // ① 今のあなたを止めているもの
   renderAdvanceReason();    // ④ 今日の前進理由
-  renderFoldHints();        // 折りたたみの一行ヒント
+  renderWidgets();          // ウィジェット風カード
   renderObservation();      // ④ AIの観察ログ
   renderSteps();
   renderTomorrow();
@@ -3824,10 +3865,38 @@ function onbFinish(){
   if(onbDraft.step){ todaySteps().push({id:uid(),text:onbDraft.step,tag:focusTag,cpId,done:false}); }
   S.onboarded=true;
   S.idealStartTs=Date.now();
+  // 人生設計カルテを抽出（対話ログは保存しない。決意と価値観だけを残す）
+  extractKarte((onbDraft.convo||[]).slice());   // コピーを渡す（この後すぐ破棄しても抽出は続く）
+  onbDraft.convo=[];   // 会話全文は破棄
   persist();
   renderFlow();
   const o=document.getElementById('onb');
   if(o){ o.classList.remove('show'); setTimeout(()=>document.getElementById('onb-mount').innerHTML='',500); }
+  quietToast('人生起動録のため、価値観と理想だけを記録します（会話全文は保存しません）');
+}
+// 対話から「物語の素材」を一度だけ抽出（数KB）。会話全文は保存しない
+async function extractKarte(convo){
+  const base={ ideal:S.ideal||'', wall:S.wall||'', ts:Date.now() };
+  // 先に最低限のカルテを置く（AI失敗時のフォールバック）
+  if(!S.karte){ S.karte={...base}; persist(); }
+  try{
+    const convoText=(convo||[]).map(m=>`${m.role==='ai'?'AI':'本人'}：${m.text}`).join('\n').slice(-4000);
+    if(!convoText){ return; }
+    const sys=`あなたはOKOSOの記録者です。オンボーディングの対話から、その人の「人生設計カルテ」を作ります。会話は保存しません。あなたが抽出する“素材”だけが残ります。
+- 本人が語った言葉を尊重し、脚色や創作をしない。分からない項目は空文字にする
+- 各項目は簡潔に（40字以内）
+出力（JSONのみ）：{"reason":"人生を変えたいと思った理由","origin":"原体験","value":"一番大切にしたい価値観","fear":"恐れていること","theme":"人生のテーマ","movedWord":"一番心が動いた言葉","droppedIdeal":"途中で捨てた理想","emotion":"この日感じていた感情"}`;
+    const user=`【最終的な向かう先】${S.ideal}\n【特定された壁】${S.wall||'（なし）'}\n【対話】\n${convoText}`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
+    if(!res.ok) return;
+    const data=await res.json();
+    let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+    const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+    const obj=JSON.parse(txt);
+    S.karte={...base, ...obj, ts:Date.now()};
+    if(!S.karteOrigin) S.karteOrigin={...S.karte};   // 初回は絶対に上書きしない
+    persist();
+  }catch(e){}
 }
 
 // ════════════════════════════════
@@ -4027,7 +4096,7 @@ function init(){
   };
   setupAutoSync();   // ④ 自動同期（画面復帰・定期）
   if(!S.onboarded) startOnboarding();
-  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChronicle(); }, 800); setTimeout(()=>{ maybeProposeTodayStep(); }, 1200); setTimeout(()=>{ maybeReviewPlannedSteps(); }, 1600); setTimeout(()=>{ maybeGenerateBottleneck(); }, 5000); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
+  else { checkUnmetTasks(); setTimeout(maybeShowMilestone, 600); setTimeout(maybeSuggestIdealReview, 1400); setTimeout(()=>{ maybeGenerateChapterZero(); }, 900); setTimeout(()=>{ maybeGenerateChronicle(); }, 1400); setTimeout(()=>{ maybeProposeTodayStep(); }, 1200); setTimeout(()=>{ maybeReviewPlannedSteps(); }, 1600); setTimeout(()=>{ maybeGenerateBottleneck(); }, 5000); setTimeout(()=>{ maybeGenerateObservation(); }, 4000); }
 }
 
 // ④ 自動同期：アプリに戻ってきた時・タブがアクティブになった時・定期的に、自動でpull+merge
@@ -4083,6 +4152,74 @@ function renderAdvanceReason(){
     <ul class="adv-list">${a.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>
   </div>`;
 }
+// iPhoneウィジェット風の概要カード（1枚1情報・タップで詳細へ・変化時だけ色）
+function renderWidgets(){
+  const el=document.getElementById('widget-stack');
+  if(!el) return;
+  el.innerHTML = widgetRoadmap() + widgetChronicle() + widgetObserve();
+}
+function widgetRoadmap(){
+  const cps=(S.monthFocuses||[]);
+  const cur=cps.length?(cps[0].progress||0):0;
+  const remain=Math.max(0,100-cur);
+  // 今日この後の前進があったか（変化＝緑）
+  const adv=S.lastAdvance && ymdKey(new Date(S.lastAdvance.ts))===dk();
+  const tone=adv?' w-green':'';
+  const sub= adv ? `今日の一歩で +${S.lastAdvance.gain}% 前へ。`
+    : cps.length ? '今日の一歩で、少し前へ。'
+    : '通過点を決めると、道が見えます。';
+  const line = cps.length
+    ? `<div class="w-big">現在地 ${cur}%</div><div class="w-mid">次の通過点まで ${remain}%</div>`
+    : `<div class="w-big">まだ、これから</div>`;
+  return `<div class="widget${tone}" onclick="goScreen('roadmap')">
+    <div class="w-head"><span class="w-name">ロードマップ</span>${adv?'<span class="w-dot"></span>':''}</div>
+    ${line}
+    <div class="w-quote">${esc(sub)}</div>
+  </div>`;
+}
+function widgetChronicle(){
+  const chs=(S.chronicle||[]);
+  const unread=chs.filter(c=>!c.read);
+  const st=(typeof chronicleAnalysisState==='function')?chronicleAnalysisState():null;
+  if(unread.length){
+    const c=unread[unread.length-1];
+    return `<div class="widget w-gold" onclick="openChronicleReaderByNo(${c.no})">
+      <div class="w-head"><span class="w-name">人生起動録</span><span class="w-dot gold"></span></div>
+      <div class="w-big">${c.no===0?'序章':`第${c.no}章`}が完成</div>
+      <div class="w-mid">「${esc(c.title)}」</div>
+      <div class="w-quote">静かな時間に、読んでみてください。</div>
+    </div>`;
+  }
+  const f=st?st.f:0;
+  const filled=Math.round(f*10);
+  const bar=`<div class="w-bar">${'<span class="on"></span>'.repeat(filled)}${'<span></span>'.repeat(10-filled)}</div>`;
+  const nextNo=st?st.nextNo:1;
+  return `<div class="widget" onclick="goScreen('chronicle')">
+    <div class="w-head"><span class="w-name">人生起動録</span></div>
+    <div class="w-mid">${nextNo===1?'最初の章':`第${nextNo}章`}へ ${Math.round(f*100)}%</div>
+    ${bar}
+    <div class="w-quote">物語は、静かに育っています。</div>
+  </div>`;
+}
+function widgetObserve(){
+  const obs=(S.observations||[]);
+  const o=obs[obs.length-1];
+  const fresh=o && Date.now()-o.ts<=5*86400000;
+  if(fresh){
+    // 未読相当（3日以内）は青
+    const isNew=Date.now()-o.ts<=3*86400000;
+    return `<div class="widget${isNew?' w-blue':''}" onclick="goScreen('observe')">
+      <div class="w-head"><span class="w-name">AI観察ログ</span>${isNew?'<span class="w-dot blue"></span>':''}</div>
+      <div class="w-mid">最近、一つ気付いたことがあります。</div>
+      <div class="w-quote">落ち着いた時に、読んでみてください。</div>
+    </div>`;
+  }
+  return `<div class="widget" onclick="goScreen('observe')">
+    <div class="w-head"><span class="w-name">AI観察ログ</span></div>
+    <div class="w-mid">あなたの変化を、見つめています。</div>
+    <div class="w-quote">もう少し記録が集まると、気付きが届きます。</div>
+  </div>`;
+}
 function renderFoldHints(){
   const rh=document.getElementById('fold-road-hint');
   if(rh){
@@ -4104,6 +4241,20 @@ function renderFoldHints(){
 
 // ═══ ① ボトルネック分析：今のあなたを止めているもの（数日に一度・必要な時だけ）═══
 const OTHER_CP_ID='__other__';   // 目標に紐付かない「その他」枠
+// 全AI機能が共有する「この人を理解している」土台
+function karteContext(){
+  const k=S.karte;
+  if(!k) return '';
+  const lines=[];
+  if(k.reason) lines.push(`人生を変えたいと思った理由：${k.reason}`);
+  if(k.origin) lines.push(`原体験：${k.origin}`);
+  if(k.value) lines.push(`大切にしている価値観：${k.value}`);
+  if(k.fear) lines.push(`恐れていること：${k.fear}`);
+  if(k.theme) lines.push(`人生のテーマ：${k.theme}`);
+  if(k.movedWord) lines.push(`一番心が動いた言葉：${k.movedWord}`);
+  if(!lines.length) return '';
+  return `\n【人生設計カルテ（この人が最初に語った決意。理解の土台にする）】\n${lines.join('\n')}`;
+}
 function isOtherStep(s){ return s && s.cpId===OTHER_CP_ID; }
 const BTL_INTERVAL=4*24*60*60*1000;
 function renderBottleneck(){
@@ -4132,7 +4283,7 @@ async function maybeGenerateBottleneck(){
 - 現象の指摘＋前進の方向、あわせて2文・90字以内
 - 明確な滞りが見えなければ {"skip":true}
 出力（JSONのみ）：{"text":"..."} または {"skip":true}`;
-    const user=`【向かう先】${S.ideal}${S.wall?`（最大の壁：${S.wall}）`:''}\n【通過点】${cps}\n【直近の完了一歩】${recent.slice(-12).join('、')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【継続】${calcStreak()}日`;
+    const user=`【向かう先】${S.ideal}${S.wall?`（最大の壁：${S.wall}）`:''}\n【通過点】${cps}\n【直近の完了一歩】${recent.slice(-12).join('、')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【継続】${calcStreak()}日${karteContext()}`;
     const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
     if(!res.ok) return;
     const data=await res.json();
@@ -4208,7 +4359,7 @@ async function callLostAPI(){
 - 「今の記録を見る限りでは、この方向が一番前進につながりそうです」の距離感を守る
 # 出力（JSONのみ）
 {"cause":"最大の原因","organize":"整理（前回比較を含む）","conclusion":"今日は〜より、〜。","step":"一歩","cpId":"最も関係する通過点のid","reason":"なぜ前進につながりそうか（40字以内）"}`;
-  const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【通過点】\n${cpLines}\n【今日の一歩】${todayList}\n【直近の完了】\n${recent.slice(-15).join('\n')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【前進資産】${assets}\n【達成履歴】${achieved}\n【AI観察ログ】\n${obs}\n【人生起動録】\n${chr}\n【過去の相談履歴】\n${hist}\n【継続】${calcStreak()}日`;
+  const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【通過点】\n${cpLines}\n【今日の一歩】${todayList}\n【直近の完了】\n${recent.slice(-15).join('\n')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【前進資産】${assets}\n【達成履歴】${achieved}\n【AI観察ログ】\n${obs}\n【人生起動録】\n${chr}\n【過去の相談履歴】\n${hist}\n【継続】${calcStreak()}日${karteContext()}`;
   const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user,max_tokens:1500})});
   if(!res.ok) throw new Error('api');
   const data=await res.json();
@@ -4315,7 +4466,7 @@ async function maybeProposeTodayStep(){
 - 昨日と同じ提案を理由なく繰り返さない。同じにするなら、今日もそれが最重要である理由をreasonに書く
 # 出力（JSONのみ）
 {"text":"一歩の内容（30字以内）","cpId":"最も関係する通過点のid","reason":"なぜ今日これなのか（40字以内）"}`;
-    const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【通過点】\n${cpLines}\n【直近の完了】\n${recent.slice(-15).join('\n')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【AIの観察】${obs}\n${prev}`;
+    const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【通過点】\n${cpLines}\n【直近の完了】\n${recent.slice(-15).join('\n')||'（なし）'}\n【直近のジャーナル】\n${jr}\n【AIの観察】${obs}\n${prev}${karteContext()}`;
     const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
     if(!res.ok) throw new Error('api');
     const data=await res.json();
@@ -4416,7 +4567,7 @@ async function judgeStepContribution(step){
 - 継続している場合は、その積み重ねを範囲内で少し評価してよい
 - 一歩の内容がチェックポイントとほとんど関係ない場合は、1〜2の小さな値にする
 出力（JSONのみ）：{"gain":数値}`;
-    const user=`【チェックポイント（成果）】${cp.text}（現在の到達率${cp.progress||0}%）\n【紐付く目標】${g?g.text:'（不明）'}\n【今日の一歩】${step.text}\n【この通過点への直近の一歩】${recent.slice(-8).join('、')||'（今回が最初）'}\n【継続状況】累計${_cpDone}件・直近7日${_cpRecent}件・全体の連続前進${calcStreak()}日`;
+    const user=`【チェックポイント（成果）】${cp.text}（現在の到達率${cp.progress||0}%）\n【紐付く目標】${g?g.text:'（不明）'}\n【今日の一歩】${step.text}\n【この通過点への直近の一歩】${recent.slice(-8).join('、')||'（今回が最初）'}\n【継続状況】累計${_cpDone}件・直近7日${_cpRecent}件・全体の連続前進${calcStreak()}日${karteContext()}`;
     const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
     if(res.ok){
       const data=await res.json();
@@ -4510,6 +4661,43 @@ function chronicleRemaining(){
   };
 }
 let _chrGenerating=false;
+// 第0章「始まりの物語」：完了から3日後、日数だけで届く（続けられた人への報酬にしない）
+const CH0_DELAY=3*24*60*60*1000;
+async function maybeGenerateChapterZero(){
+  if(!S.onboarded||!S.ideal) return;
+  if((S.chronicle||[]).some(c=>c.no===0)) return;              // 既に生成済み
+  if(!S.idealStartTs || Date.now()-S.idealStartTs < CH0_DELAY) return;
+  if(_chrGenerating) return;
+  _chrGenerating=true;
+  try{
+    const persona=S.chroniclePersona||'彼';
+    const k=S.karteOrigin||S.karte||{};
+    const sys=`あなたは「人生起動録」の執筆者です。今回書くのは特別な章、第0章「始まりの物語」。これは"人生が変わった日"ではなく、"人生を変えようと決めた日"を描く章です。まだ何も成し遂げていない。ただ、忘れていた問いに answer を出した。その瞬間だけを、一本の映画の冒頭のように描いてください。
+# ルール
+- 三人称。「${persona}」で書く。「あなた」への語り掛け禁止
+- 成果や進捗を書かない（まだ何も起きていないから）。描くのは「決意」と「その日の感情」だけ
+- 情景を優先。何度も言葉を書き直したこと、最後に残った言葉、その時の静けさ——映像が浮かぶように
+- 500〜800字。短く、余韻を持って
+- 締めは「これは、まだ何も成し遂げていない頃の話だ。」のように、始まりであることを肯定し、第1章への伏線にする
+- 応援・説教・自己啓発は禁止。観察者として静かに
+# 出力（JSONのみ）
+{"title":"章タイトル","body":"本文500〜800字（改行は\\n）","close":"締めの一文","next":"次の章への予告（60〜100字）"}`;
+    const user=`【向かう先】${S.ideal}${S.wall?`\n【この人が越えようとしている壁】${S.wall}`:''}${karteContext()}`;
+    const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user,max_tokens:1500})});
+    if(res.ok){
+      const data=await res.json();
+      let txt=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```(?:json)?/gi,'');
+      const m=txt.match(/\{[\s\S]*\}/); if(m) txt=m[0];
+      const ch=JSON.parse(txt);
+      if(ch && ch.title && ch.body){
+        S.chronicle.unshift({id:uid(), no:0, title:ch.title, body:ch.body, close:ch.close||'', next:ch.next||'', ts:Date.now(), read:false});
+        persist(); renderChronicleBanner(); renderHomeChronicle();
+        showChronicleNotice(0, ch.title);
+      }
+    }
+  }catch(e){}
+  _chrGenerating=false;
+}
 async function maybeGenerateChronicle(){
   if(!S.onboarded||!S.ideal) return;
   if(_chrGenerating) return;
@@ -4521,7 +4709,7 @@ async function maybeGenerateChronicle(){
   try{
     const ch=await callChronicleAPI();
     if(ch && ch.write && ch.title && ch.body){
-      const no=(S.chronicle||[]).length+1;
+      const no=(S.chronicle||[]).filter(c=>c.no>0).length+1;
       S.chronicle.push({id:uid(), no, title:ch.title, body:ch.body, close:ch.close||'', next:ch.next||'', ts:Date.now(), read:false});
       // 章が書けたのでスロットルは解除（次の条件充足時も即生成できる）
       S.lastChronicleCheckTs=0;
@@ -4553,7 +4741,7 @@ function fmtChronicleMaterials(){
   const streak=calcStreak();
   const activeDays=activeDaysCount();
   let carried=0; Object.values(S.steps||{}).forEach(arr=>arr.forEach(s=>{ if(s.carried) carried++; }));
-  return {persona, materials:`【本人が掲げる向かう先】${S.ideal}
+  return {persona, materials:`${karteContext()}\n【本人が掲げる向かう先】${S.ideal}
 【継続】連続前進${streak}日・前進した日の合計${activeDays}日・繰り越して再挑戦した一歩${carried}件${S.wall?`\n【本人の最大の壁】${S.wall}`:''}
 【向かう先の変遷】\n${idealHist}
 【現在の目標】${goals}
@@ -4675,7 +4863,7 @@ async function maybeGenerateObservation(){
 - 十分な変化が見つからなければ {"skip":true}
 # 出力（JSONのみ）
 {"text":"観察の文章"} または {"skip":true}`;
-    const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【最近の一歩】\n${stepSample.slice(-20).join('\n')}\n【最近のジャーナル】\n${jr}\n【継続】連続${calcStreak()}日`;
+    const user=`【向かう先】${S.ideal}${S.wall?`\n【最大の壁】${S.wall}`:''}\n【最近の一歩】\n${stepSample.slice(-20).join('\n')}\n【最近のジャーナル】\n${jr}\n【継続】連続${calcStreak()}日${karteContext()}`;
     const res=await fetch('/api/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,user})});
     if(!res.ok) throw new Error('api');
     const data=await res.json();
@@ -4741,7 +4929,7 @@ function renderChronicleBanner(){
     <div class="chr-banner-icon">📖</div>
     <div class="chr-banner-body">
       <div class="chr-banner-title">新しい章が完成しました</div>
-      <div class="chr-banner-sub">あなたの歩みを、AIが一つの物語としてまとめました。<br>第${c.no}章「${esc(c.title)}」</div>
+      <div class="chr-banner-sub">あなたの歩みを、AIが一つの物語としてまとめました。<br>${c.no===0?'序章':`第${c.no}章`}「${esc(c.title)}」</div>
     </div>
     <div class="ce-arrow">›</div>
   </div>`;
@@ -4863,7 +5051,7 @@ function openChronicleList(){
   window.setChrPersona=(v)=>{ S.chroniclePersona=v; persist(); openChronicleList(); };
   const rows=chs.length
     ? `<div class="chr-shelf">`+chs.map(c=>`<div class="chr-book${c.read?'':' unread'}" onclick="openChronicleReaderByNo(${c.no})">
-        <div class="chr-book-no">第${c.no}章</div>
+        <div class="chr-book-no">${c.no===0?'序章':`第${c.no}章`}</div>
         <div class="chr-book-title">${esc(c.title)}</div>
         <div class="chr-book-date">${new Date(c.ts).toLocaleDateString('ja-JP')}</div>
         ${c.read?'':'<div class="chr-book-new">未読</div>'}
@@ -4888,7 +5076,7 @@ function openChronicleReaderByNo(no){
   if(!c) return;
   if(!c.read){ c.read=true; persist(); renderChronicleBanner(); }
   openSheet(`<div class="chr-reader">
-      <div class="chr-reader-no">第${c.no}章</div>
+      <div class="chr-reader-no">${c.no===0?'序章':`第${c.no}章`}</div>
       <div class="chr-reader-title">「${esc(c.title)}」</div>
       <div class="chr-reader-body">${esc(c.body)}</div>
       ${c.close?`<div class="chr-reader-close">${esc(c.close)}</div>`:''}
